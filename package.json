@@ -8,14 +8,16 @@
     "build": "webpack --progress"
   },
   "devDependencies": {
+    "compare-version": "^0.1.2",
+    "shelljs": "^0.7.7",
+    "vizabi": "^0.20.2-6",
     "vizabi-tool-bundler": "github:vizabi/vizabi-tool-bundler"
   },
   "name": "vizabi-extapimap",
   "version": "1.0.0",
   "dependencies": {
     "google-maps": "^3.2.1",
-    "mapbox-gl": "^0.33.1",
-    "vizabi": "^0.20.2-6"
+    "mapbox-gl": "^0.33.1"
   },
   "repository": {
     "type": "git",
