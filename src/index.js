@@ -67,9 +67,9 @@ const LBubbleMap = Vizabi.Tool.extend("LBubbleMap", {
         preserveAspectRatio: true,
         bounds: {
           north: 60.25,
-          west: 17.5,
-          south: 59,
-          east: 19.5
+          west: 17.4,
+          south: 58.7,
+          east: 19.6
         },
         offset: {
           top: 0,

@@ -342,7 +342,7 @@ const LBubbleMapComponent = Vizabi.Component.extend({
       _this.map.ready();
       _this.map.updateColors();
       _this._labels.ready();
-      _this.redrawDataPoints(null, true);
+      //_this.redrawDataPoints(null, true);
       _this.highlightMarkers();
       _this.selectMarkers();
 //    this._selectlist.redraw();
