@@ -1,0 +1,32 @@
+{
+  "main": "build/dist/extapimap.js",
+  "files": [
+    "build/dist"
+  ],
+  "scripts": {
+    "link": "npm link ../vizabi",
+    "build": "webpack --progress"
+  },
+  "devDependencies": {
+    "vizabi-tool-bundler": "github:vizabi/vizabi-tool-bundler"
+  },
+  "name": "vizabi-extapimap",
+  "version": "1.0.0",
+  "dependencies": {
+    "google-maps": "^3.2.1",
+    "mapbox-gl": "^0.33.1",
+    "vizabi": "^0.20.2-6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vizabi/vizabi-extapimap.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vizabi/vizabi-extapimap/issues"
+  },
+  "homepage": "https://github.com/vizabi/vizabi-extapimap#readme",
+  "description": ""
+}
