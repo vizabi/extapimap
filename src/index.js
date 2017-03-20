@@ -62,31 +62,6 @@ const LBubbleMap = Vizabi.Tool.extend("LBubbleMap", {
     },
     locale: {},
     ui: {
-      map: {
-        path: null,
-        preserveAspectRatio: true,
-        bounds: {
-          north: 60.25,
-          west: 17.4,
-          south: 58.7,
-          east: 19.6
-        },
-        offset: {
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0
-        },
-        projection: "mercator",
-        topology: {
-          path: "data/sodertorn-basomr2010.json",
-          objects: {
-            geo: "c1e171fae817c0bfc26dc7df82219e08",
-            boundaries: "c1e171fae817c0bfc26dc7df82219e08"
-          },
-          geoIdProperty: "BASKOD2010"
-        }
-      },
       cursorMode: "arrow",
       panWithArrow: false,
       adaptMinMaxZoom: false,
