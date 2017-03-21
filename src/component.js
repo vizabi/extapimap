@@ -199,9 +199,10 @@ const LBubbleMapComponent = Vizabi.Component.extend({
       .on("start", (d, i) => {
         if ((d3.event.sourceEvent.metaKey || d3.event.sourceEvent.ctrlKey) && _this.model.ui.cursorMode == "arrow") {
           _this.zooming = true;
+          const mouse = d3.mouse(this.graph.node());
           _this.origin = {
-            x: d3.event.x,
-            y: d3.event.y
+            x: mouse[0],
+            y: mouse[1]
           };
           _this.zoomRect.classed("vzb-invisible", false);
         } else if (_this.model.ui.cursorMode == "hand") {
@@ -212,15 +213,12 @@ const LBubbleMapComponent = Vizabi.Component.extend({
       })
       .on("drag", (d, i) => {
         if ((d3.event.sourceEvent.metaKey || d3.event.sourceEvent.ctrlKey) && _this.model.ui.cursorMode == "arrow") {
-          const mouse = {
-            x: d3.event.x,
-            y: d3.event.y
-          };
+          const mouse = d3.mouse(this.graph.node());
           _this.zoomRect
-            .attr("x", Math.min(mouse.x, _this.origin.x))
-            .attr("y", Math.min(mouse.y, _this.origin.y))
-            .attr("width", Math.abs(mouse.x - _this.origin.x))
-            .attr("height", Math.abs(mouse.y - _this.origin.y));
+            .attr("x", Math.min(mouse[0], _this.origin.x))
+            .attr("y", Math.min(mouse[1], _this.origin.y))
+            .attr("width", Math.abs(mouse[0] - _this.origin.x))
+            .attr("height", Math.abs(mouse[1] - _this.origin.y));
 
         } else if (_this.model.ui.cursorMode == "hand") {
           _this.map.moveOver(d3.event.dx, d3.event.dy);
@@ -233,8 +231,8 @@ const LBubbleMapComponent = Vizabi.Component.extend({
             .attr("height", 0)
             .classed("vzb-invisible", true);
           if (_this.zooming) {
-            console.log("zoom end");
-            _this.map.zoomRectangle(_this.origin.x, _this.origin.y, d3.event.x, d3.event.y);
+            const mouse = d3.mouse(this.graph.node());
+            _this.map.zoomRectangle(_this.origin.x, _this.origin.y, mouse[0], mouse[1]);
             _this.zooming = false;
           }
         } else if (_this.model.ui.cursorMode == "hand") {
@@ -272,7 +270,7 @@ const LBubbleMapComponent = Vizabi.Component.extend({
       .on("click", () => {
         const cursor = _this.model.ui.cursorMode;
         if (cursor !== "arrow" && cursor !== "hand") {
-          const mouse = d3.mouse(_this.element.node());
+          const mouse = d3.mouse(this.graph.node());
           _this._hideEntities(100);
           _this.map.zoomMap(mouse, (cursor == "plus" ? 1 : -1)).then(
             () => {

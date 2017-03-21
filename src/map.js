@@ -221,7 +221,7 @@ const TopojsonLayer = MapLayer.extend({
   rescaleMap(canvas, preserveAspectRatio) {
     //var topoCanvas =
     let emitEvent = false;
-    const margin = this.context.activeProfile.margin;
+    const margin = this.context.activeProfile ? this.context.activeProfile.margin : {left: 0, top: 0};
 
     const currentNW = this.zeroProjection([
       this.context.model.ui.map.bounds.west,
@@ -240,16 +240,18 @@ const TopojsonLayer = MapLayer.extend({
           [0, 0],
           [this.context.width, this.context.height]
         ];
+        mapTopOffset =  margin.top;
+        mapLeftOffset =  margin.left;
       }
       const scaleX = Math.abs((canvas[1][0] - canvas[0][0]) / (currentSE[0] - currentNW[0]));
       const scaleY = Math.abs((canvas[1][1] - canvas[0][1]) / (currentSE[1] - currentNW[1]));
       if (scaleX != scaleY) {
         if (scaleX > scaleY) {
           scaleDelta = scaleY;
-          mapLeftOffset = (Math.abs(canvas[1][0] - canvas[0][0]) - Math.abs(scaleDelta * (currentNW[1] - currentSE[1]))) / 2;
+          mapLeftOffset += (Math.abs(canvas[1][0] - canvas[0][0]) - Math.abs(scaleDelta * (currentNW[1] - currentSE[1]))) / 2;
         } else {
           scaleDelta = scaleX;
-          mapTopOffset = (Math.abs(canvas[1][1] - canvas[0][1]) - Math.abs(scaleDelta * (currentNW[0] - currentSE[0]))) / 2;
+          mapTopOffset += (Math.abs(canvas[1][1] - canvas[0][1]) - Math.abs(scaleDelta * (currentNW[0] - currentSE[0]))) / 2;
         }
       }
     } else {
@@ -272,6 +274,14 @@ const TopojsonLayer = MapLayer.extend({
 
     // set skew function used for bubbles in chart
     const _this = this;
+    const x1y1 = this.geo2Point(
+      this.context.model.ui.map.bounds.west,
+      this.context.model.ui.map.bounds.north
+    );
+    const x2y2 = this.geo2Point(
+      this.context.model.ui.map.bounds.east,
+      this.context.model.ui.map.bounds.south
+    );
 
     // if canvas not received this map is main and shound trigger redraw points on tool
     if (emitEvent) {
@@ -374,6 +384,7 @@ const GoogleMapLayer = MapLayer.extend({
           });
         });
 
+/*
          const rectangle = new google.maps.Rectangle({
          bounds: {
          north: _this.context.model.ui.map.bounds.north,
@@ -385,6 +396,7 @@ const GoogleMapLayer = MapLayer.extend({
          draggable: true
          });
          rectangle.setMap(_this.map);
+*/
         resolve();
       });
     });
@@ -657,6 +669,7 @@ export default Vizabi.Class.extend({
         obj[_this.context.values.hook_centroid[key]] = key;
         return obj;
       }, {});
+    this.context.mapBoundsChanged();
   },
 
   rescaleMap() {
