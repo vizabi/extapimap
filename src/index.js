@@ -66,11 +66,11 @@ const LBubbleMap = Vizabi.Tool.extend("LBubbleMap", {
       panWithArrow: false,
       adaptMinMaxZoom: false,
       zoomOnScrolling: false,
-      "buttons": ["colors", "size", "find", "moreoptions", "mapcolors", "fullscreen", "presentation"],
+      "buttons": ["colors", "size", "find", "moreoptions", "mapcolors", "zoom", "fullscreen", "presentation"],
       "dialogs": {
-        "popup": ["colors", "mapcolors", "find", "size", "moreoptions"],
+        "popup": ["colors", "mapcolors", "find", "size", "zoom", "moreoptions"],
         "sidebar": ["colors", "find", "mapoptions", "zoom"],
-        "moreoptions": ["mapoptions", "opacity", "speed", "size", "colors", "mapcolors", "presentation", "about"]
+        "moreoptions": ["mapoptions", "opacity", "speed", "size", "colors", "mapcolors", "zoom", "presentation", "about"]
       },
       chart: {
         labels: {
