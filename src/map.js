@@ -69,10 +69,6 @@ const MapLayer = Vizabi.Class.extend({
     console.warn("zoomMap method should be implemented in map instance");
   },
 
-  setBounds() {
-    console.warn("setBounds method should be implemented in map instance");
-  },
-
   /**
    * Translate lat, lon into x, y
    * @param lon
@@ -343,6 +339,7 @@ const GoogleMapLayer = MapLayer.extend({
     this.context = context;
     this.parent = parent;
     this.bounds = null;
+    this.transformation = null;
   },
 
   initMap(domSelector) {
@@ -370,6 +367,17 @@ const GoogleMapLayer = MapLayer.extend({
         };
         _this.overlay.setMap(_this.map);
         // set initial bounds on load, sometimes "rescaleMap" method is not working correctly
+        google.maps.event.addListener(_this.map, "bounds_changed", () => {
+          if (!this.transformation instanceof Promise) {
+            this.transformation = new Promise((resolve) => {
+              google.maps.event.addListenerOnce(_this.map, "idle", () => {
+                resolve();
+                this.transformation = null;
+              })
+            })
+          }
+        });
+
         google.maps.event.addListenerOnce(_this.map, "idle", () => {
           const rectBounds = new google.maps.LatLngBounds(
             new google.maps.LatLng(_this.context.model.ui.map.bounds.north, _this.context.model.ui.map.bounds.west),
@@ -377,11 +385,6 @@ const GoogleMapLayer = MapLayer.extend({
           );
           _this.map.fitBounds(rectBounds);
           google.maps.event.trigger(_this.map, "resize");
-          google.maps.event.addListenerOnce(_this.map, "idle", () => {
-            if (_this.map.getBounds()) {
-              _this.parent.boundsChanged();
-            }
-          });
         });
 
 /*
@@ -402,47 +405,36 @@ const GoogleMapLayer = MapLayer.extend({
     });
   },
 
+  _waitMap() {
+    if (this.transformation instanceof Promise) {
+      return this.transformation;
+    } else {
+      return new Promise((resolve) => resolve());
+    }
+  },
+  
   updateLayer() {
     if (this.map) {
       this.map.setMapTypeId(this.context.model.ui.map.mapStyle);
     }
   },
 
-  setBounds() {
-    const _this = this;
-    const rectBounds = new google.maps.LatLngBounds(
-      new google.maps.LatLng(_this.context.model.ui.map.bounds.north, _this.context.model.ui.map.bounds.west),
-      new google.maps.LatLng(_this.context.model.ui.map.bounds.south, _this.context.model.ui.map.bounds.east)
-    );
-    _this.map.fitBounds(rectBounds);
-    google.maps.event.trigger(_this.map, "resize");
-    google.maps.event.addListenerOnce(_this.map, "idle", () => {
-      if (_this.map.getBounds()) {
-        _this.parent.boundsChanged();
-      }
-    });
-  },
-  
   rescaleMap() {
-    const _this = this;
-    const bounds = this.map.getBounds();
-    
-    if (!this.bounds || bounds !== this.bounds) {
-      this.bounds = bounds;
-      google.maps.event.addListenerOnce(_this.map, "idle", () => {
-        const rectBounds = new google.maps.LatLngBounds(
-          new google.maps.LatLng(_this.context.model.ui.map.bounds.north, _this.context.model.ui.map.bounds.west),
-          new google.maps.LatLng(_this.context.model.ui.map.bounds.south, _this.context.model.ui.map.bounds.east)
-        );
-        _this.map.fitBounds(rectBounds);
-        google.maps.event.trigger(_this.map, "resize");
-        google.maps.event.addListenerOnce(_this.map, "idle", () => {
-          if (_this.map.getBounds()) {
-            _this.parent.boundsChanged();
-          }
-        });
+    this._waitMap().then(() => {
+      const rectBounds = new google.maps.LatLngBounds(
+        new google.maps.LatLng(this.context.model.ui.map.bounds.north, this.context.model.ui.map.bounds.west),
+        new google.maps.LatLng(this.context.model.ui.map.bounds.south, this.context.model.ui.map.bounds.east)
+      );
+      this.map.fitBounds(rectBounds);
+      google.maps.event.trigger(this.map, "resize");
+      google.maps.event.addListener(this.map, "idle", () => {
+        const bounds = this.map.getBounds();
+        if (bounds && (!this.bounds || this.bounds != bounds)) {
+          this.bounds = bounds;
+          this.parent.boundsChanged();
+        }
       });
-    }
+    })
   },
 
   zoomMap(center, increment) {
@@ -534,11 +526,7 @@ const MapboxLayer = MapLayer.extend({
     });
   },
 
-  setBounds() {
-    this.rescaleMap();
-  },
-  
-  rescaleMap() {
+  rescaleMap(duration) {
     const _this = this;
     _this.bounds = [[
       _this.context.model.ui.map.bounds.west,
@@ -548,9 +536,16 @@ const MapboxLayer = MapLayer.extend({
       _this.context.model.ui.map.bounds.north
     ]];
     utils.defer(() => {
-      _this.map.fitBounds(_this.bounds, { duration: 0 });
+      if (!duration) duration = 0;
+      _this.map.fitBounds(_this.bounds, { duration: duration });
       _this.map.resize();
-      _this.parent.boundsChanged();
+      if (duration) {
+        utils.delay(duration).then(() => {
+          _this.parent.boundsChanged();
+        });        
+      } else {
+        _this.parent.boundsChanged();
+      }
     });
   },
 
@@ -664,11 +659,39 @@ export default Vizabi.Class.extend({
 
   ready() {
     const _this = this;
+    this._bounds = null;
+    let x1, y1, x2, y2;
     this.keys = Object.keys(_this.context.values.hook_centroid)
       .reduce((obj, key) => {
         obj[_this.context.values.hook_centroid[key]] = key;
         return obj;
       }, {});
+    utils.forEach(this.keys, (val, key) => {
+      const centroid = this.topojsonMap.centroid(key);
+      if (!centroid) return;
+      if ((!x1 && x1 != 0) || x1 > centroid[0]) {
+        x1 = centroid[0];
+      }
+      if ((!x2 && x2 != 0) || x2 < centroid[0]) {
+        x2 = centroid[0];
+      }
+      if ((!y1 && y1 != 0) || y1 > centroid[1]) {
+        y1 = centroid[1];
+      }
+      if ((!y2 && y2 != 0) || y2 < centroid[1]) {
+        y2 = centroid[1];
+      }
+    });
+    if (x1 < x2 && y1 < y2) {
+      const nw = this.topojsonMap.point2Geo(x1, y1);
+      const se = this.topojsonMap.point2Geo(x2, y2);
+      this._bounds = {
+        west: nw[0],
+        north: nw[1],
+        east: se[0],
+        south: se[1]
+      };
+    }
     this.context.mapBoundsChanged();
   },
 
@@ -744,7 +767,31 @@ export default Vizabi.Class.extend({
     }
     return this.topojsonMap.getCenter();
   },
-
+  
+  resetZoom(duration) {
+    if (this._bounds) {
+      this._hideTopojson();
+      this.context.model.ui.map.bounds = {
+        west: this._bounds.west,
+        north: this._bounds.north,
+        east: this._bounds.east,
+        south: this._bounds.south
+      };
+      if (this.mapInstance) {
+        this.mapInstance.rescaleMap(duration);
+      } else {
+        this.topojsonMap.rescaleMap(duration);
+      }
+      if (!duration) duration = 0;
+      return new Promise((resolve, reject) => {
+        utils.delay(duration).then(() => {
+          this._showTopojson(300)
+          resolve();
+        });
+      })
+    } 
+  },
+  
   panStarted() {
     this.zooming = true;
     if (this.context.model.ui.map.showMap) {
@@ -778,7 +825,7 @@ export default Vizabi.Class.extend({
     };
     this.zooming = false;
     if (this.mapInstance) {
-      this.mapInstance.setBounds();
+      this.mapInstance.rescaleMap();
     } else {
       this.topojsonMap.rescaleMap();
     }

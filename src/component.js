@@ -197,7 +197,8 @@ const LBubbleMapComponent = Vizabi.Component.extend({
 
     const mapDragger = d3.drag()
       .on("start", (d, i) => {
-        if ((d3.event.sourceEvent.metaKey || d3.event.sourceEvent.ctrlKey) && _this.model.ui.cursorMode == "arrow") {
+        if (((d3.event.sourceEvent.metaKey || d3.event.sourceEvent.ctrlKey) && _this.model.ui.cursorMode == "arrow")
+          || _this.model.ui.cursorMode == "plus") {
           _this.zooming = true;
           const mouse = d3.mouse(this.graph.node());
           _this.origin = {
@@ -212,7 +213,8 @@ const LBubbleMapComponent = Vizabi.Component.extend({
         }
       })
       .on("drag", (d, i) => {
-        if ((d3.event.sourceEvent.metaKey || d3.event.sourceEvent.ctrlKey) && _this.model.ui.cursorMode == "arrow") {
+        if (((d3.event.sourceEvent.metaKey || d3.event.sourceEvent.ctrlKey) && _this.model.ui.cursorMode == "arrow") ||
+          _this.model.ui.cursorMode == "plus") {
           const mouse = d3.mouse(this.graph.node());
           _this.zoomRect
             .attr("x", Math.min(mouse[0], _this.origin.x))
@@ -225,21 +227,38 @@ const LBubbleMapComponent = Vizabi.Component.extend({
         }
       })
       .on("end", (d, i) => {
-        if (_this.model.ui.cursorMode == "arrow") {
+        if (_this.model.ui.cursorMode == "arrow" || _this.model.ui.cursorMode == "plus") {
           _this.zoomRect
             .attr("width", 0)
             .attr("height", 0)
             .classed("vzb-invisible", true);
           if (_this.zooming) {
             const mouse = d3.mouse(this.graph.node());
-            _this.map.zoomRectangle(_this.origin.x, _this.origin.y, mouse[0], mouse[1]);
-            _this.zooming = false;
+            if (Math.abs(_this.origin.x - mouse[0]) < 5 || Math.abs(_this.origin.y - mouse[1]) < 5) {
+              _this._hideEntities();
+              _this.map.zoomMap(mouse, 1).then(
+                () => {
+                  _this._showEntities(300);
+                }
+              );
+            } else {
+              _this.map.zoomRectangle(_this.origin.x, _this.origin.y, mouse[0], mouse[1]);
+            }
           }
         } else if (_this.model.ui.cursorMode == "hand") {
           _this.map.panFinished();
           _this._showEntities(300);
           _this.chartSvg.classed("vzb-zooming", false);
+        } else if (_this.model.ui.cursorMode == "minus") {
+          const mouse = d3.mouse(this.graph.node());
+          _this._hideEntities();
+          _this.map.zoomMap(mouse, -1).then(
+            () => {
+              _this._showEntities(300);
+            }
+          );
         }
+        _this.zooming = false;
       });
 
     this.element.call(mapDragger);
@@ -266,19 +285,28 @@ const LBubbleMapComponent = Vizabi.Component.extend({
           _this.model.ui.cursorMode = "arrow";
         }
       });
-    this.element
-      .on("click", () => {
-        const cursor = _this.model.ui.cursorMode;
-        if (cursor !== "arrow" && cursor !== "hand") {
-          const mouse = d3.mouse(this.graph.node());
-          _this._hideEntities(100);
-          _this.map.zoomMap(mouse, (cursor == "plus" ? 1 : -1)).then(
-            () => {
-              _this._showEntities(300);
-            }
-          );
-        }
+    this.root.on("resetZoom", () => {
+      _this._hideEntities();
+      _this.map.resetZoom(500).then(() => {
+        _this._showEntities();
       });
+    });
+
+    /*
+        this.element
+          .on("click", () => {
+            const cursor = _this.model.ui.cursorMode;
+            if (cursor !== "arrow" && cursor !== "hand") {
+              const mouse = d3.mouse(this.graph.node());
+              _this._hideEntities(100);
+              _this.map.zoomMap(mouse, (cursor == "plus" ? 1 : -1)).then(
+                () => {
+                  _this._showEntities(300);
+                }
+              );
+            }
+          });
+    */
   },
 
   _hideEntities(duration) {
