@@ -63,9 +63,9 @@ const LBubbleMap = Vizabi.Tool.extend("LBubbleMap", {
     locale: {},
     ui: {
       cursorMode: "arrow",
-      panWithArrow: false,
+      panWithArrow: true,
       adaptMinMaxZoom: false,
-      zoomOnScrolling: false,
+      zoomOnScrolling: true,
       "buttons": ["colors", "size", "find", "moreoptions", "mapcolors", "zoom", "fullscreen", "presentation"],
       "dialogs": {
         "popup": ["colors", "mapcolors", "find", "size", "zoom", "moreoptions"],
