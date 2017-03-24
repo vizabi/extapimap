@@ -358,10 +358,9 @@ const GoogleMapLayer = MapLayer.extend({
           scrollwheel: false,
           disableDoubleClickZoom: true,
           disableDefaultUI: true,
-          backgroundColor: "#FFFFFF",
-          mapTypeId: _this.context.model.ui.map.mapStyle
+          backgroundColor: "#FFFFFF"
         });
-
+        _this.updateLayer();
         _this.overlay = new google.maps.OverlayView();
         _this.overlay.draw = function() {
         };
@@ -415,7 +414,29 @@ const GoogleMapLayer = MapLayer.extend({
   
   updateLayer() {
     if (this.map) {
-      this.map.setMapTypeId(this.context.model.ui.map.mapStyle);
+      const style = this.context.model.ui.map.mapStyle.split(" ");
+      this.map.setMapTypeId(style[0]);
+      if (style[1]) {
+        switch (style[1]) {
+          case "grayscale":
+            this.map.setOptions({
+              styles: [{
+                stylers: [{
+                  saturation: -100
+                }]
+              }]
+            });
+            break;
+          default:
+            this.map.setOptions({
+              styles: []
+            });
+        }
+      } else {
+        this.map.setOptions({
+          styles: []
+        });
+      }
     }
   },
 
