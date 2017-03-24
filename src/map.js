@@ -319,13 +319,18 @@ const TopojsonLayer = MapLayer.extend({
   zoomMap(center, increment) {
     return new Promise(resolve => {
       const point = this.geo2Point(center[0], center[1]);
-      const leftOffset = this.context.width / 2 - point[0];
-      const topOffset = this.context.height / 2 - point[1];
+      const margin = this.context.activeProfile ? this.context.activeProfile.margin : {left: 0, top: 0};
+      const leftOffset = margin.left;//this.context.width / 2 - point[0];
+      const topOffset = margin.top;//this.context.height / 2 - point[1];
+      const wMod = Math.min(2, Math.max(0, (point[0]) / this.context.width * 2));
+      const hMod = Math.min(2, Math.max(0, (point[1]) / this.context.height * 2));
+      const wScale = this.context.width * 0.1 * increment;
+      const hScale = this.context.height * 0.1 * increment;
       this.rescaleMap([
-        [-this.context.width * 0.1 * increment + leftOffset, -this.context.height * 0.1 * increment + topOffset],
+        [-wScale * wMod + leftOffset, -hScale * hMod + topOffset],
         [
-          this.context.width + this.context.width * 0.1 * increment + leftOffset,
-          this.context.height + this.context.height * 0.1 * increment + topOffset
+          this.context.width + wScale * (2 - wMod) + leftOffset,
+          this.context.height + hScale * (2 - hMod) + topOffset
         ]
       ], true);
       resolve();
@@ -461,8 +466,10 @@ const GoogleMapLayer = MapLayer.extend({
   zoomMap(center, increment) {
     const _this = this;
     return new Promise((resolve, reject) => {
-      _this.map.panTo({ lat: center[1], lng: center[0] });
+      const zoomPoint = this.geo2Point(center[0], center[1]);
       _this.map.setZoom(_this.map.getZoom() + 1 * increment);
+      const zoomPoint1 = this.geo2Point(center[0], center[1]);
+      _this.map.panBy(zoomPoint1[0] - zoomPoint[0], zoomPoint1[1] - zoomPoint[1]);
       google.maps.event.addListenerOnce(_this.map, "idle", () => {
         resolve();
       });
@@ -582,8 +589,9 @@ const MapboxLayer = MapLayer.extend({
   zoomMap(center, increment) {
     const _this = this;
     return new Promise((resolve, reject) => {
-      this.map.panTo(center, {
+      this.map.easeTo({
         duration: 300,
+        around: center,
         zoom: _this.map.getZoom() + 1 * increment
       });
       utils.delay(300).then(
