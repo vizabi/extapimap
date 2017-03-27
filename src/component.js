@@ -215,7 +215,7 @@ const LBubbleMapComponent = Vizabi.Component.extend({
             (_this.ui.panWithArrow && _this.ui.cursorMode === "arrow")
         ) {
           _this.dragAction = "panning";
-          _this._hideEntities(300);
+          _this._hideEntities();
           _this.map.panStarted();
           _this.chartSvg.classed("vzb-zooming", true);
         }
