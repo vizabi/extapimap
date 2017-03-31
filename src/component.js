@@ -897,7 +897,10 @@ const LBubbleMapComponent = Vizabi.Component.extend({
     this.activeProfile = this.getActiveProfile(this.profiles, this.presentationProfileChanges);
 
     const containerWH = this.root.getVizWidthHeight();
-    this.activeProfile.maxRadiusPx = this.activeProfile.maxRadiusEm * utils.hypotenuse(containerWH.width, containerWH.height);
+    this.activeProfile.maxRadiusPx = Math.max(
+      this.activeProfile.minRadiusPx,
+      this.activeProfile.maxRadiusEm * utils.hypotenuse(containerWH.width, containerWH.height)
+    );
 
     const margin = this.activeProfile.margin;
 
