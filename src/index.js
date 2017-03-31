@@ -1,6 +1,7 @@
 import "./styles.scss";
 import component from "./component";
 import "./dialogs/mapoptions/mapoptions";
+import "./dialogs/mapcolors/mapcolors";
 
 
 const LBubbleMap = Vizabi.Tool.extend("LBubbleMap", {
