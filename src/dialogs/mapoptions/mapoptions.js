@@ -37,7 +37,7 @@ const mapStyles = {
   }]
 };
 
-const MapOptions = Vizabi.Component.get("_dialog").extend({
+const MapOptions = Vizabi.Component.get("_dialog").extend("mapoptions", {
 
   /**
    * Initializes the dialog component
@@ -157,5 +157,4 @@ const MapOptions = Vizabi.Component.get("_dialog").extend({
   }
 });
 
-Vizabi.Component.register('mapoptions', MapOptions);
 export default MapOptions;
