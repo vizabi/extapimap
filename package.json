@@ -5,16 +5,16 @@
   ],
   "scripts": {
     "link": "npm link ../vizabi",
-    "build": "webpack --progress"
+    "build": "cross-env NODE_ENV=production webpack --progress",
+    "deploy": "tool-deploy"
   },
   "devDependencies": {
-    "compare-version": "^0.1.2",
-    "shelljs": "^0.7.7",
+    "cross-env": "^4.0.0",
     "vizabi": "^0.21.0-20",
     "vizabi-tool-bundler": "github:vizabi/vizabi-tool-bundler"
   },
   "name": "vizabi-extapimap",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "dependencies": {
     "google-maps": "^3.2.1",
     "mapbox-gl": "^0.34.0"
