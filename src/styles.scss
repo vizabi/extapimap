@@ -6,24 +6,24 @@
 .vzb-tool {
   $vzb-bmc-year-size: 15em;
 
-  .vzb-bubblemap {
+  .vzb-extapimap {
     @extend %vzb-chart-wrapper;
 
     //ie11 support for zoom-in, zoom-out cursors
     //ie11 only:The base URI is considered to be the URI of the document containing the element
     //and not the URI of the style sheet in which the declaration appears.
-    .vzb-bubblemap-svg.vzb-zoomin {
+    .vzb-extapimap-svg.vzb-zoomin {
       cursor: url('assets/cursors/zoom-in.cur'), auto;
     }
-    .vzb-bubblemap-svg.vzb-zoomout {
+    .vzb-extapimap-svg.vzb-zoomout {
       cursor: url('assets/cursors/zoom-out.cur'), auto;
     }
 
-    .vzb-bubblemap-svg.vzb-panhand {
+    .vzb-extapimap-svg.vzb-panhand {
       cursor: url('assets/cursors/grab.cur'), auto;
     }
 
-    .vzb-bubblemap-svg.vzb-panhand.vzb-zooming {
+    .vzb-extapimap-svg.vzb-panhand.vzb-zooming {
       cursor: url('assets/cursors/grabbing.cur'), auto;
     }
     .vzb-bc-zoom-rect {
@@ -62,7 +62,7 @@
       }
     }
 
-    .vzb-bubblemap-svg {
+    .vzb-extapimap-svg {
       &.vzb-zoomin {
         cursor: zoom-in;
       }
@@ -223,7 +223,7 @@
     }
   }
   &.vzb-large {
-    .vzb-bubblemap {
+    .vzb-extapimap {
       .vzb-bmc-axis-y-title,
       .vzb-bmc-axis-c-title {
         @extend %vzb-chart-axis-title-large;
@@ -242,7 +242,7 @@
     }
   }
   &.vzb-medium {
-    .vzb-bubblemap {
+    .vzb-extapimap {
       .vzb-bmc-axis-y-title,
       .vzb-bmc-axis-c-title {
         @extend %vzb-chart-axis-title-medium;
@@ -261,7 +261,7 @@
     }
   }
   &.vzb-small {
-    .vzb-bubblemap {
+    .vzb-extapimap {
       .vzb-bmc-axis-y-title,
       .vzb-bmc-axis-c-title {
         @extend %vzb-chart-axis-title-small;
@@ -280,7 +280,7 @@
     }
   }
   &.vzb-presentation {
-    .vzb-bubblemap {
+    .vzb-extapimap {
       .vzb-bmc-axis-y-title,
       .vzb-bmc-axis-c-title,
       .vzb-bmc-axis-info {

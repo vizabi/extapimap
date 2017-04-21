@@ -11,10 +11,10 @@ const {
 } = Vizabi;
 
 import MapEngine from "./map";
-// import Selectlist from 'bubblemap-selectlist';
+// import Selectlist from 'extapimap-selectlist';
 
 //BUBBLE MAP CHART COMPONENT
-const LBubbleMapComponent = Vizabi.Component.extend({
+const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
   /**
    * Initializes the component (Bubble Map Chart).
    * Executed once before any template is rendered.
@@ -22,7 +22,7 @@ const LBubbleMapComponent = Vizabi.Component.extend({
    * @param {Object} context The component's parent
    */
   init(config, context) {
-    this.name = "bubblemap";
+    this.name = "extapimap";
     this.template = require("./template.html");
     this.bubblesDrawing = null;
 
@@ -1230,4 +1230,4 @@ const LBubbleMapComponent = Vizabi.Component.extend({
   }
 });
 
-export default LBubbleMapComponent;
+export default ExtApiMapComponent;

@@ -4,7 +4,7 @@ import "./dialogs/mapoptions/mapoptions";
 import "./dialogs/mapcolors/mapcolors";
 
 
-const LBubbleMap = Vizabi.Tool.extend("LBubbleMap", {
+const ExtApiMap = Vizabi.Tool.extend("ExtApiMap", {
 
   /**
    * Initializes the tool (Bar Chart Tool).
@@ -14,7 +14,7 @@ const LBubbleMap = Vizabi.Tool.extend("LBubbleMap", {
    */
   init(placeholder, external_model) {
 
-    this.name = "bubblemap";
+    this.name = "extapimap";
 
     //specifying components
     this.components = [{
@@ -88,4 +88,4 @@ const LBubbleMap = Vizabi.Tool.extend("LBubbleMap", {
   }
 });
 
-export default LBubbleMap;
+export default ExtApiMap;
