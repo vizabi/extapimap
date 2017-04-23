@@ -15,8 +15,7 @@ const Mapcolors = Vizabi.Component.get("_dialog").extend("mapcolors", {
     this.components = [{
       component: Vizabi.Component.get("indicatorpicker"),
       placeholder: ".vzb-caxis-selector",
-      model: ["state.time", "state.entities", "state.marker", "locale"],
-      markerID: "color_map",
+      model: ["state.time", "state.marker.color_map", "locale"],
       showHoverValues: true
     }, {
       component: Vizabi.Component.get("colorlegend"),
