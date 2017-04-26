@@ -3,6 +3,7 @@ import component from "./component";
 import "./dialogs/mapoptions/mapoptions";
 import "./dialogs/mapcolors/mapcolors";
 
+const VERSION_INFO = { version: __VERSION, build: __BUILD };
 
 const ExtApiMap = Vizabi.Tool.extend("ExtApiMap", {
 
@@ -68,9 +69,9 @@ const ExtApiMap = Vizabi.Tool.extend("ExtApiMap", {
       panWithArrow: true,
       adaptMinMaxZoom: false,
       zoomOnScrolling: true,
-      "buttons": ["colors", "size", "find", "moreoptions", "mapcolors", "zoom", "fullscreen", "presentation"],
+      "buttons": ["colors", "size", "show", "find", "moreoptions", "mapcolors", "zoom", "fullscreen", "presentation"],
       "dialogs": {
-        "popup": ["colors", "mapcolors", "find", "size", "zoom", "moreoptions"],
+        "popup": ["colors", "mapcolors", "show", "find", "size", "zoom", "moreoptions"],
         "sidebar": ["colors", "find", "mapoptions", "zoom"],
         "moreoptions": ["mapoptions", "opacity", "speed", "size", "colors", "mapcolors", "zoom", "presentation", "about"]
       },
@@ -85,7 +86,9 @@ const ExtApiMap = Vizabi.Tool.extend("ExtApiMap", {
       },
       presentation: false
     }
-  }
+  },
+
+  versionInfo: VERSION_INFO
 });
 
 export default ExtApiMap;
