@@ -1,7 +1,7 @@
 {
   "main": "build/dist/extapimap.js",
   "files": [
-    "build/dist"
+    "build"
   ],
   "scripts": {
     "link": "npm link ../vizabi",
