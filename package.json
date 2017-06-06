@@ -9,8 +9,8 @@
     "deploy": "tool-deploy"
   },
   "devDependencies": {
-    "cross-env": "^4.0.0",
-    "vizabi": "^0.21.0-20",
+    "cross-env": "^5.0.0",
+    "vizabi": "^0.23.0-28",
     "vizabi-tool-bundler": "github:vizabi/vizabi-tool-bundler"
   },
   "name": "vizabi-extapimap",
@@ -30,5 +30,5 @@
     "url": "https://github.com/vizabi/vizabi-extapimap/issues"
   },
   "homepage": "https://github.com/vizabi/vizabi-extapimap#readme",
-  "description": ""
+  "description": "Gapminder's bubble map with underlying layer coming from external API, like Google map or Mapbox"
 }
