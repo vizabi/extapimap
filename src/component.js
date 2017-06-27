@@ -30,22 +30,32 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     this.isMobile = utils.isMobileOrTablet();
 
     //define expected models for this component
-    this.model_expects = [{
-      name: "time",
-      type: "time"
-    }, {
-      name: "entities",
-      type: "entities"
-    }, {
-      name: "marker",
-      type: "model"
-    }, {
-      name: "locale",
-      type: "locale"
-    }, {
-      name: "ui",
-      type: "ui"
-    }];
+    this.model_expects = [
+      {
+        name: "time",
+        type: "time"
+      },
+      {
+        name: "entities",
+        type: "entities"
+      },
+      {
+        name: "marker",
+        type: "model"
+      },
+      {
+        name: "locale",
+        type: "locale"
+      },
+      {
+        name: "ui",
+        type: "ui"
+      },
+      {
+        name: "data",
+        type: "data"
+      }
+    ];
 
     const _this = this;
     this.model_binds = {
@@ -200,7 +210,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         if (
           ((d3.event.sourceEvent.metaKey || d3.event.sourceEvent.ctrlKey) && _this.model.ui.cursorMode == "arrow") ||
           _this.model.ui.cursorMode == "plus"
-          
+
         ) {
           _this.dragAction = "zooming";
           _this.zooming = true;
@@ -211,8 +221,8 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
           };
           _this.zoomRect.classed("vzb-invisible", false);
         } else if (
-            _this.model.ui.cursorMode == "hand" ||
-            (_this.ui.panWithArrow && _this.ui.cursorMode === "arrow")
+          _this.model.ui.cursorMode == "hand" ||
+          (_this.ui.panWithArrow && _this.ui.cursorMode === "arrow")
         ) {
           _this.dragAction = "panning";
           _this._hideEntities();
@@ -221,7 +231,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         }
       })
       .on("drag", (d, i) => {
-        switch(_this.dragAction) {
+        switch (_this.dragAction) {
           case "zooming":
             const mouse = d3.mouse(this.graph.node());
             _this.zoomRect
@@ -236,7 +246,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         }
       })
       .on("end", (d, i) => {
-        switch(_this.dragAction) {
+        switch (_this.dragAction) {
           case "zooming":
             _this.zoomRect
               .attr("width", 0)
@@ -323,20 +333,20 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     });
 
     /*
-        this.element
-          .on("click", () => {
-            const cursor = _this.model.ui.cursorMode;
-            if (cursor !== "arrow" && cursor !== "hand") {
-              const mouse = d3.mouse(this.graph.node());
-              _this._hideEntities(100);
-              _this.map.zoomMap(mouse, (cursor == "plus" ? 1 : -1)).then(
-                () => {
-                  _this._showEntities(300);
-                }
-              );
-            }
-          });
-    */
+     this.element
+     .on("click", () => {
+     const cursor = _this.model.ui.cursorMode;
+     if (cursor !== "arrow" && cursor !== "hand") {
+     const mouse = d3.mouse(this.graph.node());
+     _this._hideEntities(100);
+     _this.map.zoomMap(mouse, (cursor == "plus" ? 1 : -1)).then(
+     () => {
+     _this._showEntities(300);
+     }
+     );
+     }
+     });
+     */
   },
 
   _hideEntities(duration) {
@@ -996,8 +1006,8 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     let minArea = utils.radiusToArea(Math.max(maxRadius * extent[0], minRadius));
     let maxArea = utils.radiusToArea(Math.max(maxRadius * extent[1], minRadius));
 
-    let range = minArea === maxArea? [minArea, maxArea] :
-      d3.range(minArea, maxArea, (maxArea - minArea)/this.sScale.domain().length).concat(maxArea);
+    let range = minArea === maxArea ? [minArea, maxArea] :
+      d3.range(minArea, maxArea, (maxArea - minArea) / this.sScale.domain().length).concat(maxArea);
 
     this.sScale.range(range);
   },

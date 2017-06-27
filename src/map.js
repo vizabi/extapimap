@@ -1,5 +1,4 @@
 const {
-  _globals: globals,
   utils,
   helpers: {
     topojson,
@@ -105,12 +104,12 @@ const TopojsonLayer = MapLayer.extend({
   },
 
   initMap() {
+    const _this = this;
     this.mapGraph = this.parent.mapSvg.html("").append("g")
       .attr("class", "vzb-bmc-map-graph");
-
-    const _this = this;
-    const shape_path = this.context.model.ui.map.topology.path
-      || globals.ext_resources.host + globals.ext_resources.preloadPath + "world-50m.json";
+    
+    const shape_path = this.context.model.ui.map.topology.path 
+      || (this.model.data.preloadPath + "world-50m.json");
 
     const projection = "geo" + utils.capitalize(this.context.model.ui.map.projection);
 
