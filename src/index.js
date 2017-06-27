@@ -21,7 +21,7 @@ const ExtApiMap = Vizabi.Tool.extend("ExtApiMap", {
     this.components = [{
       component,
       placeholder: ".vzb-tool-viz",
-      model: ["state.time", "state.entities", "state.marker", "locale", "ui"] //pass models to component
+      model: ["state.time", "state.entities", "state.marker", "locale", "ui", "data"] //pass models to component
     }, {
       component: Vizabi.Component.get("timeslider"),
       placeholder: ".vzb-tool-timeslider",

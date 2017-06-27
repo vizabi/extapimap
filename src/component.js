@@ -50,6 +50,10 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       {
         name: "ui",
         type: "ui"
+      },
+      {
+        name: "data",
+        type: "data"
       }
     ];
 
