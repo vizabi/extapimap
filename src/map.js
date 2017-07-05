@@ -109,7 +109,7 @@ const TopojsonLayer = MapLayer.extend({
       .attr("class", "vzb-bmc-map-graph");
     
     const shape_path = this.context.model.ui.map.topology.path 
-      || (this.model.data.preloadPath + "world-50m.json");
+      || (this.model.data.assetsPath + "world-50m.json");
 
     const projection = "geo" + utils.capitalize(this.context.model.ui.map.projection);
 
