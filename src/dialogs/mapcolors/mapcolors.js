@@ -20,7 +20,7 @@ const Mapcolors = Vizabi.Component.get("_dialog").extend("mapcolors", {
     }, {
       component: Vizabi.Component.get("colorlegend"),
       placeholder: ".vzb-clegend-container",
-      model: ["state.time", "state.entities", "state.marker", "state.marker.color_map", "locale"]
+      model: ["state.time", "state.entities", "state.marker", "state.marker.color_map", "locale", "ui"]
     }];
 
 
