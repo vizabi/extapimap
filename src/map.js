@@ -108,7 +108,7 @@ const TopojsonLayer = MapLayer.extend({
     this.mapGraph = this.parent.mapSvg.html("").append("g")
       .attr("class", "vzb-bmc-map-graph");
     
-    const assetName = utils.getProp(this, ["model", "ui", "map", "topology", "path"])
+    const assetName = utils.getProp(this.context, ["model", "ui", "map", "topology", "path"])
       || ("assets/world-50m.json");
 
     const projection = "geo" + utils.capitalize(this.context.model.ui.map.projection);
