@@ -207,7 +207,7 @@ const TopojsonLayer = MapLayer.extend({
     const _this = this;
     return new Promise((resolve, reject) => {
       _this.context.model.data.getAsset(assetName, (json) => {
-        if (!json.success) return console.warn("Failed loading json " + assetName + ". " + json.message);
+        if (json.success === false) return console.warn("Failed loading json " + assetName + ". " + json.message);
         resolve(json);
       });
     });
