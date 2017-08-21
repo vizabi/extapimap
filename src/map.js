@@ -108,8 +108,8 @@ const TopojsonLayer = MapLayer.extend({
     this.mapGraph = this.parent.mapSvg.html("").append("g")
       .attr("class", "vzb-bmc-map-graph");
     
-    const shape_path = this.context.model.ui.map.topology.path 
-      || (this.model.data.assetsPath + "world-50m.json");
+    const assetName = utils.getProp(this, ["model", "ui", "map", "topology", "path"])
+      || ("assets/world-50m.json");
 
     const projection = "geo" + utils.capitalize(this.context.model.ui.map.projection);
 
@@ -128,7 +128,7 @@ const TopojsonLayer = MapLayer.extend({
 
 
     this.context.model.ui.map.scale = 1;
-    return this._loadShapes(shape_path).then(
+    return this._loadShapes(assetName).then(
       shapes => {
         _this.shapes = shapes;
         _this.mapFeature = topojson.feature(_this.shapes, _this.shapes.objects[this.context.model.ui.map.topology.objects.geo]);
@@ -203,14 +203,14 @@ const TopojsonLayer = MapLayer.extend({
       .style("fill", d => _this.parent.getMapColor(d.key));
   },
 
-  _loadShapes(shape_path) {
+  _loadShapes(assetName) {
+    const _this = this;
     return new Promise((resolve, reject) => {
-      d3.json(shape_path, (error, json) => {
-        if (error) return console.warn("Failed loading json " + shape_path + ". " + error);
+      _this.context.model.data.getAsset(assetName, (json) => {
+        if (!json.success) return console.warn("Failed loading json " + assetName + ". " + json.message);
         resolve(json);
       });
     });
-
   },
 
   rescaleMap(canvas, preserveAspectRatio) {
