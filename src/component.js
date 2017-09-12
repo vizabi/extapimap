@@ -941,7 +941,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     this.year.setConditions({
       widthRatio: 2 / 10
     });
-    this.year.resize(this.width, this.height);
+    this.year.resize(this.width, this.height + margin.bottom);
 
     this.yTitleEl
       .style("font-size", infoElHeight)
