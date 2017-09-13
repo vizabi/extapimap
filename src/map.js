@@ -728,14 +728,14 @@ export default Vizabi.Class.extend({
       const margin = this.context.activeProfile.margin;
       const _this = this;
       this.mapRoot
-        .attr("width", this.context.width + margin.left + margin.right)
-        .attr("height", this.context.height + margin.top + margin.bottom)
         .style("position", "absolute")
         .style("left", 0)
         .style("right", 0)
         .style("top", 0)
-        .style("bottom", 0);
-      this.mapInstance.rescaleMap();
+        .style("bottom", 0)
+        .style("width", (this.context.width + margin.left + margin.right) + "px")
+        .style("height", (this.context.height + margin.top + margin.bottom + (this.context.model.ui.map.overflowBottom || 0)) + "px");
+        this.mapInstance.rescaleMap();
     } else {
       this.topojsonMap.rescaleMap();
     }

@@ -8,6 +8,7 @@
 
   .vzb-extapimap {
     @extend %vzb-chart-wrapper;
+    overflow: visible;
 
     //ie11 support for zoom-in, zoom-out cursors
     //ie11 only:The base URI is considered to be the URI of the document containing the element
@@ -63,6 +64,7 @@
     }
 
     .vzb-extapimap-svg {
+      overflow: visible;
       &.vzb-zoomin {
         cursor: zoom-in;
       }
@@ -82,7 +84,6 @@
         font-size: $vzb-bmc-year-size;
         fill: $vzb-color-grey;
         text-anchor: middle;
-        dominant-baseline: central;
         -webkit-touch-callout: none;
         user-select: none;
       }
