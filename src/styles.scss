@@ -206,17 +206,6 @@
         @extend %vzb-chart-info;
       }
 
-      .vzb-bmc-tooltip {
-        @extend %vzb-chart-tooltip;
-        @include rtl {
-          text {
-            direction: rtl;
-            text-anchor: start;
-            unicode-bidi: embed;
-          }
-        }
-      }
-
       .vzb-bmc-bubble {
         stroke: $vzb-color-black;
         stroke-opacity: .7;
@@ -288,8 +277,7 @@
         font-size: $vzb-font-size-largest;
       }
 
-      .vzb-bmc-bubble-labels,
-      .vzb-bmc-tooltip {
+      .vzb-bmc-bubble-labels {
         text {
           font-size: $vzb-font-size-larger;
         }
