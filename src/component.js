@@ -41,7 +41,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       },
       {
         name: "marker",
-        type: "model"
+        type: "marker"
       },
       {
         name: "locale",
