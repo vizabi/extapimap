@@ -36,10 +36,6 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         type: "time"
       },
       {
-        name: "entities",
-        type: "entities"
-      },
-      {
         name: "marker",
         type: "marker"
       },
@@ -193,8 +189,11 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       _this.map.rescaleMap();
     });
 
-    this.KEY = this.model.entities.getDimension();
     this.TIMEDIM = this.model.time.getDimension();
+    this.KEYS = utils.unique(this.model.marker._getAllDimensions({ exceptType: "time" }));
+    this.KEY = this.KEYS.join(",");
+    this.dataKeys = this.model.marker.getDataKeysPerHook();
+    this.labelNames = this.model.marker.getLabelHookNames();
 
     this.updateUIStrings();
 
@@ -385,6 +384,11 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
    */
   ready() {
     const _this = this;
+    this.KEYS = utils.unique(this.model.marker._getAllDimensions({ exceptType: "time" }));
+    this.KEY = this.KEYS.join(",");
+    this.dataKeys = this.model.marker.getDataKeysPerHook();
+    this.labelNames = this.model.marker.getLabelHookNames();
+
     this.updateUIStrings();
     this.updateIndicators();
     this.updateSize();
@@ -544,8 +548,8 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       const unitS = conceptPropsS.unit || "";
       const unitC = conceptPropsC.unit || "";
 
-      const valueS = _this.values.size[hovered[_this.KEY]];
-      let valueC = _this.values.color[hovered[_this.KEY]];
+      const valueS = _this.values.size[utils.getKey(hovered, _this.dataKeys.size)];
+      let valueC = _this.values.color[utils.getKey(hovered, _this.dataKeys.color)];
 
       //resolve value for color from the color legend model
       if (_this.model.marker.color.isDiscrete() && valueC) {
@@ -651,7 +655,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
           const pointer = {};
           pointer[KEY] = d[KEY];
           pointer[TIMEDIM] = endTime;
-          pointer.sortValue = _this.values.size[d[KEY]] || 0;
+          pointer.sortValue = _this.values.size[utils.getKey(d, _this.dataKeys.size)] || 0;
           pointer[KEY] = prefix + d[KEY];
           return pointer;
         })
@@ -713,8 +717,8 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     const KEY = this.KEY;
     this.bubbleContainer.selectAll(".vzb-bmc-bubble")
       .sort((a, b) => {
-        const sizeA = _this.values.size[a[KEY]];
-        const sizeB = _this.values.size[b[KEY]];
+        const sizeA = _this.values.size[utils.getKey(a, _this.dataKeys.size)];
+        const sizeB = _this.values.size[utils.getKey(b, _this.dataKeys.size)];
 
         if (typeof sizeA == "undefined" && typeof sizeB != "undefined") return -1;
         if (typeof sizeA != "undefined" && typeof sizeB == "undefined") return 1;
@@ -730,16 +734,17 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     if (!frame || !frame.size) return;
 
     this.model.marker.select.forEach(d => {
-      if (!frame.size[d[KEY]] && frame.size[d[KEY]] !== 0)
+      const valueS = frame.size[utils.getKey(d, _this.dataKeys.size)];
+      if (!valueS && valueS !== 0)
         _this.model.marker.selectMarker(d);
     });
   },
   _getPosition(d) {
-    const KEY = this.KEY;
-    if (this.values.hook_centroid && this.values.hook_centroid[d[KEY]]) {
-      return this.map.centroid(this.values.hook_centroid[d[KEY]]);
+    const dataKeys = this.dataKeys;
+    if (this.values.hook_centroid && this.values.hook_centroid[utils.getKey(d, dataKeys.hook_centroid)]) {
+      return this.map.centroid(this.values.hook_centroid[utils.getKey(d, dataKeys.hook_centroid)]);
     }
-    return this.map.geo2Point(this.values.hook_lat[d[KEY]], this.values.hook_lng[d[KEY]]);
+    return this.map.geo2Point(this.values.hook_lat[utils.getKey(d, dataKeys.hook_lat)], this.values.hook_lng[utils.getKey(d, dataKeys.hook_lng)]);
 
   },
 
@@ -747,13 +752,15 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     const _this = this;
     if (!duration) duration = this.duration;
     if (!this.entityBubbles) return utils.warn("redrawDataPoints(): no entityBubbles defined. likely a premature call, fix it!");
+    const dataKeys = this.dataKeys;
+    const values = this.values;
 
     this.entityBubbles.each(function(d, index) {
       const view = d3.select(this);
-      const valueS = _this.values.size[d[_this.KEY]];
-      const valueC = _this.values.color[d[_this.KEY]];
-      const valueL = _this.values.label[d[_this.KEY]];
-      const valueCentroid = _this.values.hook_centroid[d[_this.KEY]];
+      const valueS = values.size[utils.getKey(d, dataKeys.size)];
+      const valueC = values.color[utils.getKey(d, dataKeys.color)];
+      const valueL = values.label[utils.getKey(d, dataKeys.label)];
+      const valueCentroid = values.hook_centroid[utils.getKey(d, dataKeys.hook_centroid)];
 
       d.hidden_1 = d.hidden;
 
@@ -806,10 +813,10 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
 
   updateLabels(duration) {
     const _this = this;
-    const KEY = this.KEY;
+    const dataKeys = this.dataKeys;
     this.model.marker.getSelected().map(d => {
       let x, y;
-      const tooltipText = this.values.label[d[KEY]];
+      const tooltipText = this.values.label[utils.getKey(d, dataKeys.label)];
       if (d.cLoc) {
         x = d.cLoc[0];
         y = d.cLoc[1];
@@ -820,8 +827,8 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
           y = cLoc[1];
         }
       }
-      const offset = utils.areaToRadius(_this.sScale(_this.values.size[d[KEY]] || 0));
-      const color = _this.values.color[d[KEY]] != null ? _this.cScale(_this.values.color[d[KEY]]) : _this.COLOR_WHITEISH;
+      const offset = utils.areaToRadius(_this.sScale(_this.values.size[utils.getKey(d, dataKeys.size)] || 0));
+      const color = _this.values.color[utils.getKey(d, dataKeys.color)] != null ? _this.cScale(_this.values.color[utils.getKey(d, dataKeys.color)]) : _this.COLOR_WHITEISH;
       _this._updateLabel(d, null, x, y, offset, color, tooltipText, duration);
     });
   },
@@ -917,6 +924,10 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
 
     this.height = (parseInt(this.element.style("height"), 10) - margin.top - margin.bottom) || 0;
     this.width = (parseInt(this.element.style("width"), 10) - margin.left - margin.right) || 0;
+
+    this.chartSvg
+      .style("width", (this.width + margin.left + margin.right) + "px")
+      .style("height", (this.height + margin.top + margin.bottom + (this.model.ui.map.overflowBottom || 0)) + "px");
 
     if (this.height <= 0 || this.width <= 0) return utils.warn("Bubble map updateSize() abort: vizabi container is too little or has display:none");
 
@@ -1127,8 +1138,9 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       cache.labelY0 = valueY / this.height;
       cache.scaledS0 = valueS ? utils.areaToRadius(_this.sScale(valueS)) : null;
       cache.scaledC0 = valueC != null ? _this.cScale(valueC) : _this.COLOR_WHITEISH;
+      const labelText = this._getLabelText(this.values, this.labelNames, d);
 
-      this._labels.updateLabel(d, index, cache, valueX / this.width, valueY / this.height, valueS, valueC, valueL, valueLST, duration, showhide);
+      this._labels.updateLabel(d, index, cache, valueX / this.width, valueY / this.height, valueS, valueC, labelText, valueLST, duration, showhide);
     }
   },
 
@@ -1156,6 +1168,10 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     this.nonSelectedOpacityZero = false;
   },
 
+  _getLabelText(values, labelNames, d) {
+    return this.KEYS.map(key => values[labelNames[key]] ? values[labelNames[key]][d[key]] : d[key]).join(", ");    
+  },
+
   _setTooltip(d) {
     if (d) {
       const KEY = this.KEY;
@@ -1166,8 +1182,8 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       const mouse = d3.mouse(this.graph.node()).map(d => parseInt(d));
       const x = cLoc[0] || mouse[0];
       const y = cLoc[1] || mouse[1];
-      labelValues.valueS = values.size[d[KEY]];
-      labelValues.labelText = labelValues.valueL = values.label[d[KEY]];
+      labelValues.valueS = values.size[utils.getKey(d, this.dataKeys.size)];
+      labelValues.labelText = this._getLabelText(values, this.labelNames, d);
       tooltipCache.labelX0 = labelValues.valueX = x / this.width;
       tooltipCache.labelY0 = labelValues.valueY = y / this.height;
       const offset = d.r || utils.areaToRadius(this.sScale(labelValues.valueS) || 0);
