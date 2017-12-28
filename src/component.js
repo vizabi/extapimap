@@ -645,6 +645,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
   updateEntities() {
 
     const _this = this;
+    const KEYS = this.KEYS;
     const KEY = this.KEY;
     const TIMEDIM = this.TIMEDIM;
 
@@ -652,11 +653,11 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       prefix = prefix || "";
       return _this.model.marker.getKeys()
         .map(d => {
-          const pointer = {};
-          pointer[KEY] = d[KEY];
+          const pointer = Object.assign({}, d);
+          //pointer[KEY] = d[KEY];
           pointer[TIMEDIM] = endTime;
           pointer.sortValue = _this.values.size[utils.getKey(d, _this.dataKeys.size)] || 0;
-          pointer[KEY] = prefix + d[KEY];
+          pointer[KEY] = prefix + utils.getKey(d, KEYS);
           return pointer;
         })
         .sort((a, b) => b.sortValue - a.sortValue);
