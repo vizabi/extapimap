@@ -76,9 +76,9 @@ const ExtApiMap = Vizabi.Tool.extend("ExtApiMap", {
       panWithArrow: true,
       adaptMinMaxZoom: false,
       zoomOnScrolling: true,
-      "buttons": ["colors", "size", "show", "find", "moreoptions", "mapcolors", "zoom", "fullscreen", "presentation"],
+      "buttons": ["colors", "size", "find", "moreoptions", "mapcolors", "zoom", "fullscreen", "presentation"],
       "dialogs": {
-        "popup": ["colors", "mapcolors", "show", "find", "size", "zoom", "moreoptions"],
+        "popup": ["colors", "mapcolors", "find", "size", "zoom", "moreoptions"],
         "sidebar": ["colors", "find", "mapoptions", "zoom"],
         "moreoptions": ["mapoptions", "opacity", "speed", "size", "colors", "mapcolors", "zoom", "presentation", "about"]
       },
