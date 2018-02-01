@@ -742,11 +742,14 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
   },
   _getPosition(d) {
     const dataKeys = this.dataKeys;
+    if (this.values.hook_lat && this.values.hook_lat[utils.getKey(d, dataKeys.hook_lat)]) {
+      return this.map.geo2Point(this.values.hook_lat[utils.getKey(d, dataKeys.hook_lat)], this.values.hook_lng[utils.getKey(d, dataKeys.hook_lng)]);
+    }
     if (this.values.hook_centroid && this.values.hook_centroid[utils.getKey(d, dataKeys.hook_centroid)]) {
       return this.map.centroid(this.values.hook_centroid[utils.getKey(d, dataKeys.hook_centroid)]);
     }
-    return this.map.geo2Point(this.values.hook_lat[utils.getKey(d, dataKeys.hook_lat)], this.values.hook_lng[utils.getKey(d, dataKeys.hook_lng)]);
-
+    utils.warn("_getPosition(): was unable to resolve bubble positions either via lat/long or centroid")
+    return [0,0];
   },
 
   redrawDataPoints(duration, reposition) {

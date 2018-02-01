@@ -96,6 +96,7 @@ const TopojsonLayer = MapLayer.extend({
     this.shapes = null;
     this.mapLands = [];
     this.parent = parent;
+    this.resolvedCentroidCache = {};
     this.context = context;
     this.parent = parent;
     this.paths = {};
@@ -286,7 +287,10 @@ const TopojsonLayer = MapLayer.extend({
 
   centroid(key) {
     if ((key || key == 0) && this.paths[key]) {
-      return this.mapPath.centroid(this.paths[key]);
+      if (this.resolvedCentroidCache[key]) return this.geo2Point(this.resolvedCentroidCache[key][0], this.resolvedCentroidCache[key][1]);
+      const centroid = this.mapPath.centroid(this.paths[key]);
+      this.resolvedCentroidCache[key] = this.point2Geo(centroid[0], centroid[1]);
+      return centroid;
     }
     return null;
   },
