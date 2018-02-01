@@ -58,13 +58,84 @@ const ExtApiMap = Vizabi.Tool.extend("ExtApiMap", {
   default_model: {
     state: {
       time: {
-        "delay": 100,
-        "delayThresholdX2": 50,
-        "delayThresholdX4": 25
+        "autoconfig": {
+          "type": "time"
+        }
       },
       entities: {
-        "opacitySelectDim": 0.3,
-        "opacityRegular": 1
+        "autoconfig": {
+          "type": "entity_domain",
+          "excludeIDs": ["tag"]
+        }
+      },
+      entities_colorlegend: {
+        "autoconfig": {
+          "type": "entity_domain",
+          "excludeIDs": ["tag"]
+        }
+      },
+      "entities_map_colorlegend": {
+        "autoconfig": {
+          "type": "entity_domain",
+          "excludeIDs": ["tag"]
+        }
+      },
+      entities_tags: {
+        "autoconfig": {
+          "type": "entity_domain",
+          "includeOnlyIDs": ["tag"]
+        }
+      },
+      marker_tags: {
+        space: ["entities_tags"],
+        label: {
+          use: "property",
+          which: "name"
+        },
+        hook_parent: {}
+      },
+      marker: {
+        marksLimit: 1000,
+        space: ["entities", "time"],
+        label: {
+          use: "property",
+          "autoconfig": {
+            "includeOnlyIDs": ["name"],
+            "type": "string"
+          }
+        },
+        size: {
+          "autoconfig": {
+              index: 0,
+              type: "measure"
+            }
+        },
+        color: {
+          syncModels: ["marker_colorlegend"],
+          "autoconfig": {
+            index: 1,
+            type: "measure"
+          }
+        },
+        color_map: {
+          syncModels: ["marker_colorlegend"],
+          "autoconfig": {}
+        }
+      },
+      "marker_colorlegend": {
+        "space": ["entities_colorlegend"],
+        "label": {
+          "use": "property",
+          "which": "name"
+        },
+        "hook_rank": {
+          "use": "property",
+          "which": "rank"
+        },
+        "hook_geoshape": {
+          "use": "property",
+          "which": "shape_lores_svg"
+        }
       }
     },
     locale: {},
