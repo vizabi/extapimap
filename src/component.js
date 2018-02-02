@@ -193,7 +193,6 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     this.KEYS = utils.unique(this.model.marker._getAllDimensions({ exceptType: "time" }));
     this.KEY = this.KEYS.join(",");
     this.dataKeys = this.model.marker.getDataKeysPerHook();
-    this.labelNames = this.model.marker.getLabelHookNames();
 
     this.updateUIStrings();
 
@@ -387,7 +386,6 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     this.KEYS = utils.unique(this.model.marker._getAllDimensions({ exceptType: "time" }));
     this.KEY = this.KEYS.join(",");
     this.dataKeys = this.model.marker.getDataKeysPerHook();
-    this.labelNames = this.model.marker.getLabelHookNames();
 
     this.updateUIStrings();
     this.updateIndicators();
@@ -1142,7 +1140,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       cache.labelY0 = valueY / this.height;
       cache.scaledS0 = valueS ? utils.areaToRadius(_this.sScale(valueS)) : null;
       cache.scaledC0 = valueC != null ? _this.cScale(valueC) : _this.COLOR_WHITEISH;
-      const labelText = this._getLabelText(this.values, this.labelNames, d);
+      const labelText = this.model.marker.getCompoundLabelText(d, values);
 
       this._labels.updateLabel(d, index, cache, valueX / this.width, valueY / this.height, valueS, valueC, labelText, valueLST, duration, showhide);
     }
@@ -1172,10 +1170,6 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     this.nonSelectedOpacityZero = false;
   },
 
-  _getLabelText(values, labelNames, d) {
-    return this.KEYS.map(key => values[labelNames[key]] ? values[labelNames[key]][d[key]] : d[key]).join(", ");    
-  },
-
   _setTooltip(d) {
     if (d) {
       const KEY = this.KEY;
@@ -1187,7 +1181,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       const x = cLoc[0] || mouse[0];
       const y = cLoc[1] || mouse[1];
       labelValues.valueS = values.size[utils.getKey(d, this.dataKeys.size)];
-      labelValues.labelText = this._getLabelText(values, this.labelNames, d);
+      labelValues.labelText = this.model.marker.getCompoundLabelText(d, values);
       tooltipCache.labelX0 = labelValues.valueX = x / this.width;
       tooltipCache.labelY0 = labelValues.valueY = y / this.height;
       const offset = d.r || utils.areaToRadius(this.sScale(labelValues.valueS) || 0);

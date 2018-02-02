@@ -95,7 +95,7 @@ const ExtApiMap = Vizabi.Tool.extend("ExtApiMap", {
         hook_parent: {}
       },
       marker: {
-        marksLimit: 1000,
+        limit: 1000,
         space: ["entities", "time"],
         label: {
           use: "property",
