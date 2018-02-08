@@ -530,7 +530,7 @@ const GoogleMapLayer = MapLayer.extend({
 const MapboxLayer = MapLayer.extend({
 
   init(context, parent) {
-    mapboxgl.accessToken = "pk.eyJ1Ijoic2VyZ2V5ZiIsImEiOiJjaXlqeWo5YnYwMDBzMzJwZnlwZXJ2bnA2In0.e711ku9KzcFW_x5wmOZTag";
+    mapboxgl.accessToken = context.model.ui.map.accessToken || "pk.eyJ1Ijoic2VyZ2V5ZiIsImEiOiJjaXlqeWo5YnYwMDBzMzJwZnlwZXJ2bnA2In0.e711ku9KzcFW_x5wmOZTag";
     this.context = context;
     this.parent = parent;
   },
