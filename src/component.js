@@ -1140,7 +1140,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       cache.labelY0 = valueY / this.height;
       cache.scaledS0 = valueS ? utils.areaToRadius(_this.sScale(valueS)) : null;
       cache.scaledC0 = valueC != null ? _this.cScale(valueC) : _this.COLOR_WHITEISH;
-      const labelText = this.model.marker.getCompoundLabelText(d, values);
+      const labelText = this.model.marker.getCompoundLabelText(d, this.values);
 
       this._labels.updateLabel(d, index, cache, valueX / this.width, valueY / this.height, valueS, valueC, labelText, valueLST, duration, showhide);
     }
