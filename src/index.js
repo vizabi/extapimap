@@ -137,7 +137,7 @@ const ExtApiMap = Vizabi.Tool.extend("ExtApiMap", {
       "dialogs": {
         "popup": ["colors", "mapcolors", "find", "size", "zoom", "moreoptions"],
         "sidebar": ["colors", "find", "mapoptions", "zoom"],
-        "moreoptions": ["mapoptions", "opacity", "speed", "size", "colors", "mapcolors", "zoom", "presentation", "about"]
+        "moreoptions": ["mapoptions", "opacity", "speed", "size", "colors", "mapcolors", "zoom", "presentation", "technical", "about"]
       },
       chart: {
         labels: {
