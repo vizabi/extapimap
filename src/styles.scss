@@ -63,6 +63,26 @@
       }
     }
 
+    .vzb-bmc-main-canvas, .vzb-bmc-hidden-canvas {
+      position: absolute;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -webkit-crisp-edges;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    
+    .vzb-bmc-hidden-canvas {
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -webkit-crisp-edges;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      display: none;
+    }
+
+    .vzb-extapimap-svg-front {
+      pointer-events: none;
+    }
+
     .vzb-extapimap-svg {
       &.vzb-zoomin {
         cursor: zoom-in;
@@ -77,6 +97,7 @@
         cursor: grabbing;
       }
       @extend %vzb-chart-svg;
+      transform: translateZ(0);
 
       .vzb-bmc-year {
         @include opacity(.5);

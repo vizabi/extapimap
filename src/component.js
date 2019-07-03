@@ -82,8 +82,10 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         if (!_this._readyOnce) return;
         _this.redrawDataPoints(null, false);
       },
-      "change:marker.select": function(evt) {
+      "change:marker.select": function(evt, path) {
         if (!_this._readyOnce) return;
+        if (path.indexOf("select.labelOffset") !== -1) return;
+
         _this.selectMarkers();
         _this.redrawDataPoints(null, false);
         _this.updateLabels(null);
@@ -153,6 +155,14 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       LINES_CONTAINER_CLASS: "vzb-bmc-lines",
       SUPPRESS_HIGHLIGHT_DURING_PLAY: false
     });
+
+    d3.namespaces.custom = "https://d3js.org/namespace/custom";
+
+    _this.globalAttr = {
+      strokeColor: [51/255, 51/255, 51/255],
+      strokeWidth: 1.0,
+      strokeOpacity: 0.7
+    }
   },
 
 
@@ -162,25 +172,80 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
   readyOnce() {
     this.element = d3.select(this.element);
 
-    this.graph = this.element.select(".vzb-bmc-graph");
+    // reference elements
+    this.chartSvg = this.element.select("svg.vzb-extapimap-svg-front");
+    this.chartSvgBack = this.element.select("svg.vzb-extapimap-svg-back");
+    this.chartSvgAll = this.element.selectAll("svg.vzb-extapimap-svg");
+    this.graph = this.chartSvg.select(".vzb-bmc-graph");
+    this.graphBack = this.chartSvgBack.select(".vzb-bmc-graph");
+    this.graphAll = this.chartSvgAll.select(".vzb-bmc-graph");
 
-    this.chartSvg = this.element.select("svg");
-    this.bubbleContainerCrop = this.graph.select(".vzb-bmc-bubbles-crop");
-    this.bubbleContainer = this.graph.select(".vzb-bmc-bubbles");
+    //this.bubbleContainerCrop = this.graph.select(".vzb-bmc-bubbles-crop");
+    //this.bubbleContainer = this.graph.select(".vzb-bmc-bubbles");
     this.labelListContainer = this.graph.select(".vzb-bmc-bubble-labels");
-    this.dataWarningEl = this.graph.select(".vzb-data-warning");
+    this.dataWarningEl = this.graphBack.select(".vzb-data-warning");
     this.zoomRect = this.element.select(".vzb-bc-zoom-rect");
-    this.yTitleEl = this.graph.select(".vzb-bmc-axis-y-title");
-    this.cTitleEl = this.graph.select(".vzb-bmc-axis-c-title");
-    this.yInfoEl = this.graph.select(".vzb-bmc-axis-y-info");
-    this.cInfoEl = this.graph.select(".vzb-bmc-axis-c-info");
+    this.yTitleEl = this.graphBack.select(".vzb-bmc-axis-y-title");
+    this.cTitleEl = this.graphBack.select(".vzb-bmc-axis-c-title");
+    this.yInfoEl = this.graphBack.select(".vzb-bmc-axis-y-info");
+    this.cInfoEl = this.graphBack.select(".vzb-bmc-axis-c-info");
 
     this.entityBubbles = null;
 
     // year background
-    this.yearEl = this.graph.select(".vzb-bmc-year");
+    this.yearEl = this.graphBack.select(".vzb-bmc-year");
     this.year = new DynamicBackground(this.yearEl);
     this.year.setConditions({ xAlign: "left", yAlign: "bottom" });
+
+    this.bubbleContainer = d3.create("custom:bubbles");
+    this.canvases = this.element.select(".vzb-extapimap-canvases");
+    this.mainCanvas = this.canvases.select(".vzb-bmc-main-canvas");
+    this.hiddenCanvas = this.canvases.select(".vzb-bmc-hidden-canvas");
+    this._nextCol = 1;
+    this._colorToNode = {};
+
+    //this.offscreenCanvas = d3.create("canvas");
+    
+    this.mainCanvas.on('mousemove', function() {
+      const node = _this.trackCanvasObject(d3.event.offsetX * _this.devicePixelRatio, d3.event.offsetY * _this.devicePixelRatio);
+      if (utils.isTouchDevice() || (_this.model.ui.cursorMode !== "arrow" && _this.model.ui.cursorMode !== "hand")) return;
+      if (node) {
+        const d = d3.select(node).datum();
+        _this.mainCanvas.style("cursor", "pointer");
+        if (_this.someHighlighted) {
+          //break if same bubble hovered
+          if (_this.model.marker.isHighlighted(d)) return;
+          _this._interact()._mouseout(_this.model.marker.highlight[0]);
+        }
+
+        _this._interact()._mouseover(d);
+      } else if (_this.someHighlighted) {
+        _this.mainCanvas.style("cursor", null);
+        _this._interact()._mouseout(_this.model.marker.highlight[0]);
+      }
+    });
+    
+    this.mainCanvas.on('mouseout', function() {
+      if (_this.someHighlighted) {
+        _this.mainCanvas.style("cursor", null);
+        _this._interact()._mouseout(_this.model.marker.highlight[0]);
+      }
+    });
+    
+    this.mainCanvas.on('click', function() {
+      const node = _this.trackCanvasObject(d3.event.offsetX * _this.devicePixelRatio, d3.event.offsetY * _this.devicePixelRatio);
+      if (!node || utils.isTouchDevice() || (_this.model.ui.cursorMode !== "arrow" && _this.model.ui.cursorMode !== "hand")) return;
+
+      const d = d3.select(node).datum();
+      _this._interact()._click(d);
+    });
+
+    //gl 
+    this.gl = this.mainCanvas.node().getContext("webgl") || this.mainCanvas.node().getContext("experimental-webgl");
+    this.glInit(this.gl);
+    //picking gl 
+    this.pickingGl = this.hiddenCanvas.node().getContext("webgl", {alpha:false}) || this.hiddenCanvas.node().getContext("experimental-webgl", {alpha:false});
+    this.pickingGlInit(this.pickingGl);
 
     const _this = this;
     this.on("resize", () => {
@@ -221,10 +286,10 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
           _this.model.ui.cursorMode == "hand" ||
           (_this.ui.panWithArrow && _this.ui.cursorMode === "arrow")
         ) {
-          _this.dragAction = "panning";
-          _this._hideEntities();
-          _this.map.panStarted();
-          _this.chartSvg.classed("vzb-zooming", true);
+          _this.dragAction = "prepanning";
+          // _this._hideEntities();
+          // _this.map.panStarted();
+          // _this.chartSvg.classed("vzb-zooming", true);
         }
       })
       .on("drag", (d, i) => {
@@ -239,6 +304,14 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
             break;
           case "panning":
             _this.map.moveOver(d3.event.dx, d3.event.dy);
+            break;
+          case "prepanning":
+            if (d3.event.dx !== 0 || d3.event.dy !== 0) {
+              _this.dragAction = "panning";
+              _this._hideEntities();
+              _this.map.panStarted();
+              _this.chartSvg.classed("vzb-zooming", true);
+            }
             break;
         }
       })
@@ -358,6 +431,10 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     this.bubbleContainer
       .transition()
       .duration(duration)
+      .attr("opacity", 0);
+    this.canvases
+      .transition()
+      .duration(duration)
       .style("opacity", 0);
   },
 
@@ -373,8 +450,11 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     this.bubbleContainer
       .transition()
       .duration(duration)
+      .attr("opacity", 1);
+    this.canvases
+      .transition()
+      .duration(duration)
       .style("opacity", 1);
-
   },
 
 
@@ -426,8 +506,8 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     this.values = frame;
     this.updateTime();
     this.updateDoubtOpacity();
-    this.redrawDataPoints(null, false);
     this._reorderEntities();
+    this.redrawDataPoints(null, false);
     this.map.updateColors();
   },
 
@@ -580,7 +660,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     this.dataWarningEl.style("opacity", opacity);
   },
 
-  updateOpacity() {
+  updateOpacity(duration) {
     const _this = this;
     /*
      this.entityBubbles.classed("vzb-selected", function (d) {
@@ -588,7 +668,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
      });
      */
     this.map.updateOpacity();
-    this.entityBubbles.style("opacity", d => _this.getOpacity(d));
+    this.entityBubbles.attr("opacity", d => _this.getOpacity(d));
 
     this.entityBubbles.classed("vzb-selected", d => _this.model.marker.isSelected(d));
 
@@ -601,6 +681,8 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     }
 
     this.nonSelectedOpacityZero = _this.model.marker.opacitySelectDim < 0.01;
+  
+    this._canvasRedraw(duration);
   },
 
   getMapOpacity(key) {
@@ -686,25 +768,25 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     //enter selection -- init circles
     this.entityBubbles = this.entityBubbles.enter().append("circle")
       .attr("class", "vzb-bmc-bubble")
-      .on("mouseover", (d, i) => {
-        if (utils.isTouchDevice() || _this.model.ui.cursorMode !== "arrow") return;
-        _this._interact()._mouseover(d, i);
-      })
-      .on("mouseout", (d, i) => {
-        if (utils.isTouchDevice() || _this.model.ui.cursorMode !== "arrow") return;
-        _this._interact()._mouseout(d, i);
-      })
-      .on("click", (d, i) => {
-        if (utils.isTouchDevice() || _this.model.ui.cursorMode !== "arrow") return;
-        _this._interact()._click(d, i);
-        _this.highlightMarkers();
-      })
-      .onTap((d, i) => {
-        _this._interact()._click(d, i);
-        d3.event.stopPropagation();
-      })
-      .onLongTap((d, i) => {
-      })
+      // .on("mouseover", (d, i) => {
+      //   if (utils.isTouchDevice() || _this.model.ui.cursorMode !== "arrow") return;
+      //   _this._interact()._mouseover(d, i);
+      // })
+      // .on("mouseout", (d, i) => {
+      //   if (utils.isTouchDevice() || _this.model.ui.cursorMode !== "arrow") return;
+      //   _this._interact()._mouseout(d, i);
+      // })
+      // .on("click", (d, i) => {
+      //   if (utils.isTouchDevice() || _this.model.ui.cursorMode !== "arrow") return;
+      //   _this._interact()._click(d, i);
+      //   _this.highlightMarkers();
+      // })
+      // .onTap((d, i) => {
+      //   _this._interact()._click(d, i);
+      //   d3.event.stopPropagation();
+      // })
+      // .onLongTap((d, i) => {
+      // })
       .merge(this.entityBubbles);
 
     this._reorderEntities();
@@ -779,15 +861,15 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       if (d.hidden !== d.hidden_1) {
         if (duration) {
           view.transition().duration(duration).ease(d3.easeLinear)
-            .style("opacity", 0)
-            .on("end", () => view.classed("vzb-hidden", d.hidden).style("opacity", _this.model.marker.opacityRegular));
+            .attr("opacity", 0)
+            .on("end", () => view.attr("vzb-hidden", d.hidden).attr("opacity", _this.model.marker.opacityRegular));
         } else {
           if (!d.hidden) {
             if (d.cLoc) {
-              view.classed("vzb-hidden", d.hidden);
+              view.attr("vzb-hidden", d.hidden);
             }
           } else {
-            view.classed("vzb-hidden", d.hidden);
+            view.attr("vzb-hidden", d.hidden);
           }
         }
       }
@@ -795,7 +877,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         d.r = utils.areaToRadius(_this.sScale(valueS || 0));
         d.label = valueL;
 
-        view.classed("vzb-hidden", false)
+        view.attr("vzb-hidden", false)
           .attr("fill", valueC != null ? _this.cScale(valueC) : _this.COLOR_WHITEISH);
 
         if (duration) {
@@ -811,6 +893,8 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         _this._updateLabel(d, index, 0, 0, valueS, valueC, valueL, duration);
       }
     });
+
+    this._canvasRedraw(duration);
   },
 
   updateLabels(duration) {
@@ -829,7 +913,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
           y = cLoc[1];
         }
       }
-      const offset = utils.areaToRadius(_this.sScale(_this.values.size[utils.getKey(d, dataKeys.size)] || 0));
+      const offset = _this.values.size[utils.getKey(d, dataKeys.size)] || 0;
       const color = _this.values.color[utils.getKey(d, dataKeys.color)] != null ? _this.cScale(_this.values.color[utils.getKey(d, dataKeys.color)]) : _this.COLOR_WHITEISH;
       _this._updateLabel(d, null, x, y, offset, color, tooltipText, duration);
     });
@@ -927,11 +1011,29 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     this.height = (parseInt(this.element.style("height"), 10) - margin.top - margin.bottom) || 0;
     this.width = (parseInt(this.element.style("width"), 10) - margin.left - margin.right) || 0;
 
-    this.chartSvg
+    this.chartSvgAll
       .style("width", (this.width + margin.left + margin.right) + "px")
       .style("height", (this.height + margin.top + margin.bottom + (this.model.ui.map.overflowBottom || 0)) + "px");
 
     if (this.height <= 0 || this.width <= 0) return utils.warn("Bubble map updateSize() abort: vizabi container is too little or has display:none");
+    
+    const fullWidth = this.width + margin.left + margin.right;
+    const fullHeight = Math.max(0, this.height + margin.top + margin.bottom + (this.model.ui.map.overflowBottom || 0));
+
+    this.devicePixelRatio = window.devicePixelRatio || 1;
+    this.mainCanvas
+      .style("width", fullWidth + "px")
+      .style("height", fullHeight + "px")
+      .attr("width", fullWidth * this.devicePixelRatio)
+      .attr("height", fullHeight * this.devicePixelRatio);
+    this.initCanvas(this.gl, this.prog, -margin.left, -margin.top, fullWidth, fullHeight, this.devicePixelRatio);
+
+    this.hiddenCanvas
+      .style("width", fullWidth + "px")
+      .style("height", fullHeight + "px")
+      .attr("width", fullWidth * this.devicePixelRatio)
+      .attr("height", fullHeight * this.devicePixelRatio);
+    this.initCanvas(this.pickingGl, this.pickingProg, -margin.left, -margin.top, fullWidth, fullHeight, this.devicePixelRatio);
 
     this.repositionElements();
   },
@@ -947,7 +1049,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     const infoElHeight = this.activeProfile.infoElHeight;
     const isRTL = this.model.locale.isRTL();
 
-    this.graph
+    this.graphAll
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     this.year.setConditions({
@@ -1138,11 +1240,11 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       const cache = {};
       cache.labelX0 = valueX / this.width;
       cache.labelY0 = valueY / this.height;
-      cache.scaledS0 = valueS ? utils.areaToRadius(_this.sScale(valueS)) : null;
+      cache.scaledS0 = (valueS || valueS === 0) ? utils.areaToRadius(_this.sScale(valueS)) : null;
       cache.scaledC0 = valueC != null ? _this.cScale(valueC) : _this.COLOR_WHITEISH;
       const labelText = this.model.marker.getCompoundLabelText(d, this.values);
 
-      this._labels.updateLabel(d, index, cache, valueX / this.width, valueY / this.height, valueS, valueC, labelText, valueLST, duration, showhide);
+      this._labels.updateLabel(d, index, cache, valueX / this.width, valueY / this.height, 0, valueC, labelText, valueLST, duration, showhide);
     }
   },
 
@@ -1201,7 +1303,488 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
   initMap() {
     this.map = new MapEngine(this, "#vzb-map-background").getMap();
     return this.map.initMap();
-  }
+  },
+
+  //
+  //webgl
+  //
+
+  _drawFunc() {
+    this._drawPending = false;
+    const data = this.bubbleContainer.selectAll("*").nodes()
+      .filter(elem => elem.tagName !== "g" && elem.getAttribute("vzb-hidden") !== "true")
+    this.draw(data, this.mainCanvas.node(), false);
+  },
+
+  _drawOnscreen(canvas, offCanvas, x, y, width, height) {
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(x, y, width, height);
+    ctx.drawImage(offCanvas, x, y);
+  },
+
+  _canvasRedraw(duration, force) {
+    const data = this.visibleBubblesSelection = this.bubbleContainer.selectAll("*").nodes()
+      .filter(elem => elem.tagName !== "g" && elem.getAttribute("vzb-hidden") !== "true")
+
+    const _drawAnimate = drawAnimate.bind(this);
+    const _drawFunc = this._drawFunc.bind(this, data);
+
+    if (duration) {
+      !this.drawAnimFrame && (this.drawAnimFrame = requestAnimationFrame(_drawAnimate));
+    } else {
+      this.drawAnimFrame && cancelAnimationFrame(this.drawAnimFrame);
+      this.drawAnimFrame = null;
+      if (!this._drawPending) {
+        this._drawPending = true;
+        requestAnimationFrame(_drawFunc);
+      }
+    }
+
+    function drawAnimate() {
+      _drawFunc();
+      this.drawAnimFrame = requestAnimationFrame(_drawAnimate);
+    }
+  },
+
+  genColor() { 
+    const ret = [];
+    const _nextCol = this._nextCol;
+    if(_nextCol < 16777215){         
+      ret.push(_nextCol & 0xff); // R 
+      ret.push((_nextCol & 0xff00) >> 8); // G 
+      ret.push((_nextCol & 0xff0000) >> 16); // B
+      this._nextCol += 99; 
+    }
+    return ret;
+  },
+
+  trackCanvasObject(x, y) {
+    this.pickingDraw(d3.selectAll(this.visibleBubblesSelection), this.visibleBubblesSelection);
+    const gl = this.pickingGl;
+    const pixels = new Uint8Array(4);
+    gl.readPixels(x, gl.drawingBufferHeight - y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    return this._colorToNode[pixels[0] + "," + pixels[1] + "," + pixels[2]];
+  },
+
+  initCanvas(gl, prog, translateX, translateY, width, height, devicePixelRatio) {
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+    // Initialise uTransformToClipSpace
+    gl.uniformMatrix3fv(gl.getUniformLocation(prog, "uTransformToClipSpace"), false, [
+      2 / gl.drawingBufferWidth, 0, 0,
+      0, - 2 / gl.drawingBufferHeight, 0,
+      -1 - translateX * devicePixelRatio * 2 / gl.drawingBufferWidth,
+      1 + translateY * devicePixelRatio * 2 / gl.drawingBufferHeight,
+      1
+    ]);
+    
+    gl.uniform1f(gl.getUniformLocation(prog, "uHeight"), gl.drawingBufferHeight);
+    gl.uniform2f(gl.getUniformLocation(prog, "uTranslate"), translateX * devicePixelRatio, translateY * devicePixelRatio);
+    gl.uniform1f(gl.getUniformLocation(prog, "uDevicePixelRatio"), devicePixelRatio);
+    gl.uniform3fv(gl.getUniformLocation(prog, "uStrokeColor"), this.globalAttr.strokeColor);
+    gl.uniform1f(gl.getUniformLocation(prog, "uStrokeWidth"), this.globalAttr.strokeWidth * devicePixelRatio);
+    gl.uniform1f(gl.getUniformLocation(prog, "uStrokeOpacity"), this.globalAttr.strokeOpacity);
+  },
+
+  glInit(gl) {
+    gl.getExtension('GL_OES_standard_derivatives');
+    gl.getExtension('OES_standard_derivatives');
+    gl.getExtension('OES_element_index_uint');
+    // Load and compile the shaders
+    const fragmentShader = this.createShader(gl, this.fragmentShader(), gl.FRAGMENT_SHADER);
+    const vertexShader = this.createShader(gl, this.vertexShader(), gl.VERTEX_SHADER);
+
+    // Create the WebGL program
+    const prog = this.prog = gl.createProgram();
+    gl.attachShader(prog, vertexShader);
+    gl.attachShader(prog, fragmentShader);
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
+
+    // Global WebGL configuration
+    gl.disable(gl.DEPTH_TEST);
+    gl.enable(gl.BLEND);
+    gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+    // Enable the attributes
+    gl.enableVertexAttribArray(gl.getAttribLocation(prog, "aPosition"));
+    gl.enableVertexAttribArray(gl.getAttribLocation(prog, "aCenter"));
+    gl.enableVertexAttribArray(gl.getAttribLocation(prog, "aRadius"));
+    gl.enableVertexAttribArray(gl.getAttribLocation(prog, "aColor"));
+
+  },
+
+  pickingGlInit(gl) {
+    // Load and compile the shaders
+    const fragmentShader = this.createShader(gl, this.pickingFragmentShader(), gl.FRAGMENT_SHADER);
+    const vertexShader = this.createShader(gl, this.pickingVertexShader(), gl.VERTEX_SHADER);
+
+    // Create the WebGL program
+    const prog = this.pickingProg = gl.createProgram();
+    gl.attachShader(prog, vertexShader);
+    gl.attachShader(prog, fragmentShader);
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
+
+    // Global WebGL configuration
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.BLEND);
+
+    // Enable the attributes
+    gl.enableVertexAttribArray(gl.getAttribLocation(prog, "aPosition"));
+    gl.enableVertexAttribArray(gl.getAttribLocation(prog, "aCenter"));
+    gl.enableVertexAttribArray(gl.getAttribLocation(prog, "aRadius"));
+    gl.enableVertexAttribArray(gl.getAttribLocation(prog, "aColor"));
+
+  },
+
+  attrib(gl, prog, attrib_name, size, offset, stride) {
+    gl.vertexAttribPointer(gl.getAttribLocation(prog, attrib_name),
+      size, gl.FLOAT, false, stride, offset);
+  },
+
+  draw(nodes) {
+    const gl = this.gl;
+    const prog = this.prog;
+
+    gl.clearColor(0,0,0,0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    const data = this.loadData(nodes, 5, 4);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, data.posData, gl.STATIC_DRAW);
+    data.posData = null;
+
+    this.attrib(gl, prog, "aPosition", 2, 0, 20);
+    this.attrib(gl, prog, "aCenter", 2, 8, 20);
+    this.attrib(gl, prog, "aRadius", 1, 16, 20);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, data.colorData, gl.STATIC_DRAW);
+    data.colorData = null;
+
+    this.attrib(gl, prog, "aColor", 4, 0, 16);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data.indexData, gl.STATIC_DRAW);
+    data.indexData = null;
+
+    const offset = 0;
+    const type = gl.UNSIGNED_INT;
+    gl.drawElements(gl.TRIANGLES, data.vertexCount, type, offset);
+  },
+
+  pickingDraw(nodesSel, nodes) {
+    const gl = this.pickingGl;
+    const prog = this.pickingProg;
+
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    const data = this.pickingLoadData(nodesSel, nodes, 5, 4);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, data.posData, gl.STATIC_DRAW);
+    data.posData = null;
+
+    this.attrib(gl, prog, "aPosition", 2, 0, 20);
+    this.attrib(gl, prog, "aCenter", 2, 8, 20);
+    this.attrib(gl, prog, "aRadius", 1, 16, 20);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, data.colorData, gl.STATIC_DRAW);
+    data.colorData = null;
+
+    this.attrib(gl, prog, "aColor", 4, 0, 16);
+
+    const offset = 0;
+    gl.drawArrays(gl.TRIANGLES, offset, data.vertexCount);
+  },
+  
+  loadData(nodes, pos_floats_per_bubble, color_floats_per_bubble) {
+    const posData = new Float32Array(nodes.length * 3 * pos_floats_per_bubble);
+    const colorData = new Float32Array(nodes.length * 3 * color_floats_per_bubble);
+    const indexData = new Uint32Array(nodes.length * 3);
+    const koeff = (1 + Math.sqrt(2));
+    const halfStroke = this.globalAttr.strokeWidth * 0.5 + 1;
+    
+    //fill data for primitives - 1 triangle(3 vertexes) for bubble circle
+    let baseIndex = 0;
+    for (let i = 0, j = nodes.length, baseIndexPos = 0, baseIndexColor = 0, elemIndex = 0, x, y, x2, y2, dx, dy, rd, _x, _y, _rd, color, r, g, b, a; i < j; i++) {
+      const elem = nodes[i];
+      //x,y,r
+      x = +elem.getAttribute("cx");
+      y = +elem.getAttribute("cy");
+      rd = +elem.getAttribute("r") + halfStroke;
+      _x = x - rd;
+      _y = y - rd;
+      _rd = koeff * rd;
+
+      posData[baseIndexPos++] = _x;
+      posData[baseIndexPos++] = _y;
+      posData[baseIndexPos++] = x;
+      posData[baseIndexPos++] = y;
+      posData[baseIndexPos++] = rd;
+
+      posData[baseIndexPos++] = x + _rd;
+      posData[baseIndexPos++] = _y;
+      posData[baseIndexPos++] = x;
+      posData[baseIndexPos++] = y;
+      posData[baseIndexPos++] = rd;
+
+      posData[baseIndexPos++] = _x;
+      posData[baseIndexPos++] = y + _rd;
+      posData[baseIndexPos++] = x;
+      posData[baseIndexPos++] = y;
+      posData[baseIndexPos++] = rd;
+
+      //color r,g,b,a
+      color = getColor(elem.getAttribute("fill"));
+      colorData[baseIndexColor] = 
+      colorData[baseIndexColor + 4] = 
+      colorData[baseIndexColor + 8] = 
+      r = +color[0] / 255;
+
+      colorData[baseIndexColor + 1] = 
+      colorData[baseIndexColor + 5] = 
+      colorData[baseIndexColor + 9] = 
+      g = +color[1] / 255;
+
+      colorData[baseIndexColor + 2] = 
+      colorData[baseIndexColor + 6] = 
+      colorData[baseIndexColor + 10] = 
+      b = +color[2] / 255;
+
+      colorData[baseIndexColor + 3] = 
+      colorData[baseIndexColor + 7] = 
+      colorData[baseIndexColor + 11] = 
+      a = +elem.getAttribute("opacity");
+
+      baseIndexColor += 3 * color_floats_per_bubble;
+
+      //index data
+      indexData[baseIndex] = elemIndex++;
+      indexData[baseIndex + 1] = elemIndex++;
+      indexData[baseIndex + 2] = elemIndex++;
+      
+      baseIndex += 3;
+    }
+
+    return {
+      posData,
+      colorData,
+      indexData,
+      vertexCount: baseIndex
+    };
+
+    function getColor(color) {
+      let c;
+      if (color[0] === "#") {
+        c = +("0x" + color.slice(1));
+        return [
+          (c & 0xff0000) >> 16,
+          (c & 0xff00) >> 8,
+          c & 0xff
+        ];
+      } else if (color.slice(0, 3) === "rgb") {
+        return color.slice(4, -1).split(",");
+      }
+      return [0,0,0];
+    }
+
+    function normal(dx, dy) {
+      return dy && 1.0 / Math.sqrt(1.0 + Math.pow(dx / dy, 2));
+    }
+  },
+
+  pickingLoadData(nodesSel, nodes, pos_floats_per_bubble, color_floats_per_bubble) {
+    const _this = this;
+    const posData = new Float32Array(nodes.length * 3 * pos_floats_per_bubble);
+    const colorData = new Float32Array(nodes.length * 3 * color_floats_per_bubble);
+    const koeff = (1 + Math.sqrt(2));
+    const halfStroke = this.globalAttr.strokeWidth * 0.5 + 1;
+
+    //fill data for primitives - 1 triangle(3 vertexes) for bubble circle(trail circle)
+    let baseIndexPos = 0, baseIndexColor = 0, x, y, rd, _x, _y, _rd, color;
+    nodesSel.each(function(d) {
+    //for (let i = 0, j = nodes.length, baseIndexPos = 0, baseIndexColor = 0, x, y, rd, _x, _y, _rd, color; i < j; i++) {
+      const elem = this;
+      //x,y,r
+      x = +elem.getAttribute("cx");
+      y = +elem.getAttribute("cy");
+      rd = +elem.getAttribute("r") + halfStroke;
+      _x = x - rd;
+      _y = y - rd;
+      _rd = koeff * rd;
+
+      posData[baseIndexPos++] = _x;
+      posData[baseIndexPos++] = _y;
+      posData[baseIndexPos++] = x;
+      posData[baseIndexPos++] = y;
+      posData[baseIndexPos++] = rd;
+
+      posData[baseIndexPos++] = x + _rd;
+      posData[baseIndexPos++] = _y;
+      posData[baseIndexPos++] = x;
+      posData[baseIndexPos++] = y;
+      posData[baseIndexPos++] = rd;
+
+      posData[baseIndexPos++] = _x;
+      posData[baseIndexPos++] = y + _rd;
+      posData[baseIndexPos++] = x;
+      posData[baseIndexPos++] = y;
+      posData[baseIndexPos++] = rd;
+
+      //color r,g,b,a
+      if (d.__pickColor === undefined) {
+        d.__pickColor = _this.genColor();
+        _this._colorToNode[d.__pickColor.join(",")] = this;
+      }
+      color = d.__pickColor;
+
+      colorData[baseIndexColor] = 
+      colorData[baseIndexColor + 4] = 
+      colorData[baseIndexColor + 8] = color[0] / 255;
+
+      colorData[baseIndexColor + 1] = 
+      colorData[baseIndexColor + 5] = 
+      colorData[baseIndexColor + 9] = color[1] / 255;
+
+      colorData[baseIndexColor + 2] = 
+      colorData[baseIndexColor + 6] = 
+      colorData[baseIndexColor + 10] = color[2] / 255;
+
+      colorData[baseIndexColor + 3] = 
+      colorData[baseIndexColor + 7] = 
+      colorData[baseIndexColor + 11] = 1.0;
+
+      baseIndexColor += 3 * color_floats_per_bubble;
+    });
+
+    return {
+      posData,
+      colorData,
+      vertexCount: baseIndexPos / pos_floats_per_bubble
+    };
+    
+  },
+
+  createShader (gl, sourceCode, type) {
+    // Compiles either a shader of type gl.VERTEX_SHADER or gl.FRAGMENT_SHADER
+    var shader = gl.createShader( type );
+    gl.shaderSource( shader, sourceCode );
+    gl.compileShader( shader );
+  
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      var info = gl.getShaderInfoLog( shader );
+      throw 'Could not compile WebGL program. \n\n' + info;
+    }
+    return shader;
+  },
+
+  pickingVertexShader() { return `
+    uniform mat3 uTransformToClipSpace;
+    uniform mediump float uDevicePixelRatio;
+
+    attribute vec2 aPosition;
+    attribute vec2 aCenter;
+    attribute float aRadius;
+    attribute vec4 aColor;
+
+    varying vec3 vColor;
+    varying vec2 vCenter;
+    varying float vOpacity;
+    varying float vRadius;    
+
+    void main(void) {
+      vec2 pos = (uTransformToClipSpace * vec3(aPosition * uDevicePixelRatio, 1.0)).xy;
+
+      vCenter = aCenter * uDevicePixelRatio;
+      vColor = (aColor).xyz;
+      vOpacity = aColor.w;
+      vRadius = aRadius * uDevicePixelRatio;
+
+      gl_Position = vec4(pos, 0.0, 1.0);
+    }  
+  `},
+
+  pickingFragmentShader() { return `
+    //precision mediump float;
+    uniform mediump float uHeight;
+    uniform mediump vec2 uTranslate;
+
+    varying mediump vec3 vColor;
+    varying mediump vec2 vCenter;
+    varying mediump float vOpacity;
+    varying mediump float vRadius;    
+
+    void main(void) {
+      mediump float delta = 0.0, alpha = 1.0, stroke = 1.0;
+      lowp vec2 pos = vec2(gl_FragCoord.x, uHeight - gl_FragCoord.y);
+      lowp float distance = distance(vCenter - uTranslate, pos);
+      
+      if (distance > vRadius) discard;
+
+      gl_FragColor = vec4(vColor,vOpacity);
+    }  
+  `},
+  
+  vertexShader() { return `
+    uniform mat3 uTransformToClipSpace;
+    uniform mediump float uDevicePixelRatio;
+
+    attribute vec2 aPosition;
+    attribute vec2 aCenter;
+    attribute float aRadius;
+    attribute vec4 aColor;
+
+    varying vec3 vColor;
+    varying vec2 vCenter;
+    varying float vOpacity;
+    varying float vRadius;    
+
+    void main(void) {
+      vec2 pos = (uTransformToClipSpace * vec3(aPosition * uDevicePixelRatio, 1.0)).xy;
+      vCenter = aCenter * uDevicePixelRatio;
+      vColor = (aColor).xyz;
+      vOpacity = aColor.w;
+      vRadius = aRadius * uDevicePixelRatio - 1.0;
+
+      gl_Position = vec4(pos, 0.0, 1.0);
+    }
+  `},
+
+  fragmentShader() { return `
+    #ifdef GL_OES_standard_derivatives
+    #extension GL_OES_standard_derivatives : enable
+    #endif
+
+    //precision mediump float;
+    uniform mediump vec3 uStrokeColor;
+    uniform mediump float uStrokeWidth;
+    uniform mediump float uStrokeOpacity;
+    uniform mediump float uHeight;
+    uniform mediump vec2 uTranslate;
+
+    varying mediump vec3 vColor;
+    varying mediump vec2 vCenter;
+    varying mediump float vOpacity;
+    varying mediump float vRadius;    
+
+    void main(void) {
+      mediump float delta = 0.0, alpha = 1.0, stroke = 1.0;
+      lowp vec2 pos = vec2(gl_FragCoord.x, uHeight - gl_FragCoord.y);
+      lowp float distance = distance(vCenter - uTranslate, pos);
+      lowp float innerEdge = vRadius - uStrokeWidth * 0.5;
+      
+      #ifdef GL_OES_standard_derivatives
+        delta = fwidth(distance);
+        stroke = 1.0 - smoothstep(vRadius - delta, vRadius + delta, distance);
+        alpha = smoothstep(innerEdge - delta, innerEdge + delta, distance);
+      #endif
+      gl_FragColor = vec4(mix(vColor, uStrokeColor, alpha), mix(vOpacity, vOpacity * uStrokeOpacity, alpha)) * stroke;
+
+      //gl_FragColor = vec4(vColor,vOpacity);
+    }
+  `}
+
 });
 
 export default ExtApiMapComponent;

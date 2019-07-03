@@ -1,13 +1,10 @@
 <!-- Bubble Map Chart Component -->
 <div class="vzb-extapimap">
     <div id="vzb-map-background"></div>
-    <svg class="vzb-extapimap-svg vzb-export">
+    <svg class="vzb-extapimap-svg vzb-extapimap-svg-back vzb-export">
         <g class="vzb-bmc-map-background"></g>
         <g class="vzb-bmc-graph">
             <g class="vzb-bmc-year"></g>
-
-            <g class="vzb-bmc-lines"></g>
-            <g class="vzb-bmc-bubbles"></g>
 
             <g class="vzb-bmc-axis-y-title">
                 <text></text>
@@ -27,9 +24,19 @@
                 <svg></svg>
                 <text></text>
             </g>
-            <g class="vzb-bmc-labels"></g>
 
-            <rect class="vzb-bc-zoom-rect"></rect>
         </g>
+    </svg>
+    <div class="vzb-extapimap-canvases">
+        <canvas class="vzb-bmc-main-canvas"></canvas>
+        <canvas class="vzb-bmc-hidden-canvas"></canvas>
+    </div>
+    <svg class="vzb-extapimap-svg vzb-extapimap-svg-front vzb-export">
+        <g class="vzb-bmc-graph">
+            <g class="vzb-bmc-bubbles"></g>
+            <g class="vzb-bmc-lines"></g>
+            <g class="vzb-bmc-labels"></g>
+        </g>
+        <rect class="vzb-bc-zoom-rect"></rect>
     </svg>
 </div>
