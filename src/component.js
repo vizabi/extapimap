@@ -115,7 +115,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         _this.map.layerChanged();
       },
       "change:ui.cursorMode": function() {
-        const svg = _this.chartSvg;
+        const svg = _this.mainCanvas;
         if (_this.model.ui.cursorMode === "plus") {
           svg.classed("vzb-zoomin", true);
           svg.classed("vzb-zoomout", false);
@@ -207,8 +207,9 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     //this.offscreenCanvas = d3.create("canvas");
     
     this.mainCanvas.on('mousemove', function() {
-      const node = _this.trackCanvasObject(d3.event.offsetX * _this.devicePixelRatio, d3.event.offsetY * _this.devicePixelRatio);
       if (utils.isTouchDevice() || (_this.model.ui.cursorMode !== "arrow" && _this.model.ui.cursorMode !== "hand")) return;
+
+      const node = _this.trackCanvasObject(d3.event.offsetX * _this.devicePixelRatio, d3.event.offsetY * _this.devicePixelRatio);
       if (node) {
         const d = d3.select(node).datum();
         _this.mainCanvas.style("cursor", "pointer");
@@ -233,11 +234,13 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     });
     
     this.mainCanvas.on('click', function() {
-      const node = _this.trackCanvasObject(d3.event.offsetX * _this.devicePixelRatio, d3.event.offsetY * _this.devicePixelRatio);
-      if (!node || utils.isTouchDevice() || (_this.model.ui.cursorMode !== "arrow" && _this.model.ui.cursorMode !== "hand")) return;
+      if (utils.isTouchDevice() || (_this.model.ui.cursorMode !== "arrow" && _this.model.ui.cursorMode !== "hand")) return;
 
-      const d = d3.select(node).datum();
-      _this._interact()._click(d);
+      const node = _this.trackCanvasObject(d3.event.offsetX * _this.devicePixelRatio, d3.event.offsetY * _this.devicePixelRatio);
+      if(node) {
+        const d = d3.select(node).datum();
+        _this._interact()._click(d);
+      }
     });
 
     //gl 
@@ -276,7 +279,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         ) {
           _this.dragAction = "zooming";
           _this.zooming = true;
-          const mouse = d3.mouse(this.graph.node());
+          const mouse = d3.mouse(this.graph.node().parentNode);
           _this.origin = {
             x: mouse[0],
             y: mouse[1]
@@ -295,7 +298,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       .on("drag", (d, i) => {
         switch (_this.dragAction) {
           case "zooming":
-            const mouse = d3.mouse(this.graph.node());
+            const mouse = d3.mouse(this.graph.node().parentNode);
             _this.zoomRect
               .attr("x", Math.min(mouse[0], _this.origin.x))
               .attr("y", Math.min(mouse[1], _this.origin.y))
@@ -323,7 +326,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
               .attr("height", 0)
               .classed("vzb-invisible", true);
             if (_this.zooming) {
-              const mouse = d3.mouse(this.graph.node());
+              const mouse = d3.mouse(this.graph.node().parentNode);
               if (Math.abs(_this.origin.x - mouse[0]) < 5 || Math.abs(_this.origin.y - mouse[1]) < 5) {
                 _this._hideEntities();
                 _this.map.zoomMap(mouse, 1).then(
