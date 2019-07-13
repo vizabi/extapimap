@@ -215,7 +215,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         _this.mainCanvas.style("cursor", "pointer");
         if (_this.someHighlighted) {
           //break if same bubble hovered
-          if (_this.model.marker.isHighlighted(d)) return;
+          if (d.isHighlighted) return;
           _this._interact()._mouseout(_this.model.marker.highlight[0]);
         }
 
@@ -241,6 +241,15 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         const d = d3.select(node).datum();
         _this._interact()._click(d);
       }
+    });
+
+    this.mainCanvas.onTap(() => {
+      const node = _this.trackCanvasObject(d3.event.changedTouches[0].clientX * _this.devicePixelRatio, d3.event.changedTouches[0].clientY * _this.devicePixelRatio);
+      if(node) {
+        const d = d3.select(node).datum();
+        _this._interact()._click(d);
+      }
+      d3.event.stopPropagation();
     });
 
     //gl 
@@ -667,19 +676,19 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     const _this = this;
     /*
      this.entityBubbles.classed("vzb-selected", function (d) {
-     return _this.model.marker.isSelected(d);
+     return d.isSelected;
      });
      */
     this.map.updateOpacity();
     this.entityBubbles.attr("opacity", d => _this.getOpacity(d));
 
-    this.entityBubbles.classed("vzb-selected", d => _this.model.marker.isSelected(d));
+    this.entityBubbles.classed("vzb-selected", d => d.isSelected);
 
     const nonSelectedOpacityZero = _this.model.marker.opacitySelectDim < 0.01;
 
     // when pointer events need update...
     if (nonSelectedOpacityZero !== this.nonSelectedOpacityZero) {
-      this.entityBubbles.style("pointer-events", d => (!_this.someSelected || !nonSelectedOpacityZero || _this.model.marker.isSelected(d)) ?
+      this.entityBubbles.style("pointer-events", d => (!_this.someSelected || !nonSelectedOpacityZero || d.isSelected) ?
         "visible" : "none");
     }
 
@@ -700,12 +709,12 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
   getOpacity(d) {
     if (this.someHighlighted) {
       //highlight or non-highlight
-      if (this.model.marker.isHighlighted(d)) return this.model.marker.opacityRegular;
+      if (d.isHighlighted) return this.model.marker.opacityRegular;
     }
 
     if (this.someSelected) {
       //selected or non-selected
-      return this.model.marker.isSelected(d) ? this.model.marker.opacityRegular : this.model.marker.opacitySelectDim;
+      return d.isSelected ? this.model.marker.opacityRegular : this.model.marker.opacitySelectDim;
     }
 
     if (this.someHighlighted) return this.model.marker.opacitySelectDim;
@@ -1177,7 +1186,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         _this.updateTitleNumbers();
         _this.fitSizeOfTitles();
 
-        if (_this.model.marker.isSelected(d)) { // if selected, not show hover tooltip
+        if (d.isSelected) { // if selected, not show hover tooltip
           _this._setTooltip();
         } else {
           //position tooltip
@@ -1203,6 +1212,10 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
   highlightMarkers() {
     const _this = this;
     this.someHighlighted = (this.model.marker.highlight.length > 0);
+
+    utils.forEach(this.entityBubbles.data(), d => {
+      d.isHighlighted = _this.model.marker.isHighlighted(d);
+    });
 
     if (utils.isTouchDevice()) {
       if (this.someHighlighted) {
@@ -1236,7 +1249,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     if (duration == null) duration = _this.duration;
 
     // only for selected entities
-    if (_this.model.marker.isSelected(d)) {
+    if (d.isSelected) {
 
       const showhide = d.hidden !== d.hidden_1;
       const valueLST = null;
@@ -1256,6 +1269,10 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     const KEY = this.KEY;
     this.someSelected = (this.model.marker.select.length > 0);
 
+    utils.forEach(this.entityBubbles.data(), d => {
+      d.isSelected = _this.model.marker.isSelected(d);
+    });
+
 //      this._selectlist.rebuild();
     if (utils.isTouchDevice()) {
       _this._labels.showCloseCross(null, false);
@@ -1267,7 +1284,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       }
     } else {
       // hide recent hover tooltip
-      if (!_this.hovered || _this.model.marker.isSelected(_this.hovered)) {
+      if (!_this.hovered || _this.hovered.isSelected) {
         _this._setTooltip();
       }
     }
@@ -1317,12 +1334,6 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     const data = this.bubbleContainer.selectAll("*").nodes()
       .filter(elem => elem.tagName !== "g" && elem.getAttribute("vzb-hidden") !== "true")
     this.draw(data, this.mainCanvas.node(), false);
-  },
-
-  _drawOnscreen(canvas, offCanvas, x, y, width, height) {
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(x, y, width, height);
-    ctx.drawImage(offCanvas, x, y);
   },
 
   _canvasRedraw(duration, force) {
