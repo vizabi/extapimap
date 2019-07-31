@@ -59,6 +59,10 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         if (!_this._readyOnce) return;
         _this.model.marker.getFrame(_this.model.time.value, _this.frameChanged.bind(_this));
       },
+      "change:time.playing": function(evt) {
+        if (!_this._readyOnce) return;
+        _this.model.marker.getFrame(_this.model.time.value, _this.frameChanged.bind(_this));
+      },
       "change:marker.highlight": function(evt) {
         if (!_this._readyOnce) return;
         _this.highlightMarkers();
@@ -163,6 +167,8 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       strokeWidth: 1.0,
       strokeOpacity: 0.7
     }
+
+    this.transitionPosObj = {};
   },
 
 
@@ -211,7 +217,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
 
       const node = _this.trackCanvasObject(d3.event.offsetX * _this.devicePixelRatio, d3.event.offsetY * _this.devicePixelRatio);
       if (node) {
-        const d = d3.select(node).datum();
+        const d = node;
         _this.mainCanvas.style("cursor", "pointer");
         if (_this.someHighlighted) {
           //break if same bubble hovered
@@ -238,7 +244,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
 
       const node = _this.trackCanvasObject(d3.event.offsetX * _this.devicePixelRatio, d3.event.offsetY * _this.devicePixelRatio);
       if(node) {
-        const d = d3.select(node).datum();
+        const d = node;
         _this._interact()._click(d);
       }
     });
@@ -246,7 +252,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     this.mainCanvas.onTap(() => {
       const node = _this.trackCanvasObject(d3.event.changedTouches[0].clientX * _this.devicePixelRatio, d3.event.changedTouches[0].clientY * _this.devicePixelRatio);
       if(node) {
-        const d = d3.select(node).datum();
+        const d = node;
         _this._interact()._click(d);
       }
       d3.event.stopPropagation();
@@ -680,9 +686,10 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
      });
      */
     this.map.updateOpacity();
-    this.entityBubbles.attr("opacity", d => _this.getOpacity(d));
-
-    this.entityBubbles.classed("vzb-selected", d => d.isSelected);
+    utils.forEach(this.entityBubbles, (d) => {
+      d.from["opacity"] = d.attr["opacity"] = _this.getOpacity(d);
+      d["vzb-selected"] = d.isSelected;
+    });
 
     const nonSelectedOpacityZero = _this.model.marker.opacitySelectDim < 0.01;
 
@@ -694,7 +701,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
 
     this.nonSelectedOpacityZero = _this.model.marker.opacitySelectDim < 0.01;
   
-    this._canvasRedraw(duration);
+    this._canvasRedraw(this.duration, true, { opacity: 1.0 });
   },
 
   getMapOpacity(key) {
@@ -745,14 +752,17 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       prefix = prefix || "";
       return _this.model.marker.getKeys()
         .map(d => {
-          const pointer = Object.assign({}, d);
+          //const pointer = Object.assign({}, d);
           //pointer[KEY] = d[KEY];
-          pointer[TIMEDIM] = endTime;
-          pointer.sortValue = _this.values.size[utils.getKey(d, _this.dataKeys.size)] || 0;
-          pointer[KEY] = prefix + utils.getKey(d, KEYS);
-          return pointer;
-        })
-        .sort((a, b) => b.sortValue - a.sortValue);
+          d[TIMEDIM] = endTime;
+          d.sortValue = _this.values.size[utils.getKey(d, _this.dataKeys.size)] || 0;
+          d[KEY] = prefix + utils.getKey(d, KEYS);
+          d.attr = {};
+          d.from = {};
+          d.to = {};
+          return d;
+        });
+        //.sort((a, b) => b.sortValue - a.sortValue);
     };
 
     // get array of GEOs, sorted by the size hook
@@ -771,35 +781,36 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       bubbles = this.model.marker.getVisible();
     }
 
-    this.entityBubbles = this.bubbleContainer.selectAll(".vzb-bmc-bubble")
-      .data(bubbles, d => d[KEY]);
+    this.entityBubbles = bubbles;
+    // this.entityBubbles = this.bubbleContainer.selectAll(".vzb-bmc-bubble")
+    //   .data(bubbles, d => d[KEY]);
 
-    //exit selection
-    this.entityBubbles.exit().remove();
+    // //exit selection
+    // this.entityBubbles.exit().remove();
 
-    //enter selection -- init circles
-    this.entityBubbles = this.entityBubbles.enter().append("circle")
-      .attr("class", "vzb-bmc-bubble")
-      // .on("mouseover", (d, i) => {
-      //   if (utils.isTouchDevice() || _this.model.ui.cursorMode !== "arrow") return;
-      //   _this._interact()._mouseover(d, i);
-      // })
-      // .on("mouseout", (d, i) => {
-      //   if (utils.isTouchDevice() || _this.model.ui.cursorMode !== "arrow") return;
-      //   _this._interact()._mouseout(d, i);
-      // })
-      // .on("click", (d, i) => {
-      //   if (utils.isTouchDevice() || _this.model.ui.cursorMode !== "arrow") return;
-      //   _this._interact()._click(d, i);
-      //   _this.highlightMarkers();
-      // })
-      // .onTap((d, i) => {
-      //   _this._interact()._click(d, i);
-      //   d3.event.stopPropagation();
-      // })
-      // .onLongTap((d, i) => {
-      // })
-      .merge(this.entityBubbles);
+    // //enter selection -- init circles
+    // this.entityBubbles = this.entityBubbles.enter().append("circle")
+    //   .attr("class", "vzb-bmc-bubble")
+    //   // .on("mouseover", (d, i) => {
+    //   //   if (utils.isTouchDevice() || _this.model.ui.cursorMode !== "arrow") return;
+    //   //   _this._interact()._mouseover(d, i);
+    //   // })
+    //   // .on("mouseout", (d, i) => {
+    //   //   if (utils.isTouchDevice() || _this.model.ui.cursorMode !== "arrow") return;
+    //   //   _this._interact()._mouseout(d, i);
+    //   // })
+    //   // .on("click", (d, i) => {
+    //   //   if (utils.isTouchDevice() || _this.model.ui.cursorMode !== "arrow") return;
+    //   //   _this._interact()._click(d, i);
+    //   //   _this.highlightMarkers();
+    //   // })
+    //   // .onTap((d, i) => {
+    //   //   _this._interact()._click(d, i);
+    //   //   d3.event.stopPropagation();
+    //   // })
+    //   // .onLongTap((d, i) => {
+    //   // })
+    //   .merge(this.entityBubbles);
 
     this._reorderEntities();
 
@@ -808,7 +819,8 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
   _reorderEntities() {
     const _this = this;
     const KEY = this.KEY;
-    this.bubbleContainer.selectAll(".vzb-bmc-bubble")
+    //this.bubbleContainer.selectAll(".vzb-bmc-bubble")
+    this.entityBubbles
       .sort((a, b) => {
         const sizeA = _this.values.size[utils.getKey(a, _this.dataKeys.size)];
         const sizeB = _this.values.size[utils.getKey(b, _this.dataKeys.size)];
@@ -832,6 +844,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         _this.model.marker.selectMarker(d);
     });
   },
+
   _getPosition(d) {
     const dataKeys = this.dataKeys;
     if (this.values.hook_lat && this.values.hook_lat[utils.getKey(d, dataKeys.hook_lat)]) {
@@ -851,8 +864,8 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     const dataKeys = this.dataKeys;
     const values = this.values;
 
-    this.entityBubbles.each(function(d, index) {
-      const view = d3.select(this);
+    utils.forEach(this.entityBubbles, function(d, index) {
+      //const view = d3.select(this);
       const valueS = values.size[utils.getKey(d, dataKeys.size)];
       const valueC = values.color[utils.getKey(d, dataKeys.color)];
       const valueL = values.label[utils.getKey(d, dataKeys.label)];
@@ -864,24 +877,26 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         const cLoc = _this._getPosition(d);
         if (cLoc) {
           d.cLoc = cLoc;
-          view.attr("cx", d.cLoc[0])
-            .attr("cy", d.cLoc[1]);
+          d["cx"] = d.cLoc[0];
+          d["cy"] = d.cLoc[1];
         }
       }
       d.hidden = (!valueS && valueS !== 0) || valueCentroid == null || !d.cLoc;
 
       if (d.hidden !== d.hidden_1) {
         if (duration) {
-          view.transition().duration(duration).ease(d3.easeLinear)
-            .attr("opacity", 0)
-            .on("end", () => view.attr("vzb-hidden", d.hidden).attr("opacity", _this.model.marker.opacityRegular));
+          d.from["opacity"] = d.attr["opacity"];
+          d.attr["opacity"] = d.hidden ? 0 : _this.model.marker.opacityRegular;
+          d.from["vzb-hidden"] = d.attr["vzb-hidden"];
+          d.attr["vzb-hidden"] = d.hidden;
+            //.attr("opacity", _this.model.marker.opacityRegular));
         } else {
           if (!d.hidden) {
             if (d.cLoc) {
-              view.attr("vzb-hidden", d.hidden);
+              d.attr["vzb-hidden"] = d.hidden;
             }
           } else {
-            view.attr("vzb-hidden", d.hidden);
+            d.attr["vzb-hidden"] = d.hidden;
           }
         }
       }
@@ -889,17 +904,16 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         d.r = utils.areaToRadius(_this.sScale(valueS || 0));
         d.label = valueL;
 
-        view.attr("vzb-hidden", false)
-          .attr("fill", valueC != null ? _this.cScale(valueC) : _this.COLOR_WHITEISH);
+        d.attr["vzb-hidden"] = false;
+        d.fill = valueC != null ? _this.cScale(valueC) : _this.COLOR_WHITEISH;
 
         if (duration) {
-          view.transition().duration(duration).ease(d3.easeLinear)
-            .attr("r", d.r);
+          d.from["r"] = (d.hidden !== d.hidden_1) ? d.r : d.attr["r"];
+          d.attr["r"] = d.r;
         } else {
-          view.interrupt()
-            .attr("r", d.r)
-            .transition();
+          d.attr["r"] = d.r;
         }
+
         _this._updateLabel(d, index, d.cLoc[0], d.cLoc[1], valueS, valueC, d.label, duration);
       } else {
         _this._updateLabel(d, index, 0, 0, valueS, valueC, valueL, duration);
@@ -1213,7 +1227,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     const _this = this;
     this.someHighlighted = (this.model.marker.highlight.length > 0);
 
-    utils.forEach(this.entityBubbles.data(), d => {
+    utils.forEach(this.entityBubbles, d => {
       d.isHighlighted = _this.model.marker.isHighlighted(d);
     });
 
@@ -1269,10 +1283,9 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     const KEY = this.KEY;
     this.someSelected = (this.model.marker.select.length > 0);
 
-    utils.forEach(this.entityBubbles.data(), d => {
-      d.isSelected = _this.model.marker.isSelected(d);
+    utils.forEach(this.entityBubbles, d => {
+      d.isSelected = this.model.marker.isSelected(d);
     });
-
 //      this._selectlist.rebuild();
     if (utils.isTouchDevice()) {
       _this._labels.showCloseCross(null, false);
@@ -1329,33 +1342,50 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
   //webgl
   //
 
-  _drawFunc() {
+  _drawFunc(_data, force, transitionPosObj, timeStamp) {
     this._drawPending = false;
-    const data = this.bubbleContainer.selectAll("*").nodes()
-      .filter(elem => elem.tagName !== "g" && elem.getAttribute("vzb-hidden") !== "true")
-    this.draw(data, this.mainCanvas.node(), false);
+    const data = this.entityBubbles;
+    //this.bubbleContainer.selectAll("*").nodes()
+    //  .filter(elem => elem.tagName !== "g" && elem.getAttribute("vzb-hidden") !== "true")
+    const transitionPos = this.startTimeStamp ? (timeStamp - this.startTimeStamp) / this.duration : 1.0;
+    Object.assign(this.transitionPosObj, {
+      "all": transitionPos,
+      "opacity": transitionPos
+    }, transitionPosObj);
+    this.draw(data, this.duration, timeStamp, force);
   },
 
-  _canvasRedraw(duration, force) {
-    const data = this.visibleBubblesSelection = this.bubbleContainer.selectAll("*").nodes()
-      .filter(elem => elem.tagName !== "g" && elem.getAttribute("vzb-hidden") !== "true")
+  _canvasRedraw(duration, force, transitionPosObj) {
+    console.log("canvas redraw", duration, this.time);
+    const data = this.visibleBubblesSelection = this.entityBubbles;
+    //this.bubbleContainer.selectAll("*").nodes()
+    //  .filter(elem => elem.tagName !== "g" && elem.getAttribute("vzb-hidden") !== "true")
 
+    const _drawFunc = this._drawFunc.bind(this, data, force, transitionPosObj);
     const _drawAnimate = drawAnimate.bind(this);
-    const _drawFunc = this._drawFunc.bind(this, data);
 
     if (duration) {
-      !this.drawAnimFrame && (this.drawAnimFrame = requestAnimationFrame(_drawAnimate));
+      if (!this.drawAnimFrame) {
+        this.startTimeStamp = null;
+        this.drawAnimFrame = requestAnimationFrame(_drawAnimate);
+      } else if (force) {
+        requestAnimationFrame(_drawFunc);
+      } else if (this.startTimeStamp) {
+        this.startTimeStamp = null;
+      }
     } else {
       this.drawAnimFrame && cancelAnimationFrame(this.drawAnimFrame);
       this.drawAnimFrame = null;
+      this.startTimeStamp = null;
       if (!this._drawPending) {
         this._drawPending = true;
         requestAnimationFrame(_drawFunc);
       }
     }
 
-    function drawAnimate() {
-      _drawFunc();
+    function drawAnimate(timeStamp) {
+      !this.startTimeStamp && (this.startTimeStamp = timeStamp);
+      _drawFunc(timeStamp);
       this.drawAnimFrame = requestAnimationFrame(_drawAnimate);
     }
   },
@@ -1367,13 +1397,13 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       ret.push(_nextCol & 0xff); // R 
       ret.push((_nextCol & 0xff00) >> 8); // G 
       ret.push((_nextCol & 0xff0000) >> 16); // B
-      this._nextCol += 99; 
+      this._nextCol += 16; 
     }
     return ret;
   },
 
   trackCanvasObject(x, y) {
-    this.pickingDraw(d3.selectAll(this.visibleBubblesSelection), this.visibleBubblesSelection);
+    this.pickingDraw(this.visibleBubblesSelection, this.visibleBubblesSelection);
     const gl = this.pickingGl;
     const pixels = new Uint8Array(4);
     gl.readPixels(x, gl.drawingBufferHeight - y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
@@ -1394,6 +1424,8 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     gl.uniform1f(gl.getUniformLocation(prog, "uHeight"), gl.drawingBufferHeight);
     gl.uniform2f(gl.getUniformLocation(prog, "uTranslate"), translateX * devicePixelRatio, translateY * devicePixelRatio);
     gl.uniform1f(gl.getUniformLocation(prog, "uDevicePixelRatio"), devicePixelRatio);
+    gl.uniform1f(gl.getUniformLocation(prog, "uTime"), 1.0);
+    gl.uniform1f(gl.getUniformLocation(prog, "uTimeOpacity"), 1.0);
     gl.uniform3fv(gl.getUniformLocation(prog, "uStrokeColor"), this.globalAttr.strokeColor);
     gl.uniform1f(gl.getUniformLocation(prog, "uStrokeWidth"), this.globalAttr.strokeWidth * devicePixelRatio);
     gl.uniform1f(gl.getUniformLocation(prog, "uStrokeOpacity"), this.globalAttr.strokeOpacity);
@@ -1428,6 +1460,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
   },
 
   pickingGlInit(gl) {
+    gl.getExtension('OES_element_index_uint');
     // Load and compile the shaders
     const fragmentShader = this.createShader(gl, this.pickingFragmentShader(), gl.FRAGMENT_SHADER);
     const vertexShader = this.createShader(gl, this.pickingVertexShader(), gl.VERTEX_SHADER);
@@ -1456,17 +1489,40 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       size, gl.FLOAT, false, stride, offset);
   },
 
-  draw(nodes) {
+  draw(nodes, duration, timeStamp, force) {
     const gl = this.gl;
     const prog = this.prog;
 
     gl.clearColor(0,0,0,0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    const data = this.loadData(nodes, 5, 4);
+    const transitionPosObj = this.transitionPosObj;
+    gl.uniform1f(gl.getUniformLocation(prog, "uTime"), transitionPosObj.all);
+    gl.uniform1f(gl.getUniformLocation(prog, "uTimeOpacity"), transitionPosObj.opacity);
+
+    if (!force && !timeStamp) {
+      const offset = 0;
+      const type = gl.UNSIGNED_INT;
+      gl.drawElements(gl.TRIANGLES, this.vertexCount, type, offset);
+      return;
+    }
+
+    const pos_floats_per_bubble = 5;
+    const color_floats_per_bubble = 4;
+
+    const dataArrays = this.dataArrays = {};
+    dataArrays.posData = new Float32Array(nodes.length * 3 * pos_floats_per_bubble);
+    dataArrays.colorData = new Float32Array(nodes.length * 3 * color_floats_per_bubble);
+    dataArrays.indexData = new Uint32Array(nodes.length * 3);
+    // if (duration) {
+    //   dataArrays.posDataNext = new Float32Array(nodes.length * 3 * pos_floats_per_bubble);
+    //   dataArrays.colorDataNext = new Float32Array(nodes.length * 3 * color_floats_per_bubble);
+    // }
+    
+    const data = this.loadData(dataArrays, nodes, "attr", pos_floats_per_bubble, color_floats_per_bubble);
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
     gl.bufferData(gl.ARRAY_BUFFER, data.posData, gl.STATIC_DRAW);
-    data.posData = null;
+    //data.posData = null;
 
     this.attrib(gl, prog, "aPosition", 2, 0, 20);
     this.attrib(gl, prog, "aCenter", 2, 8, 20);
@@ -1478,13 +1534,44 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
 
     this.attrib(gl, prog, "aColor", 4, 0, 16);
 
+    if (duration && !force) {
+      //animation - load end data for transition
+
+      gl.enableVertexAttribArray(gl.getAttribLocation(prog, "aPosition0"));
+      //gl.enableVertexAttribArray(gl.getAttribLocation(prog, "aCenter"));
+      gl.enableVertexAttribArray(gl.getAttribLocation(prog, "aRadius0"));
+      gl.enableVertexAttribArray(gl.getAttribLocation(prog, "aColor0"));
+
+      const dataArrays2 = this.dataArrays2 = {
+        posData: new Float32Array(nodes.length * 3 * pos_floats_per_bubble),
+        colorData: new Float32Array(nodes.length * 3 * color_floats_per_bubble)
+      };
+      const data2 = this.loadData(dataArrays2, nodes, "from", pos_floats_per_bubble, color_floats_per_bubble);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+      gl.bufferData(gl.ARRAY_BUFFER, data2.posData, gl.STATIC_DRAW);
+      //data2.posData = null;
+
+      this.attrib(gl, prog, "aPosition0", 2, 0, 20);
+      //this.attrib(gl, prog, "aCenter0", 2, 8, 20);
+      this.attrib(gl, prog, "aRadius0", 1, 16, 20);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+      gl.bufferData(gl.ARRAY_BUFFER, data2.colorData, gl.STATIC_DRAW);
+      data2.colorData = null;
+
+      this.attrib(gl, prog, "aColor0", 4, 0, 16);
+    }
+
+    //indexes
+    const dataIndex = this.loadDataIndex(dataArrays, nodes);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data.indexData, gl.STATIC_DRAW);
-    data.indexData = null;
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, dataIndex.indexData, gl.STATIC_DRAW);
+    //dataIndex.indexData = null;
+    this.vertexCount = dataIndex.vertexCount;
 
     const offset = 0;
     const type = gl.UNSIGNED_INT;
-    gl.drawElements(gl.TRIANGLES, data.vertexCount, type, offset);
+    gl.drawElements(gl.TRIANGLES, dataIndex.vertexCount, type, offset);
   },
 
   pickingDraw(nodesSel, nodes) {
@@ -1493,14 +1580,17 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    const data = this.pickingLoadData(nodesSel, nodes, 5, 4);
+    gl.uniform1f(gl.getUniformLocation(prog, "uTime"), this.transitionPosObj.all);
+
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-    gl.bufferData(gl.ARRAY_BUFFER, data.posData, gl.STATIC_DRAW);
-    data.posData = null;
+    gl.bufferData(gl.ARRAY_BUFFER, this.dataArrays.posData, gl.STATIC_DRAW);
+    //data.posData = null;
 
     this.attrib(gl, prog, "aPosition", 2, 0, 20);
     this.attrib(gl, prog, "aCenter", 2, 8, 20);
     this.attrib(gl, prog, "aRadius", 1, 16, 20);
+
+    const data = this.pickingLoadData(nodesSel, nodes, 4);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
     gl.bufferData(gl.ARRAY_BUFFER, data.colorData, gl.STATIC_DRAW);
@@ -1508,25 +1598,42 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
 
     this.attrib(gl, prog, "aColor", 4, 0, 16);
 
+    if (this.duration) {
+      gl.enableVertexAttribArray(gl.getAttribLocation(prog, "aPosition0"));
+      //gl.enableVertexAttribArray(gl.getAttribLocation(prog, "aCenter0"));
+      gl.enableVertexAttribArray(gl.getAttribLocation(prog, "aRadius0"));
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+      gl.bufferData(gl.ARRAY_BUFFER, this.dataArrays2.posData, gl.STATIC_DRAW);
+      //data2.posData = null;
+
+      this.attrib(gl, prog, "aPosition0", 2, 0, 20);
+      //this.attrib(gl, prog, "aCenter0", 2, 8, 20);
+      this.attrib(gl, prog, "aRadius0", 1, 16, 20);
+    }
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.dataArrays.indexData, gl.STATIC_DRAW);
+
     const offset = 0;
-    gl.drawArrays(gl.TRIANGLES, offset, data.vertexCount);
+    const type = gl.UNSIGNED_INT;
+    gl.drawElements(gl.TRIANGLES, this.vertexCount, type, offset);
   },
   
-  loadData(nodes, pos_floats_per_bubble, color_floats_per_bubble) {
-    const posData = new Float32Array(nodes.length * 3 * pos_floats_per_bubble);
-    const colorData = new Float32Array(nodes.length * 3 * color_floats_per_bubble);
-    const indexData = new Uint32Array(nodes.length * 3);
+  loadData(dataArrays, nodes, pointer, pos_floats_per_bubble, color_floats_per_bubble) {
+    const {posData, colorData} = dataArrays;
     const koeff = (1 + Math.sqrt(2));
     const halfStroke = this.globalAttr.strokeWidth * 0.5 + 1;
-    
+
     //fill data for primitives - 1 triangle(3 vertexes) for bubble circle
-    let baseIndex = 0;
-    for (let i = 0, j = nodes.length, baseIndexPos = 0, baseIndexColor = 0, elemIndex = 0, x, y, x2, y2, dx, dy, rd, _x, _y, _rd, color, r, g, b, a; i < j; i++) {
+    for (let i = 0, j = nodes.length, baseIndexPos = 0, baseIndexColor = 0, x, y, rd, _x, _y, _rd, color, r, g, b, a; i < j; i++) {
       const elem = nodes[i];
+      const elemVariables = elem[pointer];
+      if (elem["hidden"]) continue; 
       //x,y,r
-      x = +elem.getAttribute("cx");
-      y = +elem.getAttribute("cy");
-      rd = +elem.getAttribute("r") + halfStroke;
+      x = +elem["cx"];
+      y = +elem["cy"];
+      rd = +elemVariables["r"] + halfStroke;
       _x = x - rd;
       _y = y - rd;
       _rd = koeff * rd;
@@ -1550,7 +1657,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       posData[baseIndexPos++] = rd;
 
       //color r,g,b,a
-      color = getColor(elem.getAttribute("fill"));
+      color = getColor(elem["fill"]);
       colorData[baseIndexColor] = 
       colorData[baseIndexColor + 4] = 
       colorData[baseIndexColor + 8] = 
@@ -1569,24 +1676,12 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       colorData[baseIndexColor + 3] = 
       colorData[baseIndexColor + 7] = 
       colorData[baseIndexColor + 11] = 
-      a = +elem.getAttribute("opacity");
+      a = +elemVariables["opacity"];
 
       baseIndexColor += 3 * color_floats_per_bubble;
-
-      //index data
-      indexData[baseIndex] = elemIndex++;
-      indexData[baseIndex + 1] = elemIndex++;
-      indexData[baseIndex + 2] = elemIndex++;
-      
-      baseIndex += 3;
     }
 
-    return {
-      posData,
-      colorData,
-      indexData,
-      vertexCount: baseIndex
-    };
+    return dataArrays;
 
     function getColor(color) {
       let c;
@@ -1601,55 +1696,47 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         return color.slice(4, -1).split(",");
       }
       return [0,0,0];
-    }
-
-    function normal(dx, dy) {
-      return dy && 1.0 / Math.sqrt(1.0 + Math.pow(dx / dy, 2));
-    }
+    };
+  
   },
 
-  pickingLoadData(nodesSel, nodes, pos_floats_per_bubble, color_floats_per_bubble) {
+  loadDataIndex(dataArrays, nodes) {
+    const {indexData} = dataArrays;
+    
+    //fill data for primitives - 1 triangle(3 vertexes) for bubble circle
+    let baseIndex = 0;
+    for (let i = 0, j = nodes.length, elemIndex = 0; i < j; i++) {
+      const elem = nodes[i];
+      if (elem["hidden"]) continue; 
+      //x,y,r
+      //index data
+      indexData[baseIndex] = elemIndex++;
+      indexData[baseIndex + 1] = elemIndex++;
+      indexData[baseIndex + 2] = elemIndex++;
+      
+      baseIndex += 3;
+    }
+
+    return {
+      indexData,
+      vertexCount: baseIndex
+    };
+  },
+
+  pickingLoadData(nodesSel, nodes, color_floats_per_bubble) {
     const _this = this;
-    const posData = new Float32Array(nodes.length * 3 * pos_floats_per_bubble);
     const colorData = new Float32Array(nodes.length * 3 * color_floats_per_bubble);
-    const koeff = (1 + Math.sqrt(2));
-    const halfStroke = this.globalAttr.strokeWidth * 0.5 + 1;
 
     //fill data for primitives - 1 triangle(3 vertexes) for bubble circle(trail circle)
-    let baseIndexPos = 0, baseIndexColor = 0, x, y, rd, _x, _y, _rd, color;
-    nodesSel.each(function(d) {
-    //for (let i = 0, j = nodes.length, baseIndexPos = 0, baseIndexColor = 0, x, y, rd, _x, _y, _rd, color; i < j; i++) {
-      const elem = this;
-      //x,y,r
-      x = +elem.getAttribute("cx");
-      y = +elem.getAttribute("cy");
-      rd = +elem.getAttribute("r") + halfStroke;
-      _x = x - rd;
-      _y = y - rd;
-      _rd = koeff * rd;
-
-      posData[baseIndexPos++] = _x;
-      posData[baseIndexPos++] = _y;
-      posData[baseIndexPos++] = x;
-      posData[baseIndexPos++] = y;
-      posData[baseIndexPos++] = rd;
-
-      posData[baseIndexPos++] = x + _rd;
-      posData[baseIndexPos++] = _y;
-      posData[baseIndexPos++] = x;
-      posData[baseIndexPos++] = y;
-      posData[baseIndexPos++] = rd;
-
-      posData[baseIndexPos++] = _x;
-      posData[baseIndexPos++] = y + _rd;
-      posData[baseIndexPos++] = x;
-      posData[baseIndexPos++] = y;
-      posData[baseIndexPos++] = rd;
+    let baseIndexColor = 0;
+    for (let i = 0, j = nodes.length, color; i < j; i++) {
+      const d = nodes[i];
+      if (d["hidden"]) continue; 
 
       //color r,g,b,a
       if (d.__pickColor === undefined) {
         d.__pickColor = _this.genColor();
-        _this._colorToNode[d.__pickColor.join(",")] = this;
+        _this._colorToNode[d.__pickColor.join(",")] = d;
       }
       color = d.__pickColor;
 
@@ -1670,12 +1757,11 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       colorData[baseIndexColor + 11] = 1.0;
 
       baseIndexColor += 3 * color_floats_per_bubble;
-    });
+    }
 
     return {
-      posData,
       colorData,
-      vertexCount: baseIndexPos / pos_floats_per_bubble
+      vertexCount: baseIndexColor / color_floats_per_bubble
     };
     
   },
@@ -1696,11 +1782,14 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
   pickingVertexShader() { return `
     uniform mat3 uTransformToClipSpace;
     uniform mediump float uDevicePixelRatio;
+    uniform mediump float uTime;
 
     attribute vec2 aPosition;
     attribute vec2 aCenter;
     attribute float aRadius;
     attribute vec4 aColor;
+    attribute vec2 aPosition0;
+    attribute float aRadius0;
 
     varying vec3 vColor;
     varying vec2 vCenter;
@@ -1708,12 +1797,12 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     varying float vRadius;    
 
     void main(void) {
-      vec2 pos = (uTransformToClipSpace * vec3(aPosition * uDevicePixelRatio, 1.0)).xy;
+      vec2 pos = (uTransformToClipSpace * vec3(mix(aPosition0, aPosition, uTime) * uDevicePixelRatio, 1.0)).xy;
 
       vCenter = aCenter * uDevicePixelRatio;
       vColor = (aColor).xyz;
       vOpacity = aColor.w;
-      vRadius = aRadius * uDevicePixelRatio;
+      vRadius = mix(aRadius0, aRadius, uTime) * uDevicePixelRatio;
 
       gl_Position = vec4(pos, 0.0, 1.0);
     }  
@@ -1743,11 +1832,16 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
   vertexShader() { return `
     uniform mat3 uTransformToClipSpace;
     uniform mediump float uDevicePixelRatio;
+    uniform mediump float uTime;
+    uniform mediump float uTimeOpacity;
 
     attribute vec2 aPosition;
     attribute vec2 aCenter;
     attribute float aRadius;
     attribute vec4 aColor;
+    attribute vec2 aPosition0;
+    attribute float aRadius0;
+    attribute vec4 aColor0;
 
     varying vec3 vColor;
     varying vec2 vCenter;
@@ -1755,11 +1849,11 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     varying float vRadius;    
 
     void main(void) {
-      vec2 pos = (uTransformToClipSpace * vec3(aPosition * uDevicePixelRatio, 1.0)).xy;
+      vec2 pos = (uTransformToClipSpace * vec3(mix(aPosition0, aPosition, uTime) * uDevicePixelRatio, 1.0)).xy;
       vCenter = aCenter * uDevicePixelRatio;
       vColor = (aColor).xyz;
-      vOpacity = aColor.w;
-      vRadius = aRadius * uDevicePixelRatio - 1.0;
+      vOpacity = mix(aColor0.w, aColor.w, uTimeOpacity);
+      vRadius = mix(aRadius0, aRadius, uTime) * uDevicePixelRatio - 1.0;
 
       gl_Position = vec4(pos, 0.0, 1.0);
     }
@@ -1789,7 +1883,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       lowp float innerEdge = vRadius - uStrokeWidth * 0.5;
       
       #ifdef GL_OES_standard_derivatives
-        delta = fwidth(distance);
+        delta = fwidth(distance) * 0.8;
         stroke = 1.0 - smoothstep(vRadius - delta, vRadius + delta, distance);
         alpha = smoothstep(innerEdge - delta, innerEdge + delta, distance);
       #endif
