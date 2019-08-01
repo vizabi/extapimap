@@ -211,11 +211,9 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     this._colorToNode = {};
 
     //this.offscreenCanvas = d3.create("canvas");
-    
-    this.mainCanvas.on('mousemove', function() {
-      if (utils.isTouchDevice() || (_this.model.ui.cursorMode !== "arrow" && _this.model.ui.cursorMode !== "hand")) return;
 
-      const node = _this.trackCanvasObject(d3.event.offsetX * _this.devicePixelRatio, d3.event.offsetY * _this.devicePixelRatio);
+    function canvasMouseMove() {
+      const node = _this.trackCanvasObject(_this.canvasPointCoord[0] * _this.devicePixelRatio, _this.canvasPointCoord[1] * _this.devicePixelRatio);
       if (node) {
         const d = node;
         _this.mainCanvas.style("cursor", "pointer");
@@ -230,6 +228,27 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
         _this.mainCanvas.style("cursor", null);
         _this._interact()._mouseout(_this.model.marker.highlight[0]);
       }
+
+    }
+
+    function canvasClick() {
+      const node = _this.trackCanvasObject(_this.canvasPointCoord[0] * _this.devicePixelRatio, _this.canvasPointCoord[1] * _this.devicePixelRatio);
+      if(node) {
+        const d = node;
+        _this._interact()._click(d);
+      }
+    }
+
+    this.canvasMouseMove = canvasMouseMove.bind(this);
+    this.canvasClick = canvasClick.bind(this);
+    this.canvasPointCoord = [0,0];
+
+    this.mainCanvas.on('mousemove', function() {
+      if (utils.isTouchDevice() || (_this.model.ui.cursorMode !== "arrow" && _this.model.ui.cursorMode !== "hand")) return;
+      _this.canvasPointCoord[0] = d3.event.offsetX;
+      _this.canvasPointCoord[1] = d3.event.offsetY;
+      _this.trackAnimFrame && cancelAnimationFrame(_this.trackAnimFrame);
+      _this.trackAnimFrame = requestAnimationFrame(_this.canvasMouseMove);
     });
     
     this.mainCanvas.on('mouseout', function() {
@@ -242,19 +261,18 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
     this.mainCanvas.on('click', function() {
       if (utils.isTouchDevice() || (_this.model.ui.cursorMode !== "arrow" && _this.model.ui.cursorMode !== "hand")) return;
 
-      const node = _this.trackCanvasObject(d3.event.offsetX * _this.devicePixelRatio, d3.event.offsetY * _this.devicePixelRatio);
-      if(node) {
-        const d = node;
-        _this._interact()._click(d);
-      }
+      _this.canvasPointCoord[0] = d3.event.offsetX;
+      _this.canvasPointCoord[1] = d3.event.offsetY;
+      _this.trackAnimFrame && cancelAnimationFrame(_this.trackAnimFrame);
+      _this.trackAnimFrame = requestAnimationFrame(_this.canvasClick);
     });
 
     this.mainCanvas.onTap(() => {
-      const node = _this.trackCanvasObject(d3.event.changedTouches[0].clientX * _this.devicePixelRatio, d3.event.changedTouches[0].clientY * _this.devicePixelRatio);
-      if(node) {
-        const d = node;
-        _this._interact()._click(d);
-      }
+      _this.canvasPointCoord[0] = d3.event.changedTouches[0].clientX;
+      _this.canvasPointCoord[1] = d3.event.changedTouches[0].clientY;      
+      _this.trackAnimFrame && cancelAnimationFrame(_this.trackAnimFrame);
+      _this.trackAnimFrame = requestAnimationFrame(_this.canvasClick);
+
       d3.event.stopPropagation();
     });
 
@@ -1312,7 +1330,7 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
       const labelValues = {};
       const tooltipCache = {};
       const cLoc = d.cLoc ? d.cLoc : this._getPosition(d);
-      const mouse = d3.mouse(this.graph.node()).map(d => parseInt(d));
+      const mouse = d3.event ? d3.mouse(this.graph.node()).map(d => parseInt(d)) : [0,0];
       const x = cLoc[0] || mouse[0];
       const y = cLoc[1] || mouse[1];
       labelValues.valueS = values.size[utils.getKey(d, this.dataKeys.size)];
@@ -1356,7 +1374,6 @@ const ExtApiMapComponent = Vizabi.Component.extend("extapimap", {
   },
 
   _canvasRedraw(duration, force, transitionPosObj) {
-    console.log("canvas redraw", duration, this.time);
     const data = this.visibleBubblesSelection = this.entityBubbles;
     //this.bubbleContainer.selectAll("*").nodes()
     //  .filter(elem => elem.tagName !== "g" && elem.getAttribute("vzb-hidden") !== "true")
