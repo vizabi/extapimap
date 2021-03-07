@@ -1,4 +1,6 @@
 import "./_mapoptions.scss";
+import {Dialog} from "VizabiSharedComponents";
+import { runInAction } from "mobx";
 
 /*
  * Axes dialog
@@ -37,13 +39,169 @@ const mapStyles = {
   }]
 };
 
-const MapOptions = Vizabi.Component.get("_dialog").extend("mapoptions", {
+export class MapOptions extends Dialog {
+
+  constructor(config){
+    config.template = `
+      <div class='vzb-dialog-modal'>
+        <span class="thumb-tack-class thumb-tack-class-ico-pin fa" data-dialogtype="mapoptions" data-click="pinDialog"></span>
+        <span class="thumb-tack-class thumb-tack-class-ico-drag fa" data-dialogtype="mapoptions" data-click="dragDialog"></span>
+        <div class="vzb-dialog-title">
+          <span data-localise="buttons/mapoptions"></span>
+        </div>
+        <div class="vzb-dialog-content">
+          <div class="vzb-lmap-container vzb-lmap-layers">
+            <form class="vzb-dialog-paragraph  vzb-map-layers">
+              <label for="showBubblesChk"><input id="showBubblesChk" type="checkbox" name="showBubbles"><span data-localise="hints/extapimap/showBubbles"></span></label>
+              <label for="showAreasChk"><input id="showAreasChk" type="checkbox" name="showAreas"><span data-localise="hints/extapimap/showAreas"><span></label>
+              <label for="showMapChk"><input id="showMapChk" type="checkbox" name="showMap"><span data-localise="hints/extapimap/showMap"></span></label>
+            </form>
+          </div>
+          <div class="vzb-lmap-container vzb-lmap-engine">
+            <p class="vzb-dialog-sublabel">
+              <span data-localise="hints/extapimap/mapEngine"></span>
+            </p>
+            <form class="vzb-dialog-paragraph vzb-map-engine"></form>
+          </div>
+          <div class="vzb-lmap-container vzb-lmap-style">
+            <p class="vzb-dialog-sublabel">
+              <span data-localise="hints/extapimap/mapStyle"></span>
+            </p>
+            <form class="vzb-dialog-paragraph  vzb-map-style"></form>
+          </div>
+        </div>
+        <div class="vzb-dialog-buttons">
+          <div data-click="closeDialog" class="vzb-dialog-button vzb-label-primary">
+            <span data-localise="buttons/ok"></span>
+          </div>
+        </div>
+      </div>
+    `;
+  
+    config.subcomponents = [
+    ];  
+
+    super(config);  
+  }
+
+  setup(options) {
+    super.setup(options);
+    const _this = this;
+
+    this.DOM.mapLayers = this.element.select(".vzb-map-layers");
+    this.DOM.mapEngineForm = this.element.select(".vzb-dialog-paragraph.vzb-map-engine");
+    this.DOM.mapStyleForm = this.element.select(".vzb-dialog-paragraph.vzb-map-style");
+
+
+    const mapEngineForm = this.DOM.mapEngineForm.selectAll("label")
+      .data(mapEngines);
+
+    mapEngineForm.exit().remove();
+
+    mapEngineForm.enter().append("label")
+      .attr("for", (d, i) => "a" + i)
+      .each(function(d, i) {
+        d3.select(this)
+          .append("input")
+          .attr("id", "a" + i)
+          .attr("type", "radio")
+          .attr("name", "engine")
+          .attr("value", d.value)
+          .on("change", () => _this.setModel("mapEngine", d.value));
+        d3.select(this)
+          .append("span")
+          .text(d.title);
+      });
+
+    this.DOM.mapLayers.select("input[name='showBubbles']")
+      .property("checked", d => _this.root.ui.chart.map.showBubbles)
+      .on("change", function() {
+        _this.setModel("showBubbles", d3.select(this).property("checked"));
+      });
+    this.DOM.mapLayers.select("input[name='showAreas']")
+      .property("checked",  _this.root.ui.chart.map.showAreas)
+      .on("change", function() {
+        _this.setModel("showAreas", d3.select(this).property("checked"));
+      });
+    this.DOM.mapLayers.select("input[name='showMap']")
+      .property("checked",  _this.root.ui.chart.map.showMap)
+      .on("change", function() {
+        _this.setModel("showMap", d3.select(this).property("checked"));
+      });
+
+  }
+
+  draw(){
+    super.draw();
+  
+
+    this.addReaction(this.updateView);
+  }
+
+  updateView() {
+    const _this = this;
+    this.DOM.mapStyleForm.selectAll("label").remove();
+    const mapStyleForm = this.DOM.mapStyleForm.selectAll("label")
+      .data(mapStyles[this.root.ui.chart.map.mapEngine] || []);
+
+    mapStyleForm.exit().remove();
+
+    mapStyleForm.enter().append("label")
+      .attr("for", (d, i) => "a" + i)
+      .each(function(d, i) {
+        d3.select(this)
+          .append("input")
+          .attr("id", "a" + i)
+          .attr("type", "radio")
+          .attr("name", "layer")
+          .attr("value", d.value)
+          .on("change", () => _this.setModel("mapStyle", d.value));
+        d3.select(this)
+          .append("span")
+          .text(d.title);
+      });
+
+    this.DOM.mapEngineForm.selectAll("input")
+      .property("checked", d => d.value === this.root.ui.chart.map.mapEngine);
+
+    this.DOM.mapStyleForm.selectAll("input")
+      .property("checked", d => d.value === this.root.ui.chart.map.mapStyle);
+
+    this.DOM.mapLayers.select("input[name='showBubbles']")
+      .property("checked", this.root.ui.chart.map.showBubbles);
+    this.DOM.mapLayers.select("input[name='showAreas']")
+      .property("checked", this.root.ui.chart.map.showAreas);
+    this.DOM.mapLayers.select("input[name='showMap']")
+      .property("checked", this.root.ui.chart.map.showMap);
+  }
+
+  setModel(what, value) {
+    runInAction(() => {
+
+      if (what === "mapEngine") {
+        this.root.ui.chart.map.set({ mapEngine: value, mapStyle: mapStyles[value][0].value });
+      }
+      if (what === "mapStyle") {
+        this.root.ui.chart.map.mapStyle = value;
+      }
+      if (what === "showBubbles" || what === "showAreas" || what === "showMap") {
+        this.root.ui.chart.map[what] = value;
+      }
+    });
+  }
+
+}
+
+Dialog.add("mapoptions", MapOptions);
+
+
+const _MapOptions = {
 
   /**
    * Initializes the dialog component
    * @param config component configuration
    * @param context component context (parent)
-   */
+     */
 
   init(config, context) {
     this.name = "mapoptions";
@@ -64,11 +222,11 @@ const MapOptions = Vizabi.Component.get("_dialog").extend("mapoptions", {
     this._super();
     const _this = this;
 
-    this.mapLayersEl = this.element.select(".vzb-map-layers");
-    this.mapEngineFormEl = this.element.select(".vzb-dialog-paragraph.vzb-map-engine");
-    this.mapStyleFormEl = this.element.select(".vzb-dialog-paragraph.vzb-map-style");
+    this.DOM.mapLayers = this.element.select(".vzb-map-layers");
+    this.DOM.mapEngineForm = this.element.select(".vzb-dialog-paragraph.vzb-map-engine");
+    this.DOM.mapStyleForm = this.element.select(".vzb-dialog-paragraph.vzb-map-style");
 
-    const mapEngineForm = this.mapEngineFormEl.selectAll("label")
+    const mapEngineForm = this.DOM.mapEngineForm.selectAll("label")
       .data(mapEngines);
 
     mapEngineForm.exit().remove();
@@ -88,17 +246,17 @@ const MapOptions = Vizabi.Component.get("_dialog").extend("mapoptions", {
           .text(d.title);
       });
 
-    this.mapLayersEl.select("input[name='showBubbles']")
+    this.DOM.mapLayers.select("input[name='showBubbles']")
       .property("checked", d => _this.model.ui.map.showBubbles)
       .on("change", function() {
         _this.setModel("showBubbles", d3.select(this).property("checked"));
       });
-    this.mapLayersEl.select("input[name='showAreas']")
+    this.DOM.mapLayers.select("input[name='showAreas']")
       .property("checked",  _this.model.ui.map.showAreas)
       .on("change", function() {
         _this.setModel("showAreas", d3.select(this).property("checked"));
       });
-    this.mapLayersEl.select("input[name='showMap']")
+    this.DOM.mapLayers.select("input[name='showMap']")
       .property("checked",  _this.model.ui.map.showMap)
       .on("change", function() {
         _this.setModel("showMap", d3.select(this).property("checked"));
@@ -109,8 +267,8 @@ const MapOptions = Vizabi.Component.get("_dialog").extend("mapoptions", {
 
   updateView() {
     const _this = this;
-    this.mapStyleFormEl.selectAll("label").remove();
-    const mapStyleForm = this.mapStyleFormEl.selectAll("label")
+    this.DOM.mapStyleForm.selectAll("label").remove();
+    const mapStyleForm = this.DOM.mapStyleForm.selectAll("label")
       .data(mapStyles[this.model.ui.map.mapEngine] || []);
 
     mapStyleForm.exit().remove();
@@ -130,17 +288,17 @@ const MapOptions = Vizabi.Component.get("_dialog").extend("mapoptions", {
           .text(d.title);
       });
 
-    this.mapEngineFormEl.selectAll("input")
+    this.DOM.mapEngineForm.selectAll("input")
       .property("checked", d => d.value === this.model.ui.map.mapEngine);
 
-    this.mapStyleFormEl.selectAll("input")
+    this.DOM.mapStyleForm.selectAll("input")
       .property("checked", d => d.value === this.model.ui.map.mapStyle);
 
-    this.mapLayersEl.select("input[name='showBubbles']")
+    this.DOM.mapLayers.select("input[name='showBubbles']")
       .property("checked", this.model.ui.map.showBubbles);
-    this.mapLayersEl.select("input[name='showAreas']")
+    this.DOM.mapLayers.select("input[name='showAreas']")
       .property("checked", this.model.ui.map.showAreas);
-    this.mapLayersEl.select("input[name='showMap']")
+    this.DOM.mapLayers.select("input[name='showMap']")
       .property("checked", this.model.ui.map.showMap);
   },
 
@@ -155,6 +313,4 @@ const MapOptions = Vizabi.Component.get("_dialog").extend("mapoptions", {
       this.model.ui.map[what] = value;
     }
   }
-});
-
-export default MapOptions;
+};

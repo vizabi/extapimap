@@ -1,37 +1,33 @@
-const {
-  utils,
-  helpers: {
-    topojson,
-    "d3.geoProjection": d3GeoProjection
-  },
-} = Vizabi;
+import { LegacyUtils as utils} from "VizabiSharedComponents";
+import topojson from "./topojson.js";
+import d3GeoProjection from "./d3.geoProjection.js";
 
 import GoogleMapsLoader from "google-maps";
 import mapboxgl from "mapbox-gl/dist/mapbox-gl.js";
 
-const MapLayer = Vizabi.Class.extend({
+class MapLayer {
   /**
    * Map Instance initialization
    * @param context tool object
    * @param parent map factory instance
    */
-  init(context, parent) {
-    console.warn("init method should be implemented in map instance");
-  },
+  constructor(context, parent) {
+    //console.warn("constructor should be implemented in map instance");
+  }
 
   /**
    * Drawing map in their dom element
    */
   initMap() {
     console.warn("initMap method should be implemented in map instance");
-  },
+  }
 
   /**
    * fit map to screen using ne-sw coordinates
    */
   rescaleMap() {
     console.warn("rescaleMap method should be implemented in map instance");
-  },
+  }
 
   /**
    * Move map layer in pixels
@@ -40,7 +36,7 @@ const MapLayer = Vizabi.Class.extend({
    */
   moveOver(x, y) {
     console.warn("moveOver method should be implemented in map instance");
-  },
+  }
 
   /**
    * return current canvas [[left, top], [right, bottom]]
@@ -49,7 +45,7 @@ const MapLayer = Vizabi.Class.extend({
   getCanvas() {
     console.warn("getCanvas method should be implemented in map instance");
     return [[0, 0], [0, 0]];
-  },
+  }
 
   /**
    * return map center {lat: lat, lng lng}
@@ -58,7 +54,7 @@ const MapLayer = Vizabi.Class.extend({
   getCenter() {
     console.warn("getCenter method should be implemented in map instance");
     return { lat: 0, lng: 0 };
-  },
+  }
 
   /**
    * @param {Array} center
@@ -66,7 +62,7 @@ const MapLayer = Vizabi.Class.extend({
    */
   zoomMap(center, increment) {
     console.warn("zoomMap method should be implemented in map instance");
-  },
+  }
 
   /**
    * Translate lat, lon into x, y
@@ -77,7 +73,7 @@ const MapLayer = Vizabi.Class.extend({
   geo2Point(lon, lat) {
     console.warn("geo2Point method should be implemented in map instance");
     return [0, 0];
-  },
+  }
 
   /**
    * Translate x, y  into lat, lon
@@ -88,11 +84,12 @@ const MapLayer = Vizabi.Class.extend({
   point2Geo(x, y) {
     console.warn("point2Geo method should be implemented in map instance");
     return [0, 0];
-  },
-});
+  }
+}
 
-const TopojsonLayer = MapLayer.extend({
-  init(context, parent) {
+class TopojsonLayer extends MapLayer {
+  constructor(context, parent) {
+    super(context, parent);
     this.shapes = null;
     this.mapLands = [];
     this.parent = parent;
@@ -102,17 +99,17 @@ const TopojsonLayer = MapLayer.extend({
     this.paths = {};
     this.areasAreShown = false;
     d3GeoProjection();
-  },
+  }
 
   initMap() {
     const _this = this;
     this.mapGraph = this.parent.mapSvg.html("").append("g")
       .attr("class", "vzb-bmc-map-graph");
     
-    const assetName = utils.getProp(this.context, ["model", "ui", "map", "topology", "path"])
+    const assetName = utils.getProp(this.context, ["ui", "map", "topology", "path"])
       || ("assets/world-50m.json");
 
-    const projection = "geo" + utils.capitalize(this.context.model.ui.map.projection);
+    const projection = "geo" + utils.capitalize(this.context.ui.map.projection);
 
     this.zeroProjection = d3[projection]();
     this.zeroProjection
@@ -128,23 +125,23 @@ const TopojsonLayer = MapLayer.extend({
       .projection(this.projection);
 
 
-    this.context.model.ui.map.scale = 1;
+    this.context.ui.map.scale = 1;
     return this._loadShapes(assetName).then(
       shapes => {
         _this.shapes = shapes;
-        _this.mapFeature = topojson.feature(_this.shapes, _this.shapes.objects[this.context.model.ui.map.topology.objects.geo]);
+        _this.mapFeature = topojson.feature(_this.shapes, _this.shapes.objects[this.context.ui.map.topology.objects.geo]);
         _this.mapBounds = _this.mapPath.bounds(_this.mapFeature);
-        _this.boundaries = topojson.mesh(_this.shapes, _this.shapes.objects[_this.context.model.ui.map.topology.objects.boundaries], (a, b) => a !== b);
+        _this.boundaries = topojson.mesh(_this.shapes, _this.shapes.objects[_this.context.ui.map.topology.objects.boundaries], (a, b) => a !== b);
         if (_this.mapFeature.features) {
           utils.forEach(_this.mapFeature.features, (feature, key) => {
-            feature.key = feature.properties[_this.context.model.ui.map.topology.geoIdProperty] ?
-              feature.properties[_this.context.model.ui.map.topology.geoIdProperty].toString().toLowerCase() : feature.id;
+            feature.key = feature.properties[_this.context.ui.map.topology.geoIdProperty] ?
+              feature.properties[_this.context.ui.map.topology.geoIdProperty].toString().toLowerCase() : feature.id;
             _this.paths[feature.key] = feature;
           });
         }
       }
     );
-  },
+  }
 
   showAreas() {
     const _this = this;
@@ -155,7 +152,7 @@ const TopojsonLayer = MapLayer.extend({
         .enter().insert("path")
         .attr("d", _this.mapPath)
         .attr("class", "land")
-        .style("opacity", _this.context.model.marker.opacitySelectDim)
+        .style("opacity", _this.context.ui.opacitySelectDim)
         .on("mouseover", (d, i) => {
           _this.parent._interact()._mouseover(d.key);
         })
@@ -185,47 +182,41 @@ const TopojsonLayer = MapLayer.extend({
     _this.mapGraph.insert("path")
       .datum(_this.boundaries)
       .attr("class", "boundary");
-  },
+  }
 
   hideAreas() {
     this.areasAreShown = false;
     this.mapGraph.selectAll("*").remove();
-  },
+  }
 
   updateOpacity() {
     const _this = this;
     this.mapLands
       .style("opacity", d => _this.parent.getOpacity(d.key));
-  },
+  }
 
   updateMapColors() {
     const _this = this;
     this.mapLands
       .style("fill", d => _this.parent.getMapColor(d.key));
-  },
+  }
 
   _loadShapes(assetName) {
-    const _this = this;
-    return new Promise((resolve, reject) => {
-      _this.context.model.data.getAsset(assetName, (json) => {
-        if (json.success === false) return console.warn("Failed loading json " + assetName + ". " + json.message);
-        resolve(json);
-      });
-    });
-  },
+    return this.context.model.data.source.reader.getAsset(assetName);
+  }
 
   rescaleMap(canvas, preserveAspectRatio) {
     //var topoCanvas =
     let emitEvent = false;
-    const margin = this.context.activeProfile ? this.context.activeProfile.margin : {left: 0, top: 0};
+    const margin = this.context.profileConstants ? this.context.profileConstants.margin : {left: 0, top: 0};
 
     const currentNW = this.zeroProjection([
-      this.context.model.ui.map.bounds.west,
-      this.context.model.ui.map.bounds.north
+      this.context.ui.map.bounds.west,
+      this.context.ui.map.bounds.north
     ]);
     const currentSE = this.zeroProjection([
-      this.context.model.ui.map.bounds.east,
-      this.context.model.ui.map.bounds.south
+      this.context.ui.map.bounds.east,
+      this.context.ui.map.bounds.south
     ]);
     let scaleDelta = 1, mapTopOffset = 0, mapLeftOffset = 0;
 
@@ -271,19 +262,19 @@ const TopojsonLayer = MapLayer.extend({
     // set skew function used for bubbles in chart
     const _this = this;
     const x1y1 = this.geo2Point(
-      this.context.model.ui.map.bounds.west,
-      this.context.model.ui.map.bounds.north
+      this.context.ui.map.bounds.west,
+      this.context.ui.map.bounds.north
     );
     const x2y2 = this.geo2Point(
-      this.context.model.ui.map.bounds.east,
-      this.context.model.ui.map.bounds.south
+      this.context.ui.map.bounds.east,
+      this.context.ui.map.bounds.south
     );
 
     // if canvas not received this map is main and shound trigger redraw points on tool
     if (emitEvent) {
       this.parent.boundsChanged(false);
     }
-  },
+  }
 
   centroid(key) {
     if ((key || key == 0) && this.paths[key]) {
@@ -293,22 +284,22 @@ const TopojsonLayer = MapLayer.extend({
       return centroid;
     }
     return null;
-  },
+  }
 
   geo2Point(lon, lat) {
     return this.projection([lon || 0, lat || 0]);
-  },
+  }
 
   point2Geo(x, y) {
     return this.projection.invert([x || 0, y || 0]);
-  },
+  }
 
   getCanvas() {
     return [
-      this.geo2Point(this.context.model.ui.map.bounds.west, this.context.model.ui.map.bounds.north),
-      this.geo2Point(this.context.model.ui.map.bounds.east, this.context.model.ui.map.bounds.south)
+      this.geo2Point(this.context.ui.map.bounds.west, this.context.ui.map.bounds.north),
+      this.geo2Point(this.context.ui.map.bounds.east, this.context.ui.map.bounds.south)
     ];
-  },
+  }
 
   moveOver(x, y) {
     const translate = this.projection.translate();
@@ -317,12 +308,12 @@ const TopojsonLayer = MapLayer.extend({
 
     this.mapGraph
       .selectAll("path").attr("d", this.mapPath);
-  },
+  }
 
   zoomMap(center, increment) {
     return new Promise(resolve => {
       const point = this.geo2Point(center[0], center[1]);
-      const margin = this.context.activeProfile ? this.context.activeProfile.margin : {left: 0, top: 0};
+      const margin = this.context.profileConstants ? this.context.profileConstants.margin : {left: 0, top: 0};
       const leftOffset = margin.left;//this.context.width / 2 - point[0];
       const topOffset = margin.top;//this.context.height / 2 - point[1];
       const wMod = Math.min(2, Math.max(0, (point[0]) / this.context.width * 2));
@@ -339,16 +330,17 @@ const TopojsonLayer = MapLayer.extend({
       resolve();
     });
   }
-});
+}
 
-const GoogleMapLayer = MapLayer.extend({
+class GoogleMapLayer extends MapLayer {
 
-  init(context, parent) {
+  constructor(context, parent) {
+    super(context, parent);
     this.context = context;
     this.parent = parent;
     this.bounds = null;
     this.transformation = null;
-  },
+  }
 
   initMap(domSelector) {
     const _this = this;
@@ -387,8 +379,8 @@ const GoogleMapLayer = MapLayer.extend({
 
         google.maps.event.addListenerOnce(_this.map, "idle", () => {
           const rectBounds = new google.maps.LatLngBounds(
-            new google.maps.LatLng(_this.context.model.ui.map.bounds.north, _this.context.model.ui.map.bounds.west),
-            new google.maps.LatLng(_this.context.model.ui.map.bounds.south, _this.context.model.ui.map.bounds.east)
+            new google.maps.LatLng(_this.context.ui.map.bounds.north, _this.context.ui.map.bounds.west),
+            new google.maps.LatLng(_this.context.ui.map.bounds.south, _this.context.ui.map.bounds.east)
           );
           _this.map.fitBounds(rectBounds);
           google.maps.event.trigger(_this.map, "resize");
@@ -397,10 +389,10 @@ const GoogleMapLayer = MapLayer.extend({
 /*
          const rectangle = new google.maps.Rectangle({
          bounds: {
-         north: _this.context.model.ui.map.bounds.north,
-         east: _this.context.model.ui.map.bounds.east,
-         south: _this.context.model.ui.map.bounds.south,
-         west: _this.context.model.ui.map.bounds.west
+         north: _this.context.ui.map.bounds.north,
+         east: _this.context.ui.map.bounds.east,
+         south: _this.context.ui.map.bounds.south,
+         west: _this.context.ui.map.bounds.west
          },
          editable: true,
          draggable: true
@@ -410,7 +402,7 @@ const GoogleMapLayer = MapLayer.extend({
         resolve();
       });
     });
-  },
+  }
 
   _waitMap() {
     if (this.transformation instanceof Promise) {
@@ -418,11 +410,11 @@ const GoogleMapLayer = MapLayer.extend({
     } else {
       return new Promise((resolve) => resolve());
     }
-  },
+  }
   
   updateLayer() {
     if (this.map) {
-      const style = this.context.model.ui.map.mapStyle.split(" ");
+      const style = this.context.ui.map.mapStyle.split(" ");
       this.map.setMapTypeId(style[0]);
       if (style[1]) {
         switch (style[1]) {
@@ -446,13 +438,13 @@ const GoogleMapLayer = MapLayer.extend({
         });
       }
     }
-  },
+  }
 
   rescaleMap() {
     this._waitMap().then(() => {
       const rectBounds = new google.maps.LatLngBounds(
-        new google.maps.LatLng(this.context.model.ui.map.bounds.north, this.context.model.ui.map.bounds.west),
-        new google.maps.LatLng(this.context.model.ui.map.bounds.south, this.context.model.ui.map.bounds.east)
+        new google.maps.LatLng(this.context.ui.map.bounds.north, this.context.ui.map.bounds.west),
+        new google.maps.LatLng(this.context.ui.map.bounds.south, this.context.ui.map.bounds.east)
       );
       this.map.fitBounds(rectBounds);
       google.maps.event.trigger(this.map, "resize");
@@ -464,7 +456,7 @@ const GoogleMapLayer = MapLayer.extend({
         }
       });
     })
-  },
+  }
 
   zoomMap(center, increment) {
     const _this = this;
@@ -477,7 +469,7 @@ const GoogleMapLayer = MapLayer.extend({
         resolve();
       });
     });
-  },
+  }
 
 
   geo2Point(x, y) {
@@ -487,7 +479,7 @@ const GoogleMapLayer = MapLayer.extend({
     }
     const coords = projection.fromLatLngToContainerPixel(new google.maps.LatLng(y, x));
     return [coords.x, coords.y];
-  },
+  }
 
   point2Geo(x, y) {
     const projection = this.map.getProjection();
@@ -498,7 +490,7 @@ const GoogleMapLayer = MapLayer.extend({
     const scale = Math.pow(2, this.map.getZoom());
     const point = projection.fromPointToLatLng(new google.maps.Point(x / scale + bottomLeft.x, y / scale + topRight.y));
     return [point.lng(), point.lat()];
-  },
+  }
 
   moveOver(x, y) {
     const _this = this;
@@ -508,32 +500,33 @@ const GoogleMapLayer = MapLayer.extend({
         resolve();
       });
     });
-  },
+  }
 
   getZoom() {
     return this.map.getZoom();
-  },
+  }
 
   getCanvas() {
     return [
-      this.geo2Point(this.context.model.ui.map.bounds.west, this.context.model.ui.map.bounds.north),
-      this.geo2Point(this.context.model.ui.map.bounds.east, this.context.model.ui.map.bounds.south)
+      this.geo2Point(this.context.ui.map.bounds.west, this.context.ui.map.bounds.north),
+      this.geo2Point(this.context.ui.map.bounds.east, this.context.ui.map.bounds.south)
     ];
-  },
+  }
 
   getCenter() {
     const center = this.map.getCenter();
     return { lat: center.lat(), lng: center.lng() };
   }
-});
+}
 
-const MapboxLayer = MapLayer.extend({
+class MapboxLayer extends MapLayer {
 
-  init(context, parent) {
-    mapboxgl.accessToken = context.model.ui.map.accessToken || "pk.eyJ1Ijoic2VyZ2V5ZiIsImEiOiJjaXlqeWo5YnYwMDBzMzJwZnlwZXJ2bnA2In0.e711ku9KzcFW_x5wmOZTag";
+  constructor(context, parent) {
+    super(context, parent);
+    mapboxgl.accessToken = context.ui.map.accessToken || "pk.eyJ1Ijoic2VyZ2V5ZiIsImEiOiJjaXlqeWo5YnYwMDBzMzJwZnlwZXJ2bnA2In0.e711ku9KzcFW_x5wmOZTag";
     this.context = context;
     this.parent = parent;
-  },
+  }
 
   initMap() {
     const _this = this;
@@ -542,29 +535,29 @@ const MapboxLayer = MapLayer.extend({
       _this.map = new mapboxgl.Map({
         container: _this.mapCanvas.node(),
         interactive: false,
-        style: this.context.model.ui.map.mapStyle,
+        style: this.context.ui.map.mapStyle,
         hash: false
       });
       _this.bounds = [[
-        _this.context.model.ui.map.bounds.west,
-        _this.context.model.ui.map.bounds.south
+        _this.context.ui.map.bounds.west,
+        _this.context.ui.map.bounds.south
       ], [
-        _this.context.model.ui.map.bounds.east,
-        _this.context.model.ui.map.bounds.north
+        _this.context.ui.map.bounds.east,
+        _this.context.ui.map.bounds.north
       ]];
       _this.map.fitBounds(_this.bounds);
       resolve();
     });
-  },
+  }
 
   rescaleMap(duration) {
     const _this = this;
     _this.bounds = [[
-      _this.context.model.ui.map.bounds.west,
-      _this.context.model.ui.map.bounds.south
+      _this.context.ui.map.bounds.west,
+      _this.context.ui.map.bounds.south
     ], [
-      _this.context.model.ui.map.bounds.east,
-      _this.context.model.ui.map.bounds.north
+      _this.context.ui.map.bounds.east,
+      _this.context.ui.map.bounds.north
     ]];
     utils.defer(() => {
       if (!duration) duration = 0;
@@ -578,16 +571,16 @@ const MapboxLayer = MapLayer.extend({
         _this.parent.boundsChanged();
       }
     });
-  },
+  }
 
   getCenter() {
     const center = this.map.getCenter();
     return { lat: center.lat, lng: center.lng };
-  },
+  }
 
   moveOver(dx, dy) {
     this.map.panBy([-dx, -dy], { duration: 0 });
-  },
+  }
 
   zoomMap(center, increment) {
     const _this = this;
@@ -603,25 +596,25 @@ const MapboxLayer = MapLayer.extend({
         }
       );
     });
-  },
+  }
 
   updateLayer() {
     if (this.map) {
-      this.map.setStyle(this.context.model.ui.map.mapStyle);
+      this.map.setStyle(this.context.ui.map.mapStyle);
     }
-  },
+  }
 
   getCanvas() {
     return [
-      this.geo2Point(this.context.model.ui.map.bounds.west, this.context.model.ui.map.bounds.north),
-      this.geo2Point(this.context.model.ui.map.bounds.east, this.context.model.ui.map.bounds.south)
+      this.geo2Point(this.context.ui.map.bounds.west, this.context.ui.map.bounds.north),
+      this.geo2Point(this.context.ui.map.bounds.east, this.context.ui.map.bounds.south)
     ];
-  },
+  }
 
   geo2Point(lon, lat) {
     const coords = this.map.project([lon, lat]);
     return [coords.x, coords.y];
-  },
+  }
 
   point2Geo(x, y) {
     const geo = this.map.unproject([x, y]);
@@ -629,16 +622,16 @@ const MapboxLayer = MapLayer.extend({
   }
 
 
-});
+}
 
-export default Vizabi.Class.extend({
-  init(context, domSelector) {
+export default class Map {
+  constructor(context, domSelector) {
     this.context = context;
     this.domSelector = domSelector;
     this.zooming = false;
     this.topojsonMap = null;
     this.keys = {};
-    this.mapEngine = this.context.model.ui.map.mapEngine;
+    this.mapEngine = this.context.ui.map.mapEngine;
     this.mapInstance = null;
     if (this.context.element instanceof d3.selection) {
       this.mapRoot = this.context.element.select(domSelector);
@@ -650,12 +643,12 @@ export default Vizabi.Class.extend({
     this.mapRoot.html("");
     this.mapSvg.html("");
     return this;
-  },
+  }
 
   getMap() {
     if (!this.mapInstance) {
-      if (this.context.model.ui.map.showMap) {
-        switch (this.context.model.ui.map.mapEngine) {
+      if (this.context.ui.map.showMap) {
+        switch (this.context.ui.map.mapEngine) {
           case "google":
             this.mapInstance = new GoogleMapLayer(this.context, this);
             break;
@@ -669,7 +662,7 @@ export default Vizabi.Class.extend({
       }
       return this;
     }
-  },
+  }
 
   initMap() {
     if (!this.mapInstance) {
@@ -678,7 +671,7 @@ export default Vizabi.Class.extend({
       });
     }
     const topojsonPromise = this.topojsonMap.initMap(this.domSelector);
-    if (this.context.model.ui.map.showAreas) {
+    if (this.context.ui.map.showAreas) {
       topojsonPromise.then(() => {
         this.topojsonMap.showAreas();
       });
@@ -687,18 +680,23 @@ export default Vizabi.Class.extend({
       this.mapInstance.initMap(this.domSelector),
       topojsonPromise
     ]);
-  },
+  }
 
   ready() {
     const _this = this;
     this._bounds = null;
     let x1, y1, x2, y2;
-    this.keys = Object.keys(_this.context.values.hook_centroid)
-      .reduce((obj, key) => {
-        obj[_this.context.values.hook_centroid[key]] = key;
+    // this.keys = Object.keys(_this.context.values.hook_centroid)
+    //   .reduce((obj, key) => {
+    //     obj[_this.context.values.hook_centroid[key]] = key;
+    //     return obj;
+    //   }, {});
+    this.keys = _this.context.__dataProcessed
+      .reduce((obj, data) => {
+        obj[data.centroid] = data[Symbol.for("key")];
         return obj;
       }, {});
-    utils.forEach(this.keys, (val, key) => {
+  utils.forEach(this.keys, (val, key) => {
       const centroid = this.topojsonMap.centroid(key);
       if (!centroid) return;
       if ((!x1 && x1 != 0) || x1 > centroid[0]) {
@@ -725,11 +723,11 @@ export default Vizabi.Class.extend({
       };
     }
     this.context.mapBoundsChanged();
-  },
+  }
 
   rescaleMap() {
     if (this.mapInstance) {
-      const margin = this.context.activeProfile.margin;
+      const margin = this.context.profileConstants.margin;
       const _this = this;
       this.mapRoot
         .style("position", "absolute")
@@ -738,19 +736,19 @@ export default Vizabi.Class.extend({
         .style("top", 0)
         .style("bottom", 0)
         .style("width", (this.context.width + margin.left + margin.right) + "px")
-        .style("height", (this.context.height + margin.top + margin.bottom + (this.context.model.ui.map.overflowBottom || 0)) + "px");
+        .style("height", (this.context.height + margin.top + margin.bottom + (this.context.ui.map.overflowBottom || 0)) + "px");
         this.mapInstance.rescaleMap();
     } else {
       this.topojsonMap.rescaleMap();
     }
-  },
+  }
 
   layerChanged() {
-    if (this.mapEngine == this.context.model.ui.map.mapEngine &&
-      this.context.model.ui.map.showMap &&
+    if (this.mapEngine == this.context.ui.map.mapEngine &&
+      this.context.ui.map.showMap &&
       this.mapInstance) {
-      if (this.topojsonMap.areasAreShown != this.context.model.ui.map.showAreas) {
-        if (!this.context.model.ui.map.showAreas) {
+      if (this.topojsonMap.areasAreShown != this.context.ui.map.showAreas) {
+        if (!this.context.ui.map.showAreas) {
           this.topojsonMap.hideAreas();
         } else {
           this.topojsonMap.showAreas();
@@ -758,7 +756,7 @@ export default Vizabi.Class.extend({
       }
       this.mapInstance.updateLayer();
     } else {
-      this.mapEngine = this.context.model.ui.map.mapEngine;
+      this.mapEngine = this.context.ui.map.mapEngine;
       this.mapInstance = null;
       this.mapRoot.html("");
       this.getMap();
@@ -771,39 +769,39 @@ export default Vizabi.Class.extend({
           }
         });
     }
-  },
+  }
 
   getMapColor(key) {
     if (this.keys[key]) {
-      return this.context.mcScale(this.context.values.color_map[this.keys[key]]);
+      return this.context.mcScale(this.context.model.dataMap.getByObjOrStr(null ,this.keys[key]).color_map);
     }
     return this.context.COLOR_WHITEISH;
-  },
+  }
 
   getOpacity(key) {
     if (this.keys[key]) {
       return this.context.getMapOpacity(this.keys[key]);
     }
     return this.context.COLOR_WHITEISH;
-  },
+  }
 
   updateColors() {
-    if (this.context.model.ui.map.showAreas) {
+    if (this.context.ui.map.showAreas) {
       this.topojsonMap.updateMapColors();
     }
-  },
+  }
 
   _getCenter() {
     if (this.mapInstance) {
       return this.mapInstance.getCenter();
     }
     return this.topojsonMap.getCenter();
-  },
+  }
   
   resetZoom(duration) {
     if (this._bounds) {
       this._hideTopojson();
-      this.context.model.ui.map.bounds = {
+      this.context.ui.map.bounds = {
         west: this._bounds.west,
         north: this._bounds.north,
         east: this._bounds.east,
@@ -822,20 +820,20 @@ export default Vizabi.Class.extend({
         });
       })
     } 
-  },
+  }
   
   panStarted() {
     this.zooming = true;
-    if (this.context.model.ui.map.showMap) {
+    if (this.context.ui.map.showMap) {
       this._hideTopojson();
     }
     this.canvasBefore = this.getCanvas();
-  },
+  }
 
   panFinished() {
     const nw = this.point2Geo(this.canvasBefore[0][0], this.canvasBefore[0][1]);
     const se = this.point2Geo(this.canvasBefore[1][0], this.canvasBefore[1][1]);
-    this.context.model.ui.map.bounds = {
+    this.context.ui.map.bounds = {
       west: nw[0],
       north: nw[1],
       east: se[0],
@@ -844,12 +842,12 @@ export default Vizabi.Class.extend({
     this.zooming = false;
     this.boundsChanged();
     this._showTopojson(300);
-  },
+  }
 
   zoomRectangle(x1, y1, x2, y2) {
     const nw = this.point2Geo(Math.min(x1, x2), Math.min(y1, y2));
     const se = this.point2Geo(Math.max(x1, x2), Math.max(y1, y2));
-    this.context.model.ui.map.bounds = {
+    this.context.ui.map.bounds = {
       west: nw[0],
       north: nw[1],
       east: se[0],
@@ -862,27 +860,27 @@ export default Vizabi.Class.extend({
       this.topojsonMap.rescaleMap();
     }
     this._showTopojson(300);
-  },
+  }
 
   moveOver(dx, dy) {
     if (this.mapInstance) {
       return this.mapInstance.moveOver(dx, dy);
     }
     this.topojsonMap.moveOver(dx, dy);
-  },
+  }
 
   _interact() {
-    return this.context._mapIteract();
-  },
+    return this.context._mapInteract();
+  }
 
   updateOpacity() {
-    if (this.context.model.ui.map.showAreas) {
+    if (this.context.ui.map.showAreas) {
       this.topojsonMap.updateOpacity();
     }
-  },
+  }
 
   _hideTopojson(duration) {
-    if (this.context.model.ui.map.showAreas) {
+    if (this.context.ui.map.showAreas) {
       if (duration) {
         this.topojsonMap.mapGraph
           .transition()
@@ -893,17 +891,17 @@ export default Vizabi.Class.extend({
           .style("opacity", 0);
       }
     }
-  },
+  }
 
   _showTopojson(duration) {
-    if (this.context.model.ui.map.showAreas) {
+    if (this.context.ui.map.showAreas) {
       this.topojsonMap.mapGraph
         .interrupt()
         .transition()
         .duration(duration)
         .style("opacity", duration);
     }
-  },
+  }
 
   /**
    * @param {Array} center
@@ -914,20 +912,20 @@ export default Vizabi.Class.extend({
     const geoCenter = this.point2Geo(center[0], center[1]);
     this.canvasBefore = this.getCanvas();
     this.zooming = true;
-    if (this.context.model.ui.map.showMap) {
+    if (this.context.ui.map.showMap) {
       this._hideTopojson(100);
     }
     let response;
     if (this.mapInstance) {
       response = this.mapInstance.zoomMap(geoCenter, increment);
-    } else if (this.context.model.ui.map.showAreas) {
+    } else if (this.context.ui.map.showAreas) {
       response = this.topojsonMap.zoomMap(geoCenter, increment);
     }
     return response.then(
       bounds => {
         const nw = this.point2Geo(this.canvasBefore[0][0], this.canvasBefore[0][1]);
         const se = this.point2Geo(this.canvasBefore[1][0], this.canvasBefore[1][1]);
-        _this.context.model.ui.map.bounds = {
+        _this.context.ui.map.bounds = {
           west: nw[0],
           north: nw[1],
           east: se[0],
@@ -945,7 +943,7 @@ export default Vizabi.Class.extend({
         this._showTopojson(300);
       }
     );
-  },
+  }
 
   boundsChanged(rescaleTopojson = true) {
     if (!this.zooming) {
@@ -958,39 +956,40 @@ export default Vizabi.Class.extend({
       }
       this.context.mapBoundsChanged();
     }
-  },
+  }
 
   centroid(key) {
     if (this.topojsonMap) {
       return this.topojsonMap.centroid(key);
     }
     return null;
-  },
+  }
 
   getCanvas() {
     if (this.mapInstance) {
       return this.mapInstance.getCanvas();
-    } else if (this.context.model.ui.map.showAreas) {
+    } else if (this.context.ui.map.showAreas) {
       return this.topojsonMap.getCanvas();
     }
     return [[0, 0], [0, 0]];
-  },
+  }
+
   point2Geo(x, y) {
     if (this.mapInstance) {
       return this.mapInstance.point2Geo(x, y);
-    } else if (this.context.model.ui.map.showAreas) {
+    } else if (this.context.ui.map.showAreas) {
       return this.topojsonMap.point2Geo(x, y);
     }
     return [0, 0];
-  },
+  }
 
   geo2Point(lon, lat) {
     if (this.mapInstance) {
       return this.mapInstance.geo2Point(lon, lat);
-    } else if (this.context.model.ui.map.showAreas) {
+    } else if (this.context.ui.map.showAreas) {
       return this.topojsonMap.geo2Point(lon, lat);
     }
     return [0, 0];
   }
 
-});
+}
