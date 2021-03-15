@@ -1,8 +1,11 @@
-import { BaseComponent } from "VizabiSharedComponents";
-import { Labels } from "VizabiSharedComponents";
-import { LegacyUtils as utils} from "VizabiSharedComponents";
-import { Icons } from "VizabiSharedComponents";
-import { DynamicBackground } from "VizabiSharedComponents";
+import { 
+  BaseComponent,
+  Labels,
+  Utils,
+  LegacyUtils as utils,
+  Icons,
+  DynamicBackground
+} from "VizabiSharedComponents";
 import { runInAction, decorate, computed} from "mobx";
 
 import MapEngine from "./map";
@@ -196,6 +199,8 @@ class _VizabiExtApiMap extends BaseComponent {
   draw(){
     this.localise = this.services.locale.auto();
 
+    this.treemenu = this.root.findChild({type: "TreeMenu"});
+
     // new scales and axes
     this.sScale = this.MDL.size.scale.d3Scale;
     this.cScale = color => color? this.MDL.color.scale.d3Scale(color) : COLOR_WHITEISH;
@@ -206,39 +211,55 @@ class _VizabiExtApiMap extends BaseComponent {
 
     if (this._updateLayoutProfile()) return; //return if exists with error
 
-    this.preload().then(() => {
-      this.addReaction(this._updateSize);
-      this.addReaction(this._processFrameData);
-      this.addReaction(this._rescaleMap);
-      runInAction(() => {
-        this.map.ready();
+    runInAction(() => {
+      this.preload().then(() => {
+        this.addReaction(this._updateSize);
+        this.addReaction(this._updateMarkerSizeLimits);
+        this.addReaction(this._getDuration);
+        this.addReaction(this._drawData);
+        this.addReaction(this._updateOpacity);
+        this.addReaction(this._updateDoubtOpacity);
+        runInAction(() => {
+          this.map.ready();
+        });
+
+        this.addReaction(this._updateMap);
+        this.addReaction(this._updateMapColors);
+        this.addReaction(this._updateUIStrings);
+        //this.addReaction(this._redrawData);
+
+        this.addReaction(this._setupCursorMode);
       });
-
-      this.addReaction(this._updateMap);
-      this.addReaction(this._updateMapColors);
-      this.addReaction(this._updateUIStrings);
-      this.addReaction(this._drawData);
-
-      this.addReaction(this._setupCursorMode);
     });
   }
 
   _updateLayoutProfile(){
-    this.services.layout.width + this.services.layout.height;
+    this.services.layout.size;
 
     this.profileConstants = this.services.layout.getProfileConstants(PROFILE_CONSTANTS, PROFILE_CONSTANTS_FOR_PROJECTOR);
+    const margin = this.profileConstants.margin;
+
     this.height = (this.element.node().clientHeight) || 0;
+    this.chartHeight = this.height - margin.top - margin.bottom;
     this.width = (this.element.node().clientWidth) || 0;
+    this.chartWidth = this.width - margin.left - margin.right;
     if (!this.height || !this.width) return utils.warn("Chart _updateProfile() abort: container is too little or has display:none");
 
   }
 
-  _drawData(duration) {
+  _drawData() {
+    this._processFrameData();
+    this._createAndDeleteBubbles();
+    runInAction(() => {
+      this._redrawData();
+    })
+  }
+
+  _redrawData(duration) {
     this.services.layout.size;
     
     //this._processFrameData();
-    this._createAndDeleteBubbles();
-    this.updateMarkerSizeLimits();
+    //this._createAndDeleteBubbles();
 
     const _this = this;
     if (!duration) duration = this.__duration;
@@ -271,8 +292,27 @@ class _VizabiExtApiMap extends BaseComponent {
           .attr("fill", _this.cScale(d.color));
       }
 
-      //_this._updateLabel(d, duration);
+      _this._updateLabel(d, duration);
     });
+  }
+
+  _updateLabel(d, duration) {
+    if (!duration) duration = this.__duration;
+
+    // only for selected entities
+    if (this.MDL.selected.data.filter.has(d)) {
+
+      const showhide = d.hidden !== d.hidden_1;
+      const valueLST = null;
+      const cache = {
+        labelX0: d.center[0] / this.width,
+        labelY0: d.center[1] / this.height,
+        scaledS0: d.r,
+        scaledC0: this.cScale(d.color)
+      };
+
+      this._labels.updateLabel(d, cache, d.center[0] / this.width, d.center[1] / this.height, d.size, d.color, this.__labelWithoutFrame(d), valueLST, duration, showhide);
+    }
   }
 
   _getPosition(d) {
@@ -313,8 +353,9 @@ class _VizabiExtApiMap extends BaseComponent {
 
     if(!utils.isTouchDevice()){
       this.bubbles
-        .on("mouseover", this._interact().mouseover)
-        .on("mouseout", this._interact().mouseout)
+      .on("mousedown", this._interact().mousedown)
+      .on("mouseover", this._interact().mouseover)
+      .on("mouseout", this._interact().mouseout)
         .on("click", this._interact().click);
     } else {
       this.bubbles
@@ -326,6 +367,9 @@ class _VizabiExtApiMap extends BaseComponent {
     const _this = this;
 
     return {
+      mousedown(d) {
+        if (_this.ui.cursorMode === "arrow") d3.event.stopPropagation();
+      },
       mouseover(d) {
         if (_this.MDL.frame.dragging) return;
 
@@ -354,11 +398,13 @@ class _VizabiExtApiMap extends BaseComponent {
         _this._setTooltip();
         //_this._labels.clearTooltip();
         _this.MDL.selected.data.filter.toggle(d);
+        _this._updateLabel(d);
         //_this.selectToggleMarker(d);
       },
       tap(d) {
         _this._setTooltip();
         _this.MDL.selected.data.filter.toggle(d);
+        _this._updateLabel(d);
         //_this.selectToggleMarker(d);
         d3.event.stopPropagation();
       }
@@ -405,17 +451,19 @@ class _VizabiExtApiMap extends BaseComponent {
     const infoElHeight = this.profileConstants.infoElHeight;
     const isRTL = this.services.locale.isRTL();
 
+    const graphWidth = this.width - margin.left - margin.right;
+
     this.DOM.graph
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     this._year.setConditions({
       widthRatio: 2 / 10
     });
-    this._year.resize(this.width, this.height + margin.bottom);
+    this._year.resize(this.width, this.height - margin.top);
 
     this.DOM.yTitle
       .style("font-size", infoElHeight)
-      .attr("transform", "translate(" + (isRTL ? this.width : 0) + "," + margin.top + ")");
+      .attr("transform", "translate(" + (isRTL ? this.graphWidth : 0) + "," + margin.top + ")");
 
     const yTitleBB = this.DOM.yTitle.select("text").node().getBBox();
 
@@ -431,7 +479,7 @@ class _VizabiExtApiMap extends BaseComponent {
       .attr("y", -warnBB.height * 0.65);
 
     this.DOM.dataWarning
-      .attr("transform", "translate(" + (this.width) + "," + (this.height - warnBB.height * 0.5) + ")")
+      .attr("transform", "translate(" + (graphWidth) + "," + (this.height - margin.bottom - warnBB.height * 0.5) + ")")
       .select("text");
 
     if (this.DOM.yInfo.select("svg").node()) {
@@ -475,7 +523,7 @@ class _VizabiExtApiMap extends BaseComponent {
     this.map.layerChanged();
   }
 
-  updateMarkerSizeLimits() {
+  _updateMarkerSizeLimits() {
     //this is very funny
     this.services.layout.size;
     this.MDL.size.scale.domain;
@@ -513,25 +561,25 @@ class _VizabiExtApiMap extends BaseComponent {
       }
     };
 
-    this.DOM.yTitle.select("text")
-      .text(this.localise("buttons/size") + ": " + this.strings.title.S)
+    this.DOM.yTitle
+      .classed("vzb-disabled", this.treemenu.state.ownReadiness !== Utils.STATUS.READY)
+      .select("text").text(this.localise("buttons/size") + ": " + this.strings.title.S)
       .on("click", () => {
-        _this.parent
-          .findChildByName("gapminder-treemenu")
-          .markerID("size")
-          .alignX(isRTL ? "right" : "left")
+        this.treemenu
+          .encoding("size")
+          .alignX(this.services.locale.isRTL() ? "right" : "left")
           .alignY("top")
           .updateView()
           .toggle();
       });
 
-    this.DOM.cTitle.select("text")
-      .text(this.localise("buttons/color") + ": " + this.strings.title.C)
+    this.DOM.cTitle
+      .classed("vzb-disabled", this.treemenu.state.ownReadiness !== Utils.STATUS.READY)
+      .select("text").text(this.localise("buttons/color") + ": " + this.strings.title.C)
       .on("click", () => {
-        _this.parent
-          .findChildByName("gapminder-treemenu")
-          .markerID("color")
-          .alignX(isRTL ? "right" : "left")
+        this.treemenu
+          .encoding("color")
+          .alignX(this.services.locale.isRTL() ? "right" : "left")
           .alignY("top")
           .updateView()
           .toggle();
@@ -544,13 +592,13 @@ class _VizabiExtApiMap extends BaseComponent {
 
     this.DOM.dataWarning
       .on("click", () => {
-        _this.root.findChild({type: "DataWarning"}).toggle();
+        _this.root.findChild({name: "datawarning"}).toggle();
       })
       .on("mouseover", () => {
-        _this.updateDoubtOpacity(1);
+        _this._updateDoubtOpacity(1);
       })
       .on("mouseout", () => {
-        _this.updateDoubtOpacity();
+        _this._updateDoubtOpacity();
       });
 
     const toolRect = _this.root.element.node().getBoundingClientRect();
@@ -604,16 +652,14 @@ class _VizabiExtApiMap extends BaseComponent {
     );
 
     this.DOM.chartSvg
-      .style("width", (this.width + margin.left + margin.right) + "px")
-      .style("height", (this.height + margin.top + margin.bottom + (this.ui.map.overflowBottom || 0)) + "px");
+      .style("width", this.width + "px")
+      .style("height", this.height + (this.ui.map.overflowBottom || 0) + "px");
+
+    runInAction(() => {
+      this.map.rescaleMap();
+    });
 
     this.repositionElements();
-  }
-
-  _rescaleMap() {
-    this.services.layout.size;
-
-    this.map.rescaleMap();
   }
 
   // show size number on title when hovered on a bubble
@@ -715,6 +761,40 @@ class _VizabiExtApiMap extends BaseComponent {
     //this.updateTitleNumbers();
   }
 
+  _updateOpacity() {
+    const _this = this;
+    this.MDL.frame.value; //listen
+
+    const {
+      opacityHighlightDim,
+      opacitySelectDim,
+      opacityRegular,
+    } = this.ui;
+
+    const _highlighted = this.MDL.highlighted.data.filter;
+    const _selected = this.MDL.selected.data.filter;
+    
+    const someHighlighted = _highlighted.any();
+    const someSelected = _selected.any();
+
+    this.bubbles
+      .style("opacity", d => {
+        if (_highlighted.has(d)) return opacityRegular;
+        if (_selected.has(d)) return opacityRegular;
+
+        if (someSelected) return opacitySelectDim;
+        if (someHighlighted) return opacityHighlightDim;
+
+        return opacityRegular;
+      });
+  }
+
+  _updateDoubtOpacity(opacity) {
+    if (opacity == null) opacity = this.wScale(+this.MDL.frame.value.getUTCFullYear());
+    if (this.MDL.selected.data.filter.any()) opacity = 1;
+    this.DOM.dataWarning.style("opacity", opacity);
+  }
+
   _drawForecastOverlay() {
     this.DOM.forecastOverlay.classed("vzb-hidden", 
       !this.MDL.frame.endBeforeForecast || 
@@ -755,7 +835,7 @@ class _VizabiExtApiMap extends BaseComponent {
   }
 
   mapBoundsChanged() {
-    this._drawData();
+    this._redrawData();
     //this.updateMarkerSizeLimits();
     //this.redrawDataPoints(null, true);
     //this.updateLabels(null);
@@ -812,26 +892,29 @@ class _VizabiExtApiMap extends BaseComponent {
 
   _setTooltip(d) {
     if (d) {
-      const KEY = this.KEY;
-      const values = this.values;
       const labelValues = {};
       const tooltipCache = {};
       const cLoc = d.cLoc ? d.cLoc : this._getPosition(d);
       const mouse = d3.mouse(this.DOM.graph.node()).map(d => parseInt(d));
       const x = cLoc[0] || mouse[0];
       const y = cLoc[1] || mouse[1];
-      labelValues.valueS = values.size[utils.getKey(d, this.dataKeys.size)];
-      labelValues.labelText = this.model.marker.getCompoundLabelText(d, values);
+      const offset = d.r || 0;
+
+      labelValues.valueS = d.size;
+      labelValues.labelText = this.__labelWithoutFrame(d);
       tooltipCache.labelX0 = labelValues.valueX = x / this.width;
       tooltipCache.labelY0 = labelValues.valueY = y / this.height;
-      const offset = d.r || utils.areaToRadius(this.sScale(labelValues.valueS) || 0);
-      tooltipCache.scaledS0 = d.r;
+      tooltipCache.scaledS0 = offset;
       tooltipCache.scaledC0 = null;
 
       this._labels.setTooltip(d, labelValues.labelText, tooltipCache, labelValues);
     } else {
       this._labels.setTooltip();
     }
+  }
+
+  __labelWithoutFrame(d) {
+    return this.KEYS.map(dim => this.localise(d.label[dim])).join(' ');
   }
 
   _setupCursorMode() {
@@ -986,6 +1069,18 @@ _VizabiExtApiMap.DEFAULT_UI = {
     }
   }
 }
+
+export const VizabiExtApiMap = decorate(_VizabiExtApiMap, {
+  "MDL": computed
+});
+
+
+
+
+
+
+
+
 
 
 const _OldVizabiExtApiMap = {
@@ -1376,11 +1471,6 @@ const _OldVizabiExtApiMap = {
   },
 
 
-  updateDoubtOpacity(opacity) {
-    if (opacity == null) opacity = this.wScale(+this.time.getUTCFullYear().toString());
-    if (this.someSelected) opacity = 1;
-    this.dataWarningEl.style("opacity", opacity);
-  },
 
   /**
    * Changes labels for indicators
@@ -1691,9 +1781,3 @@ const _OldVizabiExtApiMap = {
     return this.map.initMap();
   }
 };
-
-//export default VizabiExtApiMap;
-export const VizabiExtApiMap = decorate(_VizabiExtApiMap, {
-  "MDL": computed
-});
-

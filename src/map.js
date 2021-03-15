@@ -225,7 +225,7 @@ class TopojsonLayer extends MapLayer {
         emitEvent = true;
         canvas = [
           [0, 0],
-          [this.context.width, this.context.height]
+          [this.context.chartWidth, this.context.chartHeight]
         ];
         mapTopOffset =  margin.top;
         mapLeftOffset =  margin.left;
@@ -256,8 +256,8 @@ class TopojsonLayer extends MapLayer {
     // resize and put in center
     this.parent.mapSvg
       .style("transform", "translate(" + margin.left + "px," + margin.top + "px)")
-      .attr("width", this.context.width)
-      .attr("height", this.context.height);
+      .attr("width", this.context.chartWidth)
+      .attr("height", this.context.chartHeight);
 
     // set skew function used for bubbles in chart
     const _this = this;
@@ -316,15 +316,15 @@ class TopojsonLayer extends MapLayer {
       const margin = this.context.profileConstants ? this.context.profileConstants.margin : {left: 0, top: 0};
       const leftOffset = margin.left;//this.context.width / 2 - point[0];
       const topOffset = margin.top;//this.context.height / 2 - point[1];
-      const wMod = Math.min(2, Math.max(0, (point[0]) / this.context.width * 2));
-      const hMod = Math.min(2, Math.max(0, (point[1]) / this.context.height * 2));
-      const wScale = this.context.width * 0.1 * increment;
-      const hScale = this.context.height * 0.1 * increment;
+      const wMod = Math.min(2, Math.max(0, (point[0]) / this.context.chartWidth * 2));
+      const hMod = Math.min(2, Math.max(0, (point[1]) / this.context.chartHeight * 2));
+      const wScale = this.context.chartWidth * 0.1 * increment;
+      const hScale = this.context.chartHeight * 0.1 * increment;
       this.rescaleMap([
         [-wScale * wMod + leftOffset, -hScale * hMod + topOffset],
         [
-          this.context.width + wScale * (2 - wMod) + leftOffset,
-          this.context.height + hScale * (2 - hMod) + topOffset
+          this.context.chartWidth + wScale * (2 - wMod) + leftOffset,
+          this.context.chartHeight + hScale * (2 - hMod) + topOffset
         ]
       ], true);
       resolve();
@@ -727,16 +727,14 @@ export default class Map {
 
   rescaleMap() {
     if (this.mapInstance) {
-      const margin = this.context.profileConstants.margin;
-      const _this = this;
       this.mapRoot
         .style("position", "absolute")
         .style("left", 0)
         .style("right", 0)
         .style("top", 0)
         .style("bottom", 0)
-        .style("width", (this.context.width + margin.left + margin.right) + "px")
-        .style("height", (this.context.height + margin.top + margin.bottom + (this.context.ui.map.overflowBottom || 0)) + "px");
+        .style("width", this.context.width + "px")
+        .style("height", this.context.height + (this.context.ui.map.overflowBottom || 0) + "px");
         this.mapInstance.rescaleMap();
     } else {
       this.topojsonMap.rescaleMap();

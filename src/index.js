@@ -51,6 +51,11 @@ export default class ExtApiMap extends BaseComponent {
       placeholder: ".vzb-datanotes",
       model: marker
     },{
+      type: DataWarning,
+      placeholder: ".vzb-datawarning",
+      name: "datawarning",
+      model: marker
+    },{
       type: Dialogs,
       placeholder: ".vzb-dialogs",
       model: marker,
@@ -74,6 +79,7 @@ export default class ExtApiMap extends BaseComponent {
       </div>
       <div class="vzb-treemenu"></div>
       <div class="vzb-datanotes"></div>    
+      <div class="vzb-datawarning"></div>
     `;
   
     config.services = {
