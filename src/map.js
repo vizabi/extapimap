@@ -126,7 +126,7 @@ class TopojsonLayer extends MapLayer {
 
 
     this.context.ui.map.scale = 1;
-    return this._loadShapes(assetName).then(
+    return this.context.ui.map.skipShapesLoading ? Promise.resolve() : this._loadShapes(assetName).then(
       shapes => {
         _this.shapes = shapes;
         _this.mapFeature = topojson.feature(_this.shapes, _this.shapes.objects[this.context.ui.map.topology.objects.geo]);

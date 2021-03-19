@@ -271,7 +271,7 @@ class _VizabiExtApiMap extends BaseComponent {
       d.r = utils.areaToRadius(_this.sScale(d.size)||0);
       d.center = _this._getPosition(d);
 
-      d.hidden = (!d.size && d.size !== 0) || d.centroid == null || !d.center;
+      d.hidden = (!d.size && d.size !== 0) || !d.center;
 
       if(d.center) {
         view
@@ -317,7 +317,7 @@ class _VizabiExtApiMap extends BaseComponent {
 
   _getPosition(d) {
     if (d.lat && d.lng) {
-      return this.map.geo2Point(d.lat, d.lng);
+      return this.map.geo2Point(d.lng, d.lat);
     }
     if (d.centroid) {
       return this.map.centroid(d.centroid);
@@ -556,8 +556,8 @@ class _VizabiExtApiMap extends BaseComponent {
 
     this.strings = {
       title: {
-        S: conceptPropsS.name,
-        C: conceptPropsC.name
+        S: conceptPropsS.name || conceptPropsS.concept,
+        C: conceptPropsC.name || conceptPropsC.concept
       }
     };
 
@@ -790,7 +790,7 @@ class _VizabiExtApiMap extends BaseComponent {
   }
 
   _updateDoubtOpacity(opacity) {
-    if (opacity == null) opacity = this.wScale(+this.MDL.frame.value.getUTCFullYear());
+    if (opacity == null) opacity = this.wScale(utils.isDate(this.MDL.frame.value) ? +this.MDL.frame.value.getUTCFullYear() : this.MDL.frame.value);
     if (this.MDL.selected.data.filter.any()) opacity = 1;
     this.DOM.dataWarning.style("opacity", opacity);
   }
