@@ -1,5 +1,5 @@
 import { 
-  BaseComponent,
+  Chart,
   Labels,
   Utils,
   LegacyUtils as utils,
@@ -46,7 +46,7 @@ const PROFILE_CONSTANTS_FOR_PROJECTOR = {
 };
 
 //BUBBLE MAP CHART COMPONENT
-class _VizabiExtApiMap extends BaseComponent {
+class _VizabiExtApiMap extends Chart {
 
   constructor(config) {
 
@@ -1074,6 +1074,7 @@ export const VizabiExtApiMap = decorate(_VizabiExtApiMap, {
   "MDL": computed
 });
 
+Chart.add("extapimap", VizabiExtApiMap);
 
 
 
