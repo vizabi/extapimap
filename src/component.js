@@ -185,14 +185,14 @@ class _VizabiExtApiMap extends Chart {
 
   get MDL(){
     return {
-      frame: this.model.encoding.get("frame"),
-      selected: this.model.encoding.get("selected"),
-      highlighted: this.model.encoding.get("highlighted"),
-      size: this.model.encoding.get("size"),
-      color: this.model.encoding.get("color"),
-      mapColor: this.model.encoding.get("color_map"),
-      label: this.model.encoding.get("label"),
-      centroid: this.model.encoding.get("centroid")
+      frame: this.model.encoding.frame,
+      selected: this.model.encoding.selected,
+      highlighted: this.model.encoding.highlighted,
+      size: this.model.encoding.size,
+      color: this.model.encoding.color,
+      mapColor: this.model.encoding.color_map,
+      label: this.model.encoding.label,
+      centroid: this.model.encoding.centroid
     };
   }
 
