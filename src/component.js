@@ -219,10 +219,7 @@ class _VizabiExtApiMap extends Chart {
         this.addReaction(this._drawData);
         this.addReaction(this._updateOpacity);
         this.addReaction(this._updateDoubtOpacity);
-        runInAction(() => {
-          this.map.ready();
-        });
-
+        this.addReaction(this._mapReady);
         this.addReaction(this._updateMap);
         this.addReaction(this._updateMapColors);
         this.addReaction(this._updateUIStrings);
@@ -233,6 +230,13 @@ class _VizabiExtApiMap extends Chart {
     });
   }
 
+  _mapReady() {
+    this.status;
+    runInAction(() => {
+      this.map.ready();
+    });
+  }
+  
   _updateLayoutProfile(){
     this.services.layout.size;
 
@@ -914,7 +918,9 @@ class _VizabiExtApiMap extends Chart {
   }
 
   __labelWithoutFrame(d) {
-    return this.KEYS.map(dim => this.localise(d.label[dim])).join(' ');
+    if (typeof d.label == "object") return Object.values(d.label).join(", ");
+    if (d.label != null) return "" + d.label;
+    return d[Symbol.for("key")];
   }
 
   _setupCursorMode() {
@@ -1022,6 +1028,7 @@ class _VizabiExtApiMap extends Chart {
   }
 
   preload() {
+    if (this.map) return Promise.resolve();
     return this._initMap();
   }
 
