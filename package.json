@@ -4,6 +4,7 @@
     "build"
   ],
   "scripts": {
+    "prepublishOnly": "npm run build",
     "link": "npm link ../vizabi-shared-components",
     "start": "rollup -c",
     "build": "cross-env NODE_ENV=production rollup -c",
@@ -15,7 +16,7 @@
     "vizabi-tool-bundler": "github:vizabi/vizabi-tool-bundler#switch_to_rollup"
   },
   "name": "vizabi-extapimap",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "dependencies": {
     "google-maps": "^3.2.1",
     "mapbox-gl": "^0.34.0"
