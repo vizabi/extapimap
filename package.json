@@ -4,7 +4,7 @@
     "build"
   ],
   "scripts": {
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "npm start",
     "link": "npm link ../vizabi-shared-components",
     "start": "rollup -c",
     "build": "cross-env NODE_ENV=production rollup -c",
