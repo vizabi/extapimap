@@ -22,7 +22,7 @@ const VERSION_INFO = { version: __VERSION, build: __BUILD };
 export default class ExtApiMap extends BaseComponent {
 
   constructor(config){
-    const marker = config.model.stores.markers.get("bubble");
+    const marker = config.splash(config.model.markers.bubble);
 
     config.name = "extapimap";
 
@@ -86,11 +86,6 @@ export default class ExtApiMap extends BaseComponent {
       locale: new LocaleService(config.locale),
       layout: new LayoutService(config.layout)
     };
-
-    //register locale service in the marker model
-    config.model.config.markers.bubble.data.locale = observable({
-      get id() { return config.services.locale.id; }
-    });
 
     super(config);
   }
