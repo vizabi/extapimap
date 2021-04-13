@@ -12,17 +12,14 @@ import {
   ButtonList
 } from "VizabiSharedComponents";
 import { VizabiExtApiMap } from "./component.js";
-import { observable } from "mobx";
 
 import "./dialogs/mapoptions/mapoptions";
 import "./dialogs/mapcolors/mapcolors";
 
-const VERSION_INFO = { version: __VERSION, build: __BUILD };
-
 export default class ExtApiMap extends BaseComponent {
 
   constructor(config){
-    const marker = config.splash(config.model.markers.bubble);
+    const marker = config.model.markers.bar.encoding.frame.splash.marker;
 
     config.name = "extapimap";
 
@@ -115,7 +112,7 @@ ExtApiMap.DEFAULT_UI = {
   }
 };
 
-
+ExtApiMap.versionInfo = { version: __VERSION, build: __BUILD };
 
 const _ExtApiMap = {
 
@@ -262,7 +259,5 @@ const _ExtApiMap = {
       },
       presentation: false
     }
-  },
-
-  versionInfo: VERSION_INFO
+  }
 };
