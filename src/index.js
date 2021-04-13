@@ -19,7 +19,7 @@ import "./dialogs/mapcolors/mapcolors";
 export default class ExtApiMap extends BaseComponent {
 
   constructor(config){
-    const marker = config.model.markers.bar.encoding.frame.splash.marker;
+    const marker = config.model.markers.bubble.encoding.frame.splash.marker;
 
     config.name = "extapimap";
 
