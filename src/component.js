@@ -11,7 +11,7 @@ import { runInAction, decorate, computed} from "mobx";
 import MapEngine from "./map";
 // import Selectlist from 'extapimap-selectlist';
 
-const {ICON_WARN, ICON_QUESTION} = Icons;
+const {ICON_QUESTION} = Icons;
 const COLOR_BLACKISH = "rgb(51, 51, 51)";
 const COLOR_WHITEISH = "rgb(253, 253, 253)";
 
@@ -74,12 +74,7 @@ class _VizabiExtApiMap extends Chart {
               <g class="vzb-bmc-axis-c-info vzb-noexport">
               </g>
 
-              <g class="vzb-data-warning vzb-noexport">
-                  <svg></svg>
-                  <text></text>
-              </g>
               <g class="vzb-bmc-labels"></g>
-
               <rect class="vzb-bc-zoom-rect"></rect>
           </g>
       </svg>
@@ -114,7 +109,6 @@ class _VizabiExtApiMap extends Chart {
         bubbleContainerCrop: graph.select(".vzb-bmc-bubbles-crop"),
         bubbleContainer: graph.select(".vzb-bmc-bubbles"),
         labelListContainer: graph.select(".vzb-bmc-bubble-labels"),
-        dataWarning: graph.select(".vzb-data-warning"),
         yTitle: graph.select(".vzb-bmc-axis-y-title"),
         cTitle: graph.select(".vzb-bmc-axis-c-title"),
         yInfo: graph.select(".vzb-bmc-axis-y-info"),
@@ -131,10 +125,6 @@ class _VizabiExtApiMap extends Chart {
     this._year.setConditions({ xAlign: "left", yAlign: "bottom" });
 
     this._labels = this.findChild({type: "Labels"});
-
-    this.wScale = d3.scaleLinear()
-      .domain(this.ui.datawarning.doubtDomain)
-      .range(this.ui.datawarning.doubtRange);
 
     const zoomOnWheel = function() {
       if (_this.ui.zoomOnScrolling) {
@@ -218,7 +208,6 @@ class _VizabiExtApiMap extends Chart {
         this.addReaction(this._getDuration);
         this.addReaction(this._drawData);
         this.addReaction(this._updateOpacity);
-        this.addReaction(this._updateDoubtOpacity);
         this.addReaction(this._mapReady);
         this.addReaction(this._updateMap);
         this.addReaction(this._updateMapColors);
@@ -475,17 +464,6 @@ class _VizabiExtApiMap extends Chart {
     this.DOM.cTitle.attr("transform", "translate(" + (isRTL ? this.width : 0) + "," + (margin.top + yTitleBB.height) + ")")
       .classed("vzb-hidden", this.services.layout.profile === "LARGE" || this.MDL.color.data.isConstant());
 
-    const warnBB = this.DOM.dataWarning.select("text").node().getBBox();
-    this.DOM.dataWarning.select("svg")
-      .attr("width", warnBB.height * 0.75)
-      .attr("height", warnBB.height * 0.75)
-      .attr("x", -warnBB.width - warnBB.height * 1.2)
-      .attr("y", -warnBB.height * 0.65);
-
-    this.DOM.dataWarning
-      .attr("transform", "translate(" + (graphWidth) + "," + (this.height - margin.bottom - warnBB.height * 0.5) + ")")
-      .select("text");
-
     if (this.DOM.yInfo.select("svg").node()) {
       const titleBBox = this.DOM.yTitle.node().getBBox();
       const t = utils.transform(this.DOM.yTitle.node());
@@ -587,22 +565,6 @@ class _VizabiExtApiMap extends Chart {
           .alignY("top")
           .updateView()
           .toggle();
-      });
-
-    utils.setIcon(this.DOM.dataWarning, ICON_WARN).select("svg").attr("width", "0px").attr("height", "0px");
-    this.DOM.dataWarning.append("text")
-      .attr("text-anchor", "end")
-      .text(this.localise("hints/dataWarning"));
-
-    this.DOM.dataWarning
-      .on("click", () => {
-        _this.root.findChild({name: "datawarning"}).toggle();
-      })
-      .on("mouseover", () => {
-        _this._updateDoubtOpacity(1);
-      })
-      .on("mouseout", () => {
-        _this._updateDoubtOpacity();
       });
 
     const toolRect = _this.root.element.node().getBoundingClientRect();
@@ -741,16 +703,6 @@ class _VizabiExtApiMap extends Chart {
 
   }
 
-  _updateDataWarning(opacity) {
-    this.DOM.dataWarning.style("opacity",
-      1 || opacity || (
-        !this.MDL.selected.markers.size ?
-          this.wScale(this.MDL.frame.value.getUTCFullYear()) :
-          1
-      )
-    );
-  }
-
   _getDuration() {
     //smooth animation is needed when playing, except for the case when time jumps from end to start
     if(!this.MDL.frame) return 0;
@@ -791,12 +743,6 @@ class _VizabiExtApiMap extends Chart {
 
         return opacityRegular;
       });
-  }
-
-  _updateDoubtOpacity(opacity) {
-    if (opacity == null) opacity = this.wScale(utils.isDate(this.MDL.frame.value) ? +this.MDL.frame.value.getUTCFullYear() : this.MDL.frame.value);
-    if (this.MDL.selected.data.filter.any()) opacity = 1;
-    this.DOM.dataWarning.style("opacity", opacity);
   }
 
   _drawForecastOverlay() {
@@ -1040,10 +986,6 @@ class _VizabiExtApiMap extends Chart {
 }
 
 _VizabiExtApiMap.DEFAULT_UI = {
-  "datawarning": {
-    "doubtDomain": [1993, 2015],
-    "doubtRange": [0, 0]
-  },
   "map": {
     "scale": 1,
     "preserveAspectRatio": true,
@@ -1245,7 +1187,6 @@ const _OldVizabiExtApiMap = {
     this.bubbleContainerCrop = this.graph.select(".vzb-bmc-bubbles-crop");
     this.bubbleContainer = this.graph.select(".vzb-bmc-bubbles");
     this.labelListContainer = this.graph.select(".vzb-bmc-bubble-labels");
-    this.dataWarningEl = this.graph.select(".vzb-data-warning");
     this.zoomRect = this.element.select(".vzb-bc-zoom-rect");
     this.DOM.yTitle = this.graph.select(".vzb-bmc-axis-y-title");
     this.DOM.cTitle = this.graph.select(".vzb-bmc-axis-c-title");
@@ -1272,10 +1213,6 @@ const _OldVizabiExtApiMap = {
     this.dataKeys = this.model.marker.getDataKeysPerHook();
 
     this.updateUIStrings();
-
-    this.wScale = d3.scaleLinear()
-      .domain(this.ui.datawarning.doubtDomain)
-      .range(this.ui.datawarning.doubtRange);
 
     this._labels.readyOnce();
 
