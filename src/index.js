@@ -18,7 +18,11 @@ import "./dialogs/mapcolors/mapcolors";
 export default class ExtApiMap extends BaseComponent {
 
   constructor(config){
-    const marker = config.model.markers.bubble.encoding.frame.splash.marker;
+    const fullMarker = config.model.markers.bubble;
+    Vizabi.utils.applyDefaults(fullMarker.config, ExtApiMap.DEFAULT_CORE);  
+      
+    const frameType = Vizabi.stores.encodings.modelTypes.frame;
+    const { marker, splashMarker } = frameType.splashMarker(fullMarker);
 
     config.name = "extapimap";
 
@@ -78,6 +82,7 @@ export default class ExtApiMap extends BaseComponent {
     };
 
     super(config);
+    this.splashMarker = splashMarker;
   }
 };
 
@@ -105,152 +110,8 @@ ExtApiMap.DEFAULT_UI = {
   }
 };
 
-ExtApiMap.versionInfo = { version: __VERSION, build: __BUILD };
+ExtApiMap.DEFAULT_CORE = {
 
-const _ExtApiMap = {
-
-  /**
-   * Initializes the tool (Bar Chart Tool).
-   * Executed once before any template is rendered.
-   * @param {Object} placeholder Placeholder element for the tool
-   * @param {Object} external_model Model as given by the external page
-   */
-  init(placeholder, external_model) {
-
-    this.name = "extapimap";
-
-    //specifying components
-    this.components = [{
-      component,
-      placeholder: ".vzb-tool-viz",
-      model: ["state.time", "state.marker", "locale", "ui", "data"] //pass models to component
-    }, {
-      component: Vizabi.Component.get("timeslider"),
-      placeholder: ".vzb-tool-timeslider",
-      model: ["state.time", "state.marker", "ui"]
-    }, {
-      component: Vizabi.Component.get("dialogs"),
-      placeholder: ".vzb-tool-dialogs",
-      model: ["state", "ui", "locale"]
-    }, {
-      component: Vizabi.Component.get("buttonlist"),
-      placeholder: ".vzb-tool-buttonlist",
-      model: ["state", "ui", "locale"]
-    }, {
-      component: Vizabi.Component.get("treemenu"),
-      placeholder: ".vzb-tool-treemenu",
-      model: ["state.marker", "state.time", "locale", "ui"]
-    }, {
-      component: Vizabi.Component.get("datawarning"),
-      placeholder: ".vzb-tool-datawarning",
-      model: ["locale"]
-    }, {
-      component: Vizabi.Component.get("datanotes"),
-      placeholder: ".vzb-tool-datanotes",
-      model: ["state.marker", "locale"]
-    }, {
-      component: Vizabi.Component.get("steppedspeedslider"),
-      placeholder: ".vzb-tool-stepped-speed-slider",
-      model: ["state.time", "locale"]
-    }];
-    //constructor is the same as any tool
-    this._super(placeholder, external_model);
-  },
-
-  default_model: {
-    state: {
-      time: {
-        "autoconfig": {
-          "type": "time"
-        }
-      },
-      entities: {
-        "autoconfig": {
-          "type": "entity_domain",
-          "excludeIDs": ["tag"]
-        }
-      },
-      entities_colorlegend: {
-        "autoconfig": {
-          "type": "entity_domain",
-          "excludeIDs": ["tag"]
-        }
-      },
-      "entities_map_colorlegend": {
-        "autoconfig": {
-          "type": "entity_domain",
-          "excludeIDs": ["tag"]
-        }
-      },
-      marker: {
-        limit: 1000,
-        space: ["entities", "time"],
-        label: {
-          use: "property",
-          "autoconfig": {
-            "includeOnlyIDs": ["name"],
-            "type": "string"
-          }
-        },
-        size: {
-          "autoconfig": {
-              index: 0,
-              type: "measure"
-            }
-        },
-        color: {
-          syncModels: ["marker_colorlegend"],
-          "autoconfig": {
-            index: 1,
-            type: "measure"
-          }
-        },
-        color_map: {
-          syncModels: ["marker_colorlegend"],
-          "autoconfig": {}
-        }
-      },
-      "marker_colorlegend": {
-        "space": ["entities_colorlegend"],
-        "label": {
-          "use": "property",
-          "which": "name"
-        },
-        "hook_rank": {
-          "use": "property",
-          "which": "rank"
-        },
-        "hook_geoshape": {
-          "use": "property",
-          "which": "shape_lores_svg"
-        }
-      }
-    },
-    locale: {},
-    ui: {
-      map: {
-        overflowBottom: 50
-      },
-      cursorMode: "arrow",
-      panWithArrow: true,
-      adaptMinMaxZoom: false,
-      zoomOnScrolling: true,
-      "buttons": ["colors", "size", "find", "moreoptions", "mapcolors", "zoom", "presentation", "sidebarcollapse", "fullscreen"],
-      "dialogs": {
-        "popup": ["colors", "mapcolors", "find", "size", "zoom", "moreoptions"],
-        "sidebar": ["colors", "find", "mapoptions", "zoom"],
-        "moreoptions": ["mapoptions", "opacity", "speed", "size", "colors", "mapcolors", "zoom", "presentation", "technical", "about"]
-      },
-      chart: {
-        labels: {
-          dragging: true
-        }
-      },
-      datawarning: {
-        doubtDomain: [],
-        doubtRange: []
-      },
-      presentation: false
-    }
-  }
 };
+
+ExtApiMap.versionInfo = { version: __VERSION, build: __BUILD };
