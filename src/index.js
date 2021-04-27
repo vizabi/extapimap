@@ -8,7 +8,8 @@ import {
   TreeMenu,
   SteppedSlider,
   Dialogs,
-  ButtonList
+  ButtonList,
+  versionInfo
 } from "VizabiSharedComponents";
 import { VizabiExtApiMap } from "./component.js";
 
@@ -114,4 +115,4 @@ ExtApiMap.DEFAULT_CORE = {
 
 };
 
-ExtApiMap.versionInfo = { version: __VERSION, build: __BUILD };
+ExtApiMap.versionInfo = { version: __VERSION, build: __BUILD, package: __PACKAGE_JSON_FIELDS, sharedComponents: versionInfo};

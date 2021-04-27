@@ -1,36 +1,55 @@
 {
-  "main": "build/extapimap.js",
-  "files": [
-    "build"
-  ],
+  "name": "vizabi-extapimap",
+  "version": "3.2.5",
+  "description": "Vizabi map from external API",
   "scripts": {
-    "prepublishOnly": "npm start",
+    "prepublishOnly": "npm run build",
     "link": "npm link ../vizabi-shared-components",
     "start": "rollup -c",
     "build": "cross-env NODE_ENV=production rollup -c",
     "deploy": "tool-deploy"
   },
-  "devDependencies": {
-    "cross-env": "^5.0.0",
-    "vizabi-shared-components": "../vizabi-shared-components",
-    "vizabi-tool-bundler": "github:vizabi/vizabi-tool-bundler#switch_to_rollup"
-  },
-  "name": "vizabi-extapimap",
-  "version": "3.2.4",
-  "dependencies": {
-    "google-maps": "^3.2.1",
-    "mapbox-gl": "^0.34.0"
-  },
+  "main": "build/extapimap.js",
+  "files": [
+    "build"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vizabi/vizabi-extapimap.git"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": {
+    "name": "Gapminder Foundation",
+    "url": "https://www.gapminder.org",
+    "email": "info@gapminder.org"
+  },
+  "contributors": [
+    {
+      "name": "Angie",
+      "url": "https://github.com/angieskazka"
+    },
+    {
+      "name": "Jasper",
+      "url": "https://github.com/jheeffer"
+    },
+    {
+      "name": "Dima",
+      "url": "https://github.com/dab2000"
+    }
+  ],
+  "license": "CC-BY-4.0",
   "bugs": {
     "url": "https://github.com/vizabi/vizabi-extapimap/issues"
   },
   "homepage": "https://github.com/vizabi/vizabi-extapimap#readme",
-  "description": "Gapminder's bubble map with underlying layer coming from external API, like Google map or Mapbox"
+  "devDependencies": {
+    "cross-env": "^5.0.0",
+    "css.escape": "^1.5.1",
+    "vizabi-shared-components": "../vizabi-shared-components",
+    "vizabi-tool-bundler": "1.0.2"
+  },
+  "dependencies": {
+    "google-maps": "^3.2.1",
+    "mapbox-gl": "^0.34.0"
+  }
 }

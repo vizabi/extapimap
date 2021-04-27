@@ -1,1 +1,1 @@
-module.exports = require("vizabi-tool-bundler").bind(null, 'ExtApiMap', 'extapimap', __dirname);
+module.exports = require("vizabi-tool-bundler").bind(null, 'ExtApiMap', 'extapimap', __dirname, require("./package.json"));
