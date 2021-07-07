@@ -4,7 +4,7 @@
   "description": "Vizabi map from external API",
   "scripts": {
     "prepublishOnly": "npm start",
-    "link": "npm link ../vizabi-shared-components",
+    "link": "npm link ../@vizabi/shared-components",
     "start": "rollup -c",
     "build": "cross-env NODE_ENV=production rollup -c",
     "deploy": "tool-deploy"
@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vizabi/vizabi-extapimap.git"
+    "url": "git+https://github.com/@vizabi/extapimap.git"
   },
   "keywords": [],
   "author": {
@@ -42,13 +42,13 @@
   ],
   "license": "CC-BY-4.0",
   "bugs": {
-    "url": "https://github.com/vizabi/vizabi-extapimap/issues"
+    "url": "https://github.com/@vizabi/extapimap/issues"
   },
-  "homepage": "https://github.com/vizabi/vizabi-extapimap#readme",
+  "homepage": "https://github.com/@vizabi/extapimap#readme",
   "devDependencies": {
     "cross-env": "^5.0.0",
     "css.escape": "^1.5.1",
-    "vizabi-shared-components": "../shared-components",
+    "@vizabi/shared-components": "../shared-components",
     "vizabi-tool-bundler": "1.0.2"
   },
   "dependencies": {
