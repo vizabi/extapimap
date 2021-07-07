@@ -126,18 +126,18 @@ class _VizabiExtApiMap extends Chart {
 
     this._labels = this.findChild({type: "Labels"});
 
-    const zoomOnWheel = function() {
+    const zoomOnWheel = function(event) {
       if (_this.ui.zoomOnScrolling) {
-        const mouse = d3.mouse(_this.DOM.graph.node());
+        const mouse = d3.pointer(event);
         _this._hideEntities();
-        _this.map.zoomMap(mouse, d3.event.wheelDelta > 0 ? 1 : -1).then(
+        _this.map.zoomMap(mouse, event.wheelDelta > 0 ? 1 : -1).then(
           () => {
             _this._showEntities(100);
           }
         );
-        d3.event.stopPropagation();
-        d3.event.preventDefault();
-        d3.event.returnValue = false;
+        event.stopPropagation();
+        event.preventDefault();
+        event.returnValue = false;
         return false;
       }
     };
@@ -148,25 +148,25 @@ class _VizabiExtApiMap extends Chart {
 
     const _this = this;
     d3.select("body")
-      .on("keydown", () => {
+      .on("keydown", event => {
         if (_this.ui.cursorMode !== "arrow" && _this.ui.cursorMode !== "hand") return;
-        if (d3.event.metaKey || d3.event.ctrlKey) {
+        if (event.metaKey || event.ctrlKey) {
           _this.DOM.chartSvg.classed("vzb-zoomin", true);
           //_this.ui.set("cursorMode", "plus", false, false);
         }
       })
-      .on("keyup", () => {
+      .on("keyup", event => {
         if (_this.ui.cursorMode !== "arrow" && _this.ui.cursorMode !== "hand") return;
-        if (!d3.event.metaKey && !d3.event.ctrlKey) {
+        if (!event.metaKey && !event.ctrlKey) {
           _this.DOM.chartSvg.classed("vzb-zoomin", false);
           //_this.ui.set("cursorMode", "arrow", false, false);
         }
       })
       //this is for the case when user would press ctrl and move away from the browser tab or window
       //keyup event would happen somewhere else and won't be captured, so zoomin class would get stuck
-      .on("mouseenter", () => {
+      .on("mouseenter", event => {
         if (_this.ui.cursorMode !== "arrow" && _this.ui.cursorMode !== "hand") return;
-        if (!d3.event.metaKey && !d3.event.ctrlKey) {
+        if (!event.metaKey && !event.ctrlKey) {
           _this.ui.cursorMode = "arrow";
         }
       });
@@ -346,9 +346,9 @@ class _VizabiExtApiMap extends Chart {
 
     if(!utils.isTouchDevice()){
       this.bubbles
-      .on("mousedown", this._interact().mousedown)
-      .on("mouseover", this._interact().mouseover)
-      .on("mouseout", this._interact().mouseout)
+        .on("mousedown", this._interact().mousedown)
+        .on("mouseover", this._interact().mouseover)
+        .on("mouseout", this._interact().mouseout)
         .on("click", this._interact().click);
     } else {
       this.bubbles
@@ -360,10 +360,10 @@ class _VizabiExtApiMap extends Chart {
     const _this = this;
 
     return {
-      mousedown(d) {
-        if (_this.ui.cursorMode === "arrow") d3.event.stopPropagation();
+      mousedown(event) {
+        if (_this.ui.cursorMode === "arrow") event.stopPropagation();
       },
-      mouseover(d) {
+      mouseover(event, d) {
         if (_this.MDL.frame.dragging) return;
 
         _this.hovered = d;
@@ -373,9 +373,9 @@ class _VizabiExtApiMap extends Chart {
         //_this.fitSizeOfTitles();
        
         // if not selected, show tooltip
-        if (!_this.MDL.selected.data.filter.has(d)) _this._setTooltip(d);
+        if (!_this.MDL.selected.data.filter.has(d)) _this._setTooltip(event, d);
       },
-      mouseout(d) {
+      mouseout(event, d) {
         if (_this.MDL.frame.dragging) return;
 
         _this.hovered = null;
@@ -386,7 +386,7 @@ class _VizabiExtApiMap extends Chart {
         _this._setTooltip();
         //_this._labels.clearTooltip();
       },
-      click(d) {
+      click(event, d) {
         _this.MDL.highlighted.data.filter.delete(d);
         _this._setTooltip();
         //_this._labels.clearTooltip();
@@ -394,12 +394,12 @@ class _VizabiExtApiMap extends Chart {
         _this._updateLabel(d);
         //_this.selectToggleMarker(d);
       },
-      tap(d) {
+      tap(event, d) {
         _this._setTooltip();
         _this.MDL.selected.data.filter.toggle(d);
         _this._updateLabel(d);
         //_this.selectToggleMarker(d);
-        d3.event.stopPropagation();
+        event.stopPropagation();
       }
     };
   }
@@ -840,12 +840,12 @@ class _VizabiExtApiMap extends Chart {
     return this.ui.opacityRegular;
   }
 
-  _setTooltip(d) {
+  _setTooltip(event, d) {
     if (d) {
       const labelValues = {};
       const tooltipCache = {};
       const cLoc = d.cLoc ? d.cLoc : this._getPosition(d);
-      const mouse = d3.mouse(this.DOM.graph.node()).map(d => parseInt(d));
+      const mouse = d3.pointer(event);
       const x = cLoc[0] || mouse[0];
       const y = cLoc[1] || mouse[1];
       const offset = d.r || 0;
@@ -893,15 +893,15 @@ class _VizabiExtApiMap extends Chart {
   _createMapDragger() {
     const _this = this;
     return d3.drag()
-      .on("start", (d, i) => {
+      .on("start", (event) => {
         if (
-          ((d3.event.sourceEvent.metaKey || d3.event.sourceEvent.ctrlKey) && _this.ui.cursorMode == "arrow") ||
+          ((event.sourceEvent.metaKey || event.sourceEvent.ctrlKey) && _this.ui.cursorMode == "arrow") ||
           _this.ui.cursorMode == "plus"
 
         ) {
           _this.dragAction = "zooming";
           _this.zooming = true;
-          const mouse = d3.mouse(_this.DOM.graph.node());
+          const mouse = d3.pointer(event);
           _this.origin = {
             x: mouse[0],
             y: mouse[1]
@@ -917,50 +917,52 @@ class _VizabiExtApiMap extends Chart {
           _this.DOM.chartSvg.classed("vzb-zooming", true);
         }
       })
-      .on("drag", (d, i) => {
+      .on("drag", (event) => {
         switch (_this.dragAction) {
-          case "zooming":
-            const mouse = d3.mouse(_this.DOM.graph.node());
-            _this.DOM.zoomRect
-              .attr("x", Math.min(mouse[0], _this.origin.x))
-              .attr("y", Math.min(mouse[1], _this.origin.y))
-              .attr("width", Math.abs(mouse[0] - _this.origin.x))
-              .attr("height", Math.abs(mouse[1] - _this.origin.y));
-            break;
-          case "panning":
-            _this.map.moveOver(d3.event.dx, d3.event.dy);
-            break;
+        case "zooming": {
+          const mouse = d3.pointer(event);
+          _this.DOM.zoomRect
+            .attr("x", Math.min(mouse[0], _this.origin.x))
+            .attr("y", Math.min(mouse[1], _this.origin.y))
+            .attr("width", Math.abs(mouse[0] - _this.origin.x))
+            .attr("height", Math.abs(mouse[1] - _this.origin.y));
+          break;
+        }
+        case "panning": {
+          _this.map.moveOver(event.dx, event.dy);
+          break;
+        }
         }
       })
-      .on("end", (d, i) => {
+      .on("end", (event) => {
         switch (_this.dragAction) {
-          case "zooming":
-            _this.DOM.zoomRect
-              .attr("width", 0)
-              .attr("height", 0)
-              .classed("vzb-invisible", true);
-            if (_this.zooming) {
-              const mouse = d3.mouse(_this.DOM.graph.node());
-              if (Math.abs(_this.origin.x - mouse[0]) < 5 || Math.abs(_this.origin.y - mouse[1]) < 5) {
-                _this._hideEntities();
-                _this.map.zoomMap(mouse, 1).then(
-                  () => {
-                    _this._showEntities(300);
-                  }
-                );
-              } else {
-                _this.map.zoomRectangle(_this.origin.x, _this.origin.y, mouse[0], mouse[1]);
-              }
+        case "zooming":
+          _this.DOM.zoomRect
+            .attr("width", 0)
+            .attr("height", 0)
+            .classed("vzb-invisible", true);
+          if (_this.zooming) {
+            const mouse = d3.pointer(event);
+            if (Math.abs(_this.origin.x - mouse[0]) < 5 || Math.abs(_this.origin.y - mouse[1]) < 5) {
+              _this._hideEntities();
+              _this.map.zoomMap(mouse, 1).then(
+                () => {
+                  _this._showEntities(300);
+                }
+              );
+            } else {
+              _this.map.zoomRectangle(_this.origin.x, _this.origin.y, mouse[0], mouse[1]);
             }
-            break;
-          case "panning":
-            _this.map.panFinished();
-            _this._showEntities(300);
-            _this.DOM.chartSvg.classed("vzb-zooming", false);
-            break;
+          }
+          break;
+        case "panning":
+          _this.map.panFinished();
+          _this._showEntities(300);
+          _this.DOM.chartSvg.classed("vzb-zooming", false);
+          break;
         }
         if (_this.ui.cursorMode == "minus") {
-          const mouse = d3.mouse(_this.DOM.graph.node());
+          const mouse = d3.pointer(event);
           _this._hideEntities();
           _this.map.zoomMap(mouse, -1).then(
             () => {
@@ -1217,15 +1219,15 @@ const _OldVizabiExtApiMap = {
     this._labels.readyOnce();
 
     const mapDragger = d3.drag()
-      .on("start", (d, i) => {
+      .on("start", (event) => {
         if (
-          ((d3.event.sourceEvent.metaKey || d3.event.sourceEvent.ctrlKey) && _this.ui.cursorMode == "arrow") ||
+          ((event.sourceEvent.metaKey || event.sourceEvent.ctrlKey) && _this.ui.cursorMode == "arrow") ||
           _this.ui.cursorMode == "plus"
 
         ) {
           _this.dragAction = "zooming";
           _this.zooming = true;
-          const mouse = d3.mouse(this.graph.node());
+          const mouse = d3.pointer(event);
           _this.origin = {
             x: mouse[0],
             y: mouse[1]
@@ -1241,50 +1243,52 @@ const _OldVizabiExtApiMap = {
           _this.chartSvg.classed("vzb-zooming", true);
         }
       })
-      .on("drag", (d, i) => {
+      .on("drag", (event) => {
         switch (_this.dragAction) {
-          case "zooming":
-            const mouse = d3.mouse(this.graph.node());
-            _this.zoomRect
-              .attr("x", Math.min(mouse[0], _this.origin.x))
-              .attr("y", Math.min(mouse[1], _this.origin.y))
-              .attr("width", Math.abs(mouse[0] - _this.origin.x))
-              .attr("height", Math.abs(mouse[1] - _this.origin.y));
-            break;
-          case "panning":
-            _this.map.moveOver(d3.event.dx, d3.event.dy);
-            break;
+        case "zooming": {
+          const mouse = d3.pointer(event);
+          _this.zoomRect
+            .attr("x", Math.min(mouse[0], _this.origin.x))
+            .attr("y", Math.min(mouse[1], _this.origin.y))
+            .attr("width", Math.abs(mouse[0] - _this.origin.x))
+            .attr("height", Math.abs(mouse[1] - _this.origin.y));
+          break;
+        }
+        case "panning": {
+          _this.map.moveOver(event.dx, event.dy);
+          break;
+        }
         }
       })
-      .on("end", (d, i) => {
+      .on("end", (event) => {
         switch (_this.dragAction) {
-          case "zooming":
-            _this.zoomRect
-              .attr("width", 0)
-              .attr("height", 0)
-              .classed("vzb-invisible", true);
-            if (_this.zooming) {
-              const mouse = d3.mouse(this.graph.node());
-              if (Math.abs(_this.origin.x - mouse[0]) < 5 || Math.abs(_this.origin.y - mouse[1]) < 5) {
-                _this._hideEntities();
-                _this.map.zoomMap(mouse, 1).then(
-                  () => {
-                    _this._showEntities(300);
-                  }
-                );
-              } else {
-                _this.map.zoomRectangle(_this.origin.x, _this.origin.y, mouse[0], mouse[1]);
-              }
+        case "zooming":
+          _this.zoomRect
+            .attr("width", 0)
+            .attr("height", 0)
+            .classed("vzb-invisible", true);
+          if (_this.zooming) {
+            const mouse = d3.pointer(event);
+            if (Math.abs(_this.origin.x - mouse[0]) < 5 || Math.abs(_this.origin.y - mouse[1]) < 5) {
+              _this._hideEntities();
+              _this.map.zoomMap(mouse, 1).then(
+                () => {
+                  _this._showEntities(300);
+                }
+              );
+            } else {
+              _this.map.zoomRectangle(_this.origin.x, _this.origin.y, mouse[0], mouse[1]);
             }
-            break;
-          case "panning":
-            _this.map.panFinished();
-            _this._showEntities(300);
-            _this.chartSvg.classed("vzb-zooming", false);
-            break;
+          }
+          break;
+        case "panning":
+          _this.map.panFinished();
+          _this._showEntities(300);
+          _this.chartSvg.classed("vzb-zooming", false);
+          break;
         }
         if (_this.ui.cursorMode == "minus") {
-          const mouse = d3.mouse(this.graph.node());
+          const mouse = d3.pointer(event);
           _this._hideEntities();
           _this.map.zoomMap(mouse, -1).then(
             () => {
@@ -1295,44 +1299,45 @@ const _OldVizabiExtApiMap = {
         _this.dragAction = null;
         _this.zooming = false;
       });
-    const zoomOnWheel = function() {
+    const zoomOnWheel = function(event) {
       if (_this.ui.zoomOnScrolling) {
-        const mouse = d3.mouse(_this.graph.node());
+        const mouse = d3.pointer(event);
         _this._hideEntities();
-        _this.map.zoomMap(mouse, d3.event.wheelDelta > 0 ? 1 : -1).then(
+        _this.map.zoomMap(mouse, event.wheelDelta > 0 ? 1 : -1).then(
           () => {
             _this._showEntities(100);
           }
         );
-        d3.event.stopPropagation();
-        d3.event.preventDefault();
-        d3.event.returnValue = false;
+        event.stopPropagation();
+        event.preventDefault();
+        event.returnValue = false;
         return false;
       }
     };
     this.element.call(mapDragger);
-    this.element.on("mousewheel", zoomOnWheel)
+    this.element
+      .on("mousewheel", zoomOnWheel)
       .on("wheel", zoomOnWheel);
     d3.select("body")
-      .on("keydown", () => {
+      .on("keydown", event => {
         if (_this.ui.cursorMode !== "arrow" && _this.ui.cursorMode !== "hand") return;
-        if (d3.event.metaKey || d3.event.ctrlKey) {
+        if (event.metaKey || event.ctrlKey) {
           _this.element.select("svg").classed("vzb-zoomin", true);
           //_this.ui.set("cursorMode", "plus", false, false);
         }
       })
-      .on("keyup", () => {
+      .on("keyup", event => {
         if (_this.ui.cursorMode !== "arrow" && _this.ui.cursorMode !== "hand") return;
-        if (!d3.event.metaKey && !d3.event.ctrlKey) {
+        if (!event.metaKey && !event.ctrlKey) {
           _this.element.select("svg").classed("vzb-zoomin", false);
           //_this.ui.set("cursorMode", "arrow", false, false);
         }
       })
       //this is for the case when user would press ctrl and move away from the browser tab or window
       //keyup event would happen somewhere else and won't be captured, so zoomin class would get stuck
-      .on("mouseenter", () => {
+      .on("mouseenter", (event) => {
         if (_this.ui.cursorMode !== "arrow" && _this.ui.cursorMode !== "hand") return;
-        if (!d3.event.metaKey && !d3.event.ctrlKey) {
+        if (!event.metaKey && !event.ctrlKey) {
           _this.ui.cursorMode = "arrow";
         }
       });
@@ -1345,10 +1350,10 @@ const _OldVizabiExtApiMap = {
 
     /*
      this.element
-     .on("click", () => {
+     .on("click", (event) => {
      const cursor = _this.ui.cursorMode;
      if (cursor !== "arrow" && cursor !== "hand") {
-     const mouse = d3.mouse(this.graph.node());
+     const mouse = d3.pointer(event);
      _this._hideEntities(100);
      _this.map.zoomMap(mouse, (cursor == "plus" ? 1 : -1)).then(
      () => {
@@ -1478,24 +1483,24 @@ const _OldVizabiExtApiMap = {
     //enter selection -- init circles
     this.entityBubbles = this.entityBubbles.enter().append("circle")
       .attr("class", "vzb-bmc-bubble")
-      .on("mouseover", (d, i) => {
+      .on("mouseover", (event, d) => {
         if (utils.isTouchDevice() || _this.ui.cursorMode !== "arrow") return;
-        _this._interact()._mouseover(d, i);
+        _this._interact()._mouseover(event, d);
       })
-      .on("mouseout", (d, i) => {
+      .on("mouseout", (event, d) => {
         if (utils.isTouchDevice() || _this.ui.cursorMode !== "arrow") return;
-        _this._interact()._mouseout(d, i);
+        _this._interact()._mouseout(event, d);
       })
-      .on("click", (d, i) => {
+      .on("click", (event, d) => {
         if (utils.isTouchDevice() || _this.ui.cursorMode !== "arrow") return;
-        _this._interact()._click(d, i);
+        _this._interact()._click(event, d);
         _this.highlightMarkers();
       })
-      .onTap((d, i) => {
-        _this._interact()._click(d, i);
-        d3.event.stopPropagation();
+      .onTap((event, d) => {
+        _this._interact()._click(event, d);
+        event.stopPropagation();
       })
-      .onLongTap((d, i) => {
+      .onLongTap(() => {
       })
       .merge(this.entityBubbles);
 

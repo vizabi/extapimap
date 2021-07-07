@@ -51,14 +51,14 @@ const MCSelectList = Vizabi.Class.extend({
         label.append("text").attr("class", "vzb-bmc-label-shadow vzb-bmc-label-text");
         label.append("text").attr("class", "vzb-bmc-label-text");
         label.append("g").attr("class", "vzb-bmc-label-x vzb-label-shadow vzb-invisible")
-          .on("click", (d, i) => {
+          .on("click", (event, d) => {
             if (utils.isTouchDevice()) return;
-            d3.event.stopPropagation();
+            event.stopPropagation();
             _this.model.entities.clearHighlighted();
             _this.model.marker.selectMarker(d);
-            d3.event.stopPropagation();
+            event.stopPropagation();
           })
-          .onTap((d, i) => {
+          .onTap((event, d) => {
             d3.select("#" + d.geo + "-label").remove();
             _this.model.entities.clearHighlighted();
             _this.model.marker.selectMarker(d);
@@ -81,16 +81,16 @@ const MCSelectList = Vizabi.Class.extend({
             .text("Deselect");
         }
       })
-      .on("mousemove", (d, i) => {
+      .on("mousemove", (event, d) => {
         if (utils.isTouchDevice()) return;
         _this.model.marker.highlightMarker(d);
       })
-      .on("mouseout", (d, i) => {
+      .on("mouseout", () => {
         if (utils.isTouchDevice()) return;
         _this.model.marker.clearHighlighted();
 
       })
-      .on("click", (d, i) => {
+      .on("click", (event, d) => {
         if (utils.isTouchDevice()) return;
         _this.model.marker.clearHighlighted();
         _this.model.marker.selectMarker(d);
@@ -175,8 +175,8 @@ const MCSelectList = Vizabi.Class.extend({
           .attr("cy", fontHeight / 1.5)
           .style("fill", _this.cScale(_this.values.color[d.KEY()]));
 
-        view.onTap((d, i) => {
-          d3.event.stopPropagation();
+        view.onTap((event, d) => {
+          event.stopPropagation();
           _this.model.marker.highlightMarker(d);
           setTimeout(() => {
             _this.model.marker.unhighlightMarker(d);

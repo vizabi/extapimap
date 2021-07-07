@@ -153,20 +153,20 @@ class TopojsonLayer extends MapLayer {
         .attr("d", _this.mapPath)
         .attr("class", "land")
         .style("opacity", _this.context.ui.opacitySelectDim)
-        .on("mouseover", (d, i) => {
-          _this.parent._interact()._mouseover(d.key);
+        .on("mouseover", (event, d) => {
+          _this.parent._interact()._mouseover(event, d.key);
         })
-        .on("mouseout", (d, i) => {
-          _this.parent._interact()._mouseout(d.key);
+        .on("mouseout", (event, d) => {
+          _this.parent._interact()._mouseout(event, d.key);
         })
-        .on("click", (d, i) => {
-          _this.parent._interact()._click(d.key);
+        .on("click", (event, d) => {
+          _this.parent._interact()._click(event, d.key);
         })
-        .onTap((d, i) => {
-          _this.parent._interact()._click(d.key);
-          d3.event.stopPropagation();
+        .onTap((event, d) => {
+          _this.parent._interact()._click(event, d.key);
+          event.stopPropagation();
         })
-        .each(function(d, i) {
+        .each(function(d) {
           const view = d3.select(this);
           view
             .attr("id", d.key)
