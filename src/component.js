@@ -12,38 +12,40 @@ import MapEngine from "./map";
 // import Selectlist from 'extapimap-selectlist';
 
 const {ICON_QUESTION} = Icons;
-const COLOR_BLACKISH = "rgb(51, 51, 51)";
+//const COLOR_BLACKISH = "rgb(51, 51, 51)";
 const COLOR_WHITEISH = "rgb(253, 253, 253)";
 
-const PROFILE_CONSTANTS = {
+const MAX_RADIUS_EM = 0.05;
+
+const PROFILE_CONSTANTS = (width, height) => ({
   SMALL: {
     margin: { top: 10, right: 10, left: 10, bottom: 0 },
     infoElHeight: 16,
     minRadiusPx: 0.5,
-    maxRadiusEm: 0.05
-},
+    maxRadiusPx: Math.max(0.5, MAX_RADIUS_EM * utils.hypotenuse(width, height)),
+  },
   MEDIUM: {
     margin: { top: 20, right: 20, left: 20, bottom: 30 },
     infoElHeight: 20,
     minRadiusPx: 1,
-    maxRadiusEm: 0.05
-},
+    maxRadiusPx: Math.max(0.5, MAX_RADIUS_EM * utils.hypotenuse(width, height)),
+  },
   LARGE: {
     margin: { top: 30, right: 30, left: 30, bottom: 35 },
     infoElHeight: 22,
     minRadiusPx: 1,
-    maxRadiusEm: 0.05
+    maxRadiusPx: Math.max(0.5, MAX_RADIUS_EM * utils.hypotenuse(width, height)),
   }
-};
+});
 
-const PROFILE_CONSTANTS_FOR_PROJECTOR = {
+const PROFILE_CONSTANTS_FOR_PROJECTOR = () => ({
   MEDIUM: {
     infoElHeight: 26
   },
   LARGE: {
     infoElHeight: 32
   }
-};
+});
 
 //BUBBLE MAP CHART COMPONENT
 class _VizabiExtApiMap extends Chart {
@@ -229,12 +231,16 @@ class _VizabiExtApiMap extends Chart {
   _updateLayoutProfile(){
     this.services.layout.size;
 
-    this.profileConstants = this.services.layout.getProfileConstants(PROFILE_CONSTANTS, PROFILE_CONSTANTS_FOR_PROJECTOR);
-    const margin = this.profileConstants.margin;
-
     this.height = (this.element.node().clientHeight) || 0;
-    this.chartHeight = this.height - margin.top - margin.bottom;
     this.width = (this.element.node().clientWidth) || 0;
+    
+    this.profileConstants = this.services.layout.getProfileConstants(
+      PROFILE_CONSTANTS(this.width, this.height), 
+      PROFILE_CONSTANTS_FOR_PROJECTOR(this.width, this.height)
+    );
+
+    const margin = this.profileConstants.margin;
+    this.chartHeight = this.height - margin.top - margin.bottom;
     this.chartWidth = this.width - margin.left - margin.right;
     if (!this.height || !this.width) return utils.warn("Chart _updateProfile() abort: container is too little or has display:none");
 
@@ -511,13 +517,11 @@ class _VizabiExtApiMap extends Chart {
     this.MDL.size.scale.domain;
 
     const {
-      minRadiusPx,
+      minRadiusPx: minRadius,
+      maxRadiusPx: maxRadius
     } = this.profileConstants;
 
     const extent = this.MDL.size.extent || [0, 1];
-
-    let minRadius = minRadiusPx;
-    let maxRadius = this.maxRadiusPx;
 
     let minArea = utils.radiusToArea(Math.max(maxRadius * extent[0], minRadius));
     let maxArea = utils.radiusToArea(Math.max(maxRadius * extent[1], minRadius));
@@ -605,17 +609,6 @@ class _VizabiExtApiMap extends Chart {
 
   _updateSize() {
     this.services.layout.size;
-
-    const {
-      minRadiusPx,
-      maxRadiusEm,
-      margin
-    } = this.profileConstants;
-
-    this.maxRadiusPx = Math.max(
-      minRadiusPx,
-      maxRadiusEm * utils.hypotenuse(this.width, this.height)
-    );
 
     this.DOM.chartSvg
       .style("width", this.width + "px")
