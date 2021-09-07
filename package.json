@@ -1,6 +1,6 @@
 {
   "name": "@vizabi/extapimap",
-  "version": "3.3.3",
+  "version": "3.3.4",
   "description": "Vizabi map from external API",
   "scripts": {
     "prepublishOnly": "npm start",
@@ -49,7 +49,7 @@
     "@vizabi/shared-components": "../shared-components",
     "cross-env": "^5.0.0",
     "css.escape": "^1.5.1",
-    "vizabi-tool-bundler": "1.2.1"
+    "vizabi-tool-bundler": "1.2.2"
   },
   "dependencies": {
     "google-maps": "^3.2.1",
