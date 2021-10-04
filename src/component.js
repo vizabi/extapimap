@@ -4,7 +4,7 @@ import {
   Utils,
   LegacyUtils as utils,
   Icons,
-  DynamicBackground
+  DateTimeBackground
 } from "VizabiSharedComponents";
 import { runInAction, decorate, computed} from "mobx";
 
@@ -57,7 +57,7 @@ class _VizabiExtApiMap extends Chart {
       <svg class="vzb-extapimap-svg vzb-export">
           <g class="vzb-bmc-map-background"></g>
           <g class="vzb-bmc-graph">
-              <g class="vzb-bmc-year"></g>
+              <g class="vzb-bmc-date"></g>
 
               <g class="vzb-bmc-lines"></g>
               <g class="vzb-bmc-bubbles"></g>
@@ -93,8 +93,8 @@ class _VizabiExtApiMap extends Chart {
       },
       name: "labels"
     },{
-      type: DynamicBackground,
-      placeholder: ".vzb-bmc-year"
+      type: DateTimeBackground,
+      placeholder: ".vzb-bmc-date"
     }];
 
     super(config);
@@ -115,7 +115,7 @@ class _VizabiExtApiMap extends Chart {
         cTitle: graph.select(".vzb-bmc-axis-c-title"),
         yInfo: graph.select(".vzb-bmc-axis-y-info"),
         cInfo: graph.select(".vzb-bmc-axis-c-info"),
-        year: graph.select(".vzb-bmc-year")
+        year: graph.select(".vzb-bmc-date")
       })
     );
 
@@ -123,8 +123,8 @@ class _VizabiExtApiMap extends Chart {
 
     this.isMobile = utils.isMobileOrTablet();
 
-    this._year = this.findChild({type: "DynamicBackground"});
-    this._year.setConditions({ xAlign: "left", yAlign: "bottom" });
+    this._date = this.findChild({type: "DateTimeBackground"});
+    this._date.setConditions({ xAlign: "left", yAlign: "bottom" });
 
     this._labels = this.findChild({type: "Labels"});
 
@@ -455,10 +455,10 @@ class _VizabiExtApiMap extends Chart {
     this.DOM.graph
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    this._year.setConditions({
+    this._date.setConditions({
       widthRatio: 2 / 10
     });
-    this._year.resize(this.width, this.height - margin.top);
+    this._date.resize(this.width, this.height - margin.top);
 
     this.DOM.yTitle
       .style("font-size", infoElHeight)
@@ -703,7 +703,6 @@ class _VizabiExtApiMap extends Chart {
     this.frameValue = this.MDL.frame.value;
     return this.__duration = this.MDL.frame.playing && (this.frameValue - this.frameValue_1 > 0) ? this.MDL.frame.speed : 0;
 
-    //this.year.setText(this.model.time.formatDate(this.time), this.duration);
     //this._updateForecastOverlay();
 
     //possibly update the exact value in size title
@@ -1191,9 +1190,9 @@ const _OldVizabiExtApiMap = {
     this.entityBubbles = null;
 
     // year background
-    this.DOM.year = this.graph.select(".vzb-bmc-year");
-    this.year = new DynamicBackground(this.DOM.year);
-    this.year.setConditions({ xAlign: "left", yAlign: "bottom" });
+    this.DOM.date = this.graph.select(".vzb-bmc-date");
+    this._date = new DateTimeBackground(this.DOM.date);
+    this._date.setConditions({ xAlign: "left", yAlign: "bottom" });
 
     const _this = this;
     this.on("resize", () => {
@@ -1624,7 +1623,7 @@ const _OldVizabiExtApiMap = {
     this.time_1 = this.time == null ? this.model.time.value : this.time;
     this.time = this.model.time.value;
     this.duration = this.model.time.playing && (this.time - this.time_1 > 0) ? this.model.time.delayAnimations : 0;
-    this.year.setText(this.model.time.formatDate(this.time), this.duration);
+    this._date.setText(this.time, this.duration);
 
     //possibly update the exact value in size title
     this.updateTitleNumbers();
