@@ -189,7 +189,7 @@ class _VizabiExtApiMap extends Chart {
   }
 
   draw(){
-    this.localise = this.services.locale.auto();
+    this.localise = this.services.locale.auto(this.MDL.frame.interval);
 
     this.treemenu = this.root.findChild({type: "TreeMenu"});
 
