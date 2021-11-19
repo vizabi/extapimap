@@ -82,7 +82,6 @@
       position: absolute;
 
       .vzb-bmc-date {
-        @include opacity(.5);
         font-size: $vzb-bmc-date-size;
         fill: $vzb-color-grey;
         text-anchor: middle;
