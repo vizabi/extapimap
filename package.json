@@ -1,9 +1,9 @@
 {
   "name": "@vizabi/extapimap",
-  "version": "3.4.0",
+  "version": "3.4.1",
   "description": "Vizabi map from external API",
   "scripts": {
-    "prepublishOnly": "npm start",
+    "prepublishOnly": "npm run build",
     "link": "npm link ../shared-components",
     "start": "rollup -c",
     "build": "cross-env NODE_ENV=production rollup -c",
@@ -50,6 +50,10 @@
     "cross-env": "^5.0.0",
     "css.escape": "^1.5.1",
     "vizabi-tool-bundler": "^1.2.3"
+  },
+  "peerDependencies": {
+    "mobx": "^5.15.7",
+    "d3": "^6.7.0"
   },
   "dependencies": {
     "google-maps": "^3.2.1",

@@ -87,6 +87,8 @@ export default class ExtApiMap extends BaseComponent {
   }
 };
 
+ExtApiMap.mainComponent = VizabiExtApiMap;
+
 ExtApiMap.DEFAULT_UI = {
   chart: {
     viewWH: {
