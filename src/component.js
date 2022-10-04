@@ -173,6 +173,13 @@ class _VizabiExtApiMap extends Chart {
         }
       });
 
+    this.root.element.on("custom-resetZoom", () => {
+      _this._hideEntities();
+      _this.map.resetZoom(500).then(() => {
+        _this._showEntities();
+      });
+    });
+  
   }
 
   get MDL(){
@@ -194,7 +201,7 @@ class _VizabiExtApiMap extends Chart {
     this.treemenu = this.root.findChild({type: "TreeMenu"});
 
     // new scales and axes
-    this.sScale = this.MDL.size.scale.d3Scale;
+    this.sScale = this.MDL.size.scale.d3Scale.copy();
     this.cScale = color => color? this.MDL.color.scale.d3Scale(color) : COLOR_WHITEISH;
     this.mcScale = color => color? this.MDL.mapColor.scale.d3Scale(color) : COLOR_WHITEISH;
 
@@ -206,7 +213,7 @@ class _VizabiExtApiMap extends Chart {
     runInAction(() => {
       this.preload().then(() => {
         this.addReaction(this._updateSize);
-        this.addReaction(this._updateMarkerSizeLimits);
+        //this.addReaction(this._updateMarkerSizeLimits);
         this.addReaction(this._getDuration);
         this.addReaction(this._drawData);
         this.addReaction(this._updateOpacity);
@@ -249,6 +256,7 @@ class _VizabiExtApiMap extends Chart {
   _drawData() {
     this._processFrameData();
     this._createAndDeleteBubbles();
+    this._updateMarkerSizeLimits();
     runInAction(() => {
       this._redrawData();
     })
@@ -450,8 +458,6 @@ class _VizabiExtApiMap extends Chart {
     const infoElHeight = this.profileConstants.infoElHeight;
     const isRTL = this.services.locale.isRTL();
 
-    const graphWidth = this.width - margin.left - margin.right;
-
     this.DOM.graph
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
@@ -462,13 +468,13 @@ class _VizabiExtApiMap extends Chart {
 
     this.DOM.yTitle
       .style("font-size", infoElHeight)
-      .attr("transform", "translate(" + (isRTL ? this.graphWidth : 0) + "," + margin.top + ")");
+      .attr("transform", "translate(" + (isRTL ? this.chartWidth : 0) + "," + margin.top + ")");
 
     const yTitleBB = this.DOM.yTitle.select("text").node().getBBox();
 
     //hide the second line about color in large profile or when color is constant
     this.DOM.cTitle.attr("transform", "translate(" + (isRTL ? this.width : 0) + "," + (margin.top + yTitleBB.height) + ")")
-      .classed("vzb-hidden", this.services.layout.profile === "LARGE" || this.MDL.color.data.isConstant());
+      .classed("vzb-hidden", this.services.layout.profile === "LARGE" || this.MDL.color.data.isConstant);
 
     if (this.DOM.yInfo.select("svg").node()) {
       const titleBBox = this.DOM.yTitle.node().getBBox();
@@ -521,13 +527,13 @@ class _VizabiExtApiMap extends Chart {
       maxRadiusPx: maxRadius
     } = this.profileConstants;
 
-    const extent = this.MDL.size.extent || [0, 1];
+    const extent = this.MDL.size.scale.extent || [0, 1];
 
     let minArea = utils.radiusToArea(Math.max(maxRadius * extent[0], minRadius));
     let maxArea = utils.radiusToArea(Math.max(maxRadius * extent[1], minRadius));
 
     let range = minArea === maxArea ? [minArea, maxArea] :
-      d3.range(minArea, maxArea, (maxArea - minArea) / this.sScale.domain().length).concat(maxArea);
+      d3.range(minArea, maxArea, (maxArea - minArea) / (this.sScale.domain().length - 1)).concat(maxArea);
 
     this.sScale.range(range);
   }
@@ -885,7 +891,7 @@ class _VizabiExtApiMap extends Chart {
   _createMapDragger() {
     const _this = this;
     return d3.drag()
-      .on("start", (event) => {
+      .on("start", function(event) {
         if (
           ((event.sourceEvent.metaKey || event.sourceEvent.ctrlKey) && _this.ui.cursorMode == "arrow") ||
           _this.ui.cursorMode == "plus"
@@ -893,7 +899,7 @@ class _VizabiExtApiMap extends Chart {
         ) {
           _this.dragAction = "zooming";
           _this.zooming = true;
-          const mouse = d3.pointer(event);
+          const mouse = d3.pointer(event, _this.DOM.graph.node());
           _this.origin = {
             x: mouse[0],
             y: mouse[1]
@@ -909,10 +915,10 @@ class _VizabiExtApiMap extends Chart {
           _this.DOM.chartSvg.classed("vzb-zooming", true);
         }
       })
-      .on("drag", (event) => {
+      .on("drag", function(event) {
         switch (_this.dragAction) {
         case "zooming": {
-          const mouse = d3.pointer(event);
+          const mouse = d3.pointer(event, _this.DOM.graph.node());
           _this.DOM.zoomRect
             .attr("x", Math.min(mouse[0], _this.origin.x))
             .attr("y", Math.min(mouse[1], _this.origin.y))
@@ -926,7 +932,7 @@ class _VizabiExtApiMap extends Chart {
         }
         }
       })
-      .on("end", (event) => {
+      .on("end", function(event) {
         switch (_this.dragAction) {
         case "zooming":
           _this.DOM.zoomRect
@@ -934,7 +940,7 @@ class _VizabiExtApiMap extends Chart {
             .attr("height", 0)
             .classed("vzb-invisible", true);
           if (_this.zooming) {
-            const mouse = d3.pointer(event);
+            const mouse = d3.pointer(event, _this.DOM.graph.node());
             if (Math.abs(_this.origin.x - mouse[0]) < 5 || Math.abs(_this.origin.y - mouse[1]) < 5) {
               _this._hideEntities();
               _this.map.zoomMap(mouse, 1).then(
@@ -954,7 +960,7 @@ class _VizabiExtApiMap extends Chart {
           break;
         }
         if (_this.ui.cursorMode == "minus") {
-          const mouse = d3.pointer(event);
+          const mouse = d3.pointer(event, _this.DOM.graph.node());
           _this._hideEntities();
           _this.map.zoomMap(mouse, -1).then(
             () => {
