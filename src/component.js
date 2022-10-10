@@ -173,7 +173,7 @@ class _VizabiExtApiMap extends Chart {
         }
       });
 
-    this.root.element.on("custom-resetZoom", () => {
+    this.root.element.on("custom-resetZoom.extapimap", () => {
       _this._hideEntities();
       _this.map.resetZoom(500).then(() => {
         _this._showEntities();
@@ -212,6 +212,7 @@ class _VizabiExtApiMap extends Chart {
 
     runInAction(() => {
       this.preload().then(() => {
+        if (this.map.inPreload) return;
         this.addReaction(this._updateSize);
         //this.addReaction(this._updateMarkerSizeLimits);
         this.addReaction(this._getDuration);

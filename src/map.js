@@ -128,6 +128,7 @@ class TopojsonLayer extends MapLayer {
     this.context.ui.map.scale = 1;
     return this.context.ui.map.skipShapesLoading ? Promise.resolve() : this._loadShapes(assetName).then(
       shapes => {
+        _this.parent.inPreload = false;
         _this.shapes = shapes;
         _this.mapFeature = topojson.feature(_this.shapes, _this.shapes.objects[this.context.ui.map.topology.objects.geo]);
         _this.mapBounds = _this.mapPath.bounds(_this.mapFeature);
@@ -202,6 +203,7 @@ class TopojsonLayer extends MapLayer {
   }
 
   _loadShapes(assetName) {
+    this.parent.inPreload = true;
     return this.context.model.data.source.reader.getAsset(assetName);
   }
 
