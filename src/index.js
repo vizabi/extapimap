@@ -5,6 +5,7 @@ import {
   DataNotes,
   LocaleService,
   LayoutService,
+  CapitalVizabiService,
   TreeMenu,
   SteppedSlider,
   Dialogs,
@@ -78,6 +79,7 @@ export default class ExtApiMap extends BaseComponent {
     `;
   
     config.services = {
+      Vizabi: new CapitalVizabiService({Vizabi: config.Vizabi}),
       locale: new LocaleService(config.locale),
       layout: new LayoutService(config.layout)
     };
