@@ -179,7 +179,8 @@ export class MapOptions extends Dialog {
     runInAction(() => {
 
       if (what === "mapEngine") {
-        this.root.ui.chart.map.set({ mapEngine: value, mapStyle: mapStyles[value][0].value });
+        this.root.ui.chart.map.mapEngine = value;
+        this.root.ui.chart.map.mapStyle = mapStyles[value][0].value;
       }
       if (what === "mapStyle") {
         this.root.ui.chart.map.mapStyle = value;
