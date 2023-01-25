@@ -423,9 +423,19 @@ class _VizabiExtApiMap extends Chart {
     };
   }
 
+  _getMarkerItemForArea(id) {
+    if (!id) return undefined;
+
+    const d = Object.assign({}, this.model.dataMap.get(id));
+    d.r = utils.areaToRadius(this.sScale(d.size)||0);
+    d.center = this._getPosition(d);
+    d.hidden = (!d.size && d.size !== 0) || !d.center;
+
+    return  d;
+  }
+
   _mapInteract() {
     const _this = this;
-    const d = {};
     return {
       _mouseover(event, key) {
         if (utils.isTouchDevice()
@@ -433,8 +443,7 @@ class _VizabiExtApiMap extends Chart {
           || _this.ui.map.showBubbles
           || !_this.map.keys[key]
         ) return;
-        d[Symbol.for("key")] = _this.map.keys[key];
-        _this._interact().mouseover(event, d);
+        _this._interact().mouseover(event, _this._getMarkerItemForArea(_this.map.keys[key]));
       },
       _mouseout(event, key) {
         if (utils.isTouchDevice()
@@ -442,8 +451,7 @@ class _VizabiExtApiMap extends Chart {
           || _this.ui.map.showBubbles
           || !_this.map.keys[key]
         ) return;
-        d[Symbol.for("key")] = _this.map.keys[key];
-        _this._interact().mouseout(event, d);
+        _this._interact().mouseout(event, _this._getMarkerItemForArea(_this.map.keys[key]));
       },
       _click(event, key) {
         if (utils.isTouchDevice()
@@ -451,8 +459,7 @@ class _VizabiExtApiMap extends Chart {
           || _this.ui.map.showBubbles
           || !_this.map.keys[key]
         ) return;
-        d[Symbol.for("key")] = _this.map.keys[key];
-        _this._interact().click(event, d);
+        _this._interact().click(event, _this._getMarkerItemForArea(_this.map.keys[key]));
       }
     };
   }
@@ -733,9 +740,10 @@ class _VizabiExtApiMap extends Chart {
     const _highlighted = this.MDL.highlighted.data.filter;
     const _selected = this.MDL.selected.data.filter;
     
-    const someHighlighted = _highlighted.any();
-    const someSelected = _selected.any();
+    const someHighlighted = this.someHighlighted = _highlighted.any();
+    const someSelected = this.someSelected = _selected.any();
 
+    this.map.updateOpacity();
     this.bubbles
       .style("opacity", d => {
         if (_highlighted.has(d)) return opacityRegular;
@@ -791,7 +799,15 @@ class _VizabiExtApiMap extends Chart {
     this._redrawData();
     //this.updateMarkerSizeLimits();
     //this.redrawDataPoints(null, true);
-    //this.updateLabels(null);
+    this.updateLabels(null);
+  }
+
+  updateLabels() {
+    if (this.ui.map.showBubbles) return;
+    const selectedFilter = this.MDL.selected.data.filter;
+    for (const key of selectedFilter.markers.keys()) {
+      this._updateLabel(this._getMarkerItemForArea(key));
+    }
   }
 
   updateOpacity() {
@@ -822,7 +838,7 @@ class _VizabiExtApiMap extends Chart {
       return this.ui.opacitySelectDim;
     }
     const d = {};
-    d[this.KEY] = key;
+    d[Symbol.for("key")] = key;
     return this.getOpacity(d);
   }
 
