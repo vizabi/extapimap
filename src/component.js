@@ -379,7 +379,7 @@ class _VizabiExtApiMap extends Chart {
         if (_this.ui.cursorMode === "arrow") event.stopPropagation();
       },
       mouseover(event, d) {
-        if (_this.MDL.frame.dragging) return;
+        if (_this.zooming || _this.map.zooming || _this.ui.cursorMode !== "arrow" || _this.MDL.frame.dragging) return;
 
         _this.hovered = d;
         _this.MDL.highlighted.data.filter.set(d);
@@ -391,7 +391,7 @@ class _VizabiExtApiMap extends Chart {
         if (!_this.MDL.selected.data.filter.has(d)) _this._setTooltip(event, d);
       },
       mouseout(event, d) {
-        if (_this.MDL.frame.dragging) return;
+        if (_this.zooming || _this.map.zooming ||_this.ui.cursorMode !== "arrow" || _this.MDL.frame.dragging) return;
 
         _this.hovered = null;
         _this.MDL.highlighted.data.filter.delete(d);
@@ -402,6 +402,8 @@ class _VizabiExtApiMap extends Chart {
         //_this._labels.clearTooltip();
       },
       click(event, d) {
+        if (_this.zooming || _this.map.zooming ||_this.ui.cursorMode !== "arrow") return;
+
         _this.MDL.highlighted.data.filter.delete(d);
         _this._setTooltip();
         //_this._labels.clearTooltip();
@@ -410,6 +412,8 @@ class _VizabiExtApiMap extends Chart {
         //_this.selectToggleMarker(d);
       },
       tap(event, d) {
+        if (_this.zooming || _this.map.zooming ||_this.ui.cursorMode !== "arrow") return;
+
         _this._setTooltip();
         _this.MDL.selected.data.filter.toggle(d);
         _this._updateLabel(d);
