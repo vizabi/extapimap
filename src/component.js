@@ -348,7 +348,7 @@ class _VizabiExtApiMap extends Chart {
   _createAndDeleteBubbles() {
 
     this.bubbles = this.DOM.bubbleContainer.selectAll(".vzb-bmc-bubble")
-      .data(this.__dataProcessed, d => d[Symbol.for("key")]);
+      .data(!this.ui.map.showBubbles ? [] : this.__dataProcessed, d => d[Symbol.for("key")]);
 
     //exit selection
     this.bubbles.exit().remove();
@@ -423,32 +423,32 @@ class _VizabiExtApiMap extends Chart {
     const _this = this;
     const d = {};
     return {
-      _mouseover(key, i) {
+      _mouseover(event, key) {
         if (utils.isTouchDevice()
           || _this.ui.cursorMode !== "arrow"
           || _this.ui.map.showBubbles
           || !_this.map.keys[key]
         ) return;
-        d[_this.KEY] = _this.map.keys[key];
-        _this._interact()._mouseover(d);
+        d[Symbol.for("key")] = _this.map.keys[key];
+        _this._interact().mouseover(event, d);
       },
-      _mouseout(key, i) {
+      _mouseout(event, key) {
         if (utils.isTouchDevice()
           || _this.ui.cursorMode !== "arrow"
           || _this.ui.map.showBubbles
           || !_this.map.keys[key]
         ) return;
-        d[_this.KEY] = _this.map.keys[key];
-        _this._interact()._mouseout(d);
+        d[Symbol.for("key")] = _this.map.keys[key];
+        _this._interact().mouseout(event, d);
       },
-      _click(key, i) {
+      _click(event, key) {
         if (utils.isTouchDevice()
           || _this.ui.cursorMode !== "arrow"
           || _this.ui.map.showBubbles
           || !_this.map.keys[key]
         ) return;
-        d[_this.KEY] = _this.map.keys[key];
-        _this._interact()._click(d);
+        d[Symbol.for("key")] = _this.map.keys[key];
+        _this._interact().click(event, d);
       }
     };
   }
