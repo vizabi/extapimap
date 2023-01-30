@@ -217,10 +217,10 @@ class _VizabiExtApiMap extends Chart {
         //this.addReaction(this._updateMarkerSizeLimits);
         this.addReaction(this._getDuration);
         this.addReaction(this._drawData);
-        this.addReaction(this._updateOpacity);
         this.addReaction(this._mapReady);
         this.addReaction(this._updateMap);
         this.addReaction(this._updateMapColors);
+        this.addReaction(this._updateOpacity);
         this.addReaction(this._updateUIStrings);
         //this.addReaction(this._redrawData);
 
