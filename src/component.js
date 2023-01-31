@@ -222,6 +222,8 @@ class _VizabiExtApiMap extends Chart {
         this.addReaction(this._updateMapColors);
         this.addReaction(this._updateOpacity);
         this.addReaction(this._updateUIStrings);
+        this.addReaction(this._highlightDataPoints);
+        this.addReaction(this._selectDataPoints);
         //this.addReaction(this._redrawData);
 
         this.addReaction(this._setupCursorMode);
@@ -316,7 +318,9 @@ class _VizabiExtApiMap extends Chart {
         labelX0: d.center[0] / this.width,
         labelY0: d.center[1] / this.height,
         scaledS0: d.r,
-        scaledC0: this.cScale(d.color)
+        scaledC0: this.cScale(d.color),
+        initTextBBox: null,
+        initFontSize: null  
       };
 
       this._labels.updateLabel(d, cache, d.center[0] / this.width, d.center[1] / this.height, d.size, d.color, this.__labelWithoutFrame(d), valueLST, duration, showhide);
@@ -383,41 +387,29 @@ class _VizabiExtApiMap extends Chart {
 
         _this.hovered = d;
         _this.MDL.highlighted.data.filter.set(d);
+        _this._labels.showCloseCross(d, true);
         //put the exact value in the size title
         //this.updateTitleNumbers();
-        //_this.fitSizeOfTitles();
-       
-        // if not selected, show tooltip
-        if (!_this.MDL.selected.data.filter.has(d)) _this._setTooltip(event, d);
+        //_this.fitSizeOfTitles();       
       },
       mouseout(event, d) {
         if (_this.zooming || _this.map.zooming ||_this.ui.cursorMode !== "arrow" || _this.MDL.frame.dragging) return;
 
         _this.hovered = null;
         _this.MDL.highlighted.data.filter.delete(d);
+        _this._labels.showCloseCross(d, false);
         //_this.updateTitleNumbers();
         //_this.fitSizeOfTitles();
-
-        _this._setTooltip();
-        //_this._labels.clearTooltip();
       },
       click(event, d) {
         if (_this.zooming || _this.map.zooming ||_this.ui.cursorMode !== "arrow") return;
 
-        _this.MDL.highlighted.data.filter.delete(d);
-        _this._setTooltip();
-        //_this._labels.clearTooltip();
         _this.MDL.selected.data.filter.toggle(d);
-        _this._updateLabel(d);
-        //_this.selectToggleMarker(d);
       },
       tap(event, d) {
         if (_this.zooming || _this.map.zooming ||_this.ui.cursorMode !== "arrow") return;
 
-        _this._setTooltip();
         _this.MDL.selected.data.filter.toggle(d);
-        _this._updateLabel(d);
-        //_this.selectToggleMarker(d);
         event.stopPropagation();
       }
     };
@@ -427,9 +419,9 @@ class _VizabiExtApiMap extends Chart {
     if (!id) return undefined;
 
     const d = Object.assign({}, this.model.dataMap.get(id));
-    d.r = utils.areaToRadius(this.sScale(d.size)||0);
+    d.r = 3;
     d.center = this._getPosition(d);
-    d.hidden = (!d.size && d.size !== 0) || !d.center;
+    d.hidden = !d.center;
 
     return  d;
   }
@@ -799,14 +791,13 @@ class _VizabiExtApiMap extends Chart {
     this._redrawData();
     //this.updateMarkerSizeLimits();
     //this.redrawDataPoints(null, true);
-    this.updateLabels(null);
+    if (!this.ui.map.showBubbles) this.updateLabels(null);
   }
 
   updateLabels() {
-    if (this.ui.map.showBubbles) return;
     const selectedFilter = this.MDL.selected.data.filter;
     for (const key of selectedFilter.markers.keys()) {
-      this._updateLabel(this._getMarkerItemForArea(key));
+      this._updateLabel(this.ui.map.showBubbles ? this.model.dataMap.get(key) : this._getMarkerItemForArea(key));
     }
   }
 
@@ -886,6 +877,49 @@ class _VizabiExtApiMap extends Chart {
     if (typeof d.label == "object") return Object.values(d.label).join(", ");
     if (d.label != null) return "" + d.label;
     return d[Symbol.for("key")];
+  }
+
+  _highlightDataPoints() {
+    const highlightedFilter = this.MDL.highlighted.data.filter;
+    const selectedFilter = this.MDL.selected.data.filter;
+    this.someHighlighted = highlightedFilter.any();
+
+    if (highlightedFilter.markers.size === 1) {
+      const highlightedKey = highlightedFilter.markers.keys().next().value;
+      const d = this.ui.map.showBubbles ? this.model.dataMap.get(highlightedKey) : this._getMarkerItemForArea(highlightedKey);
+      const selectedKey = d[Symbol.for("key")];
+      let entityOutOfView = false;
+
+      ////const titles = _this._formatSTitleValues(values.size[utils.getKey(d, dataKeys.size)], values.color[utils.getKey(d, dataKeys.color)]);
+      ////_this._updateSTitle(titles[0], titles[1]);
+      // if (x + s < 0 || x - s > this.width || y + s < 0 || y - s > this.height) {
+      //   entityOutOfView = true;
+      // }
+
+      //show tooltip
+      const isSelected = selectedFilter.has(selectedKey);
+
+      const text = isSelected ? "": this.__labelWithoutFrame(d);
+      
+      this._labels.highlight(null, false);
+      this._labels.highlight({ [Symbol.for("key")]: selectedKey }, true);
+
+      //set tooltip and show axis projections
+      if (text) {// && !entityOutOfView) {
+        this._setTooltip({}, d);
+      } else {
+        this._setTooltip();
+      }
+
+    } else {
+      this._setTooltip();
+      this._labels.highlight(null, false);
+    }
+
+  }
+
+  _selectDataPoints() {
+    this.updateLabels();
   }
 
   _setupCursorMode() {
