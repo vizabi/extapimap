@@ -369,7 +369,7 @@ class GoogleMapLayer extends MapLayer {
         _this.overlay.setMap(_this.map);
         // set initial bounds on load, sometimes "rescaleMap" method is not working correctly
         google.maps.event.addListener(_this.map, "bounds_changed", () => {
-          if (!this.transformation instanceof Promise) {
+          if (!(this.transformation instanceof Promise)) {
             this.transformation = new Promise((resolve) => {
               google.maps.event.addListenerOnce(_this.map, "idle", () => {
                 resolve();

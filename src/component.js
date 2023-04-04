@@ -10,7 +10,6 @@ import * as d3 from "d3";
 import { runInAction, decorate, computed} from "mobx";
 
 import MapEngine from "./map";
-// import Selectlist from 'extapimap-selectlist';
 
 const {ICON_QUESTION} = Icons;
 //const COLOR_BLACKISH = "rgb(51, 51, 51)";
