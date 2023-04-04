@@ -354,6 +354,7 @@ class GoogleMapLayer extends MapLayer {
     GoogleMapsLoader.KEY = "AIzaSyAP0vMZwYojifwGYHTnEtYV40v6-MdLGFM";
     return new Promise((resolve) => {
       GoogleMapsLoader.load(google => {
+        _this.google = google;
         _this.map = new google.maps.Map(_this.mapCanvas.node(), {
           draggable: false,
           zoomControl: false,
@@ -444,13 +445,13 @@ class GoogleMapLayer extends MapLayer {
 
   rescaleMap() {
     this._waitMap().then(() => {
-      const rectBounds = new google.maps.LatLngBounds(
-        new google.maps.LatLng(this.context.ui.map.bounds.north, this.context.ui.map.bounds.west),
-        new google.maps.LatLng(this.context.ui.map.bounds.south, this.context.ui.map.bounds.east)
+      const rectBounds = new this.google.maps.LatLngBounds(
+        new this.google.maps.LatLng(this.context.ui.map.bounds.north, this.context.ui.map.bounds.west),
+        new this.google.maps.LatLng(this.context.ui.map.bounds.south, this.context.ui.map.bounds.east)
       );
       this.map.fitBounds(rectBounds);
-      google.maps.event.trigger(this.map, "resize");
-      google.maps.event.addListener(this.map, "idle", () => {
+      this.google.maps.event.trigger(this.map, "resize");
+      this.google.maps.event.addListener(this.map, "idle", () => {
         const bounds = this.map.getBounds();
         if (bounds && (!this.bounds || this.bounds != bounds)) {
           this.bounds = bounds;
@@ -467,7 +468,7 @@ class GoogleMapLayer extends MapLayer {
       _this.map.setZoom(_this.map.getZoom() + 1 * increment);
       const zoomPoint1 = this.geo2Point(center[0], center[1]);
       _this.map.panBy(zoomPoint1[0] - zoomPoint[0], zoomPoint1[1] - zoomPoint[1]);
-      google.maps.event.addListenerOnce(_this.map, "idle", () => {
+      _this.google.maps.event.addListenerOnce(_this.map, "idle", () => {
         resolve();
       });
     });
@@ -479,7 +480,7 @@ class GoogleMapLayer extends MapLayer {
     if (!projection) {
       return null;
     }
-    const coords = projection.fromLatLngToContainerPixel(new google.maps.LatLng(y, x));
+    const coords = projection.fromLatLngToContainerPixel(new this.google.maps.LatLng(y, x));
     return [coords.x, coords.y];
   }
 
@@ -490,7 +491,7 @@ class GoogleMapLayer extends MapLayer {
     const topRight = projection.fromLatLngToPoint(ne);
     const bottomLeft = projection.fromLatLngToPoint(sw);
     const scale = Math.pow(2, this.map.getZoom());
-    const point = projection.fromPointToLatLng(new google.maps.Point(x / scale + bottomLeft.x, y / scale + topRight.y));
+    const point = projection.fromPointToLatLng(new this.google.maps.Point(x / scale + bottomLeft.x, y / scale + topRight.y));
     return [point.lng(), point.lat()];
   }
 
@@ -498,7 +499,7 @@ class GoogleMapLayer extends MapLayer {
     const _this = this;
     return new Promise((resolve) => {
       _this.map.panBy(-x, -y);
-      google.maps.event.addListenerOnce(_this.map, "idle", () => {
+      _this.google.maps.event.addListenerOnce(_this.map, "idle", () => {
         resolve();
       });
     });
