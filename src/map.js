@@ -13,7 +13,7 @@ class MapLayer {
    * @param parent map factory instance
    */
   constructor(context, parent) {
-    //console.warn("constructor should be implemented in map instance");
+    console.warn("constructor should be implemented in map instance", context, parent);
   }
 
   /**
@@ -36,7 +36,7 @@ class MapLayer {
    * @param {Integer} y
    */
   moveOver(x, y) {
-    console.warn("moveOver method should be implemented in map instance");
+    console.warn("moveOver method should be implemented in map instance", x, y);
   }
 
   /**
@@ -62,7 +62,7 @@ class MapLayer {
    * @param {bool} increment increase zoom if true
    */
   zoomMap(center, increment) {
-    console.warn("zoomMap method should be implemented in map instance");
+    console.warn("zoomMap method should be implemented in map instance", center, increment);
   }
 
   /**
@@ -72,7 +72,7 @@ class MapLayer {
    * @return {Array} [x, y]
    */
   geo2Point(lon, lat) {
-    console.warn("geo2Point method should be implemented in map instance");
+    console.warn("geo2Point method should be implemented in map instance", lon, lat);
     return [0, 0];
   }
 
@@ -83,7 +83,7 @@ class MapLayer {
    * @return {Array} [lon, lat]
    */
   point2Geo(x, y) {
-    console.warn("point2Geo method should be implemented in map instance");
+    console.warn("point2Geo method should be implemented in map instance", x,y);
     return [0, 0];
   }
 }
@@ -135,7 +135,7 @@ class TopojsonLayer extends MapLayer {
         _this.mapBounds = _this.mapPath.bounds(_this.mapFeature);
         _this.boundaries = topojson.mesh(_this.shapes, _this.shapes.objects[_this.context.ui.map.topology.objects.boundaries], (a, b) => a !== b);
         if (_this.mapFeature.features) {
-          utils.forEach(_this.mapFeature.features, (feature, key) => {
+          utils.forEach(_this.mapFeature.features, (feature) => {
             feature.key = feature.properties[_this.context.ui.map.topology.geoIdProperty] ?
               feature.properties[_this.context.ui.map.topology.geoIdProperty].toString().toLowerCase() : feature.id;
             _this.paths[feature.key] = feature;
@@ -263,12 +263,11 @@ class TopojsonLayer extends MapLayer {
       .attr("height", this.context.chartHeight);
 
     // set skew function used for bubbles in chart
-    const _this = this;
-    const x1y1 = this.geo2Point(
+    this.geo2Point(
       this.context.ui.map.bounds.west,
       this.context.ui.map.bounds.north
     );
-    const x2y2 = this.geo2Point(
+    this.geo2Point(
       this.context.ui.map.bounds.east,
       this.context.ui.map.bounds.south
     );
@@ -345,7 +344,7 @@ class GoogleMapLayer extends MapLayer {
     this.transformation = null;
   }
 
-  initMap(domSelector) {
+  initMap() {
     const _this = this;
     this.mapCanvas = this.parent.mapRoot;
     this.mapCanvas
@@ -353,7 +352,7 @@ class GoogleMapLayer extends MapLayer {
       .style("height", "100%");
 
     GoogleMapsLoader.KEY = "AIzaSyAP0vMZwYojifwGYHTnEtYV40v6-MdLGFM";
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       GoogleMapsLoader.load(google => {
         _this.map = new google.maps.Map(_this.mapCanvas.node(), {
           draggable: false,
@@ -463,7 +462,7 @@ class GoogleMapLayer extends MapLayer {
 
   zoomMap(center, increment) {
     const _this = this;
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const zoomPoint = this.geo2Point(center[0], center[1]);
       _this.map.setZoom(_this.map.getZoom() + 1 * increment);
       const zoomPoint1 = this.geo2Point(center[0], center[1]);
@@ -497,7 +496,7 @@ class GoogleMapLayer extends MapLayer {
 
   moveOver(x, y) {
     const _this = this;
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       _this.map.panBy(-x, -y);
       google.maps.event.addListenerOnce(_this.map, "idle", () => {
         resolve();
@@ -534,7 +533,7 @@ class MapboxLayer extends MapLayer {
   initMap() {
     const _this = this;
     this.mapCanvas = this.parent.mapRoot;
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       _this.map = new mapboxgl.Map({
         container: _this.mapCanvas.node(),
         interactive: false,
@@ -587,7 +586,7 @@ class MapboxLayer extends MapLayer {
 
   zoomMap(center, increment) {
     const _this = this;
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       this.map.easeTo({
         duration: 300,
         around: center,
@@ -814,7 +813,7 @@ export default class Map {
         this.topojsonMap.rescaleMap(duration);
       }
       if (!duration) duration = 0;
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         utils.delay(duration).then(() => {
           this._showTopojson(300);
           resolve();
@@ -923,7 +922,7 @@ export default class Map {
       response = this.topojsonMap.zoomMap(geoCenter, increment);
     }
     return response.then(
-      bounds => {
+      () => {
         const nw = this.point2Geo(this.canvasBefore[0][0], this.canvasBefore[0][1]);
         const se = this.point2Geo(this.canvasBefore[1][0], this.canvasBefore[1][1]);
         _this.context.ui.map.bounds = {

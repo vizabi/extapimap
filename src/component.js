@@ -564,7 +564,7 @@ class _VizabiExtApiMap extends Chart {
       .on("click", () => {
         this.treemenu
           .encoding("size")
-          .alignX(this.services.locale.isRTL() ? "right" : "left")
+          .alignX(isRTL ? "right" : "left")
           .alignY("top")
           .updateView()
           .toggle();
@@ -576,7 +576,7 @@ class _VizabiExtApiMap extends Chart {
       .on("click", () => {
         this.treemenu
           .encoding("color")
-          .alignX(this.services.locale.isRTL() ? "right" : "left")
+          .alignX(isRTL ? "right" : "left")
           .alignY("top")
           .updateView()
           .toggle();
@@ -721,7 +721,6 @@ class _VizabiExtApiMap extends Chart {
   }
 
   _updateOpacity() {
-    const _this = this;
     this.MDL.frame.value; //listen
 
     const {
@@ -889,7 +888,6 @@ class _VizabiExtApiMap extends Chart {
       const highlightedKey = highlightedFilter.markers.keys().next().value;
       const d = this.ui.map.showBubbles ? this.model.dataMap.get(highlightedKey) : this._getMarkerItemForArea(highlightedKey);
       const selectedKey = d[Symbol.for("key")];
-      let entityOutOfView = false;
 
       ////const titles = _this._formatSTitleValues(values.size[utils.getKey(d, dataKeys.size)], values.color[utils.getKey(d, dataKeys.color)]);
       ////_this._updateSTitle(titles[0], titles[1]);

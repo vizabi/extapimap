@@ -115,7 +115,7 @@ export class MapOptions extends Dialog {
       });
 
     this.DOM.mapLayers.select("input[name='showBubbles']")
-      .property("checked", d => _this.root.ui.chart.map.showBubbles)
+      .property("checked", () => _this.root.ui.chart.map.showBubbles)
       .on("change", function() {
         _this.setModel("showBubbles", d3.select(this).property("checked"));
       });
