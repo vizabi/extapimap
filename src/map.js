@@ -375,8 +375,8 @@ class GoogleMapLayer extends MapLayer {
               google.maps.event.addListenerOnce(_this.map, "idle", () => {
                 resolve();
                 this.transformation = null;
-              })
-            })
+              });
+            });
           }
         });
 
@@ -389,7 +389,7 @@ class GoogleMapLayer extends MapLayer {
           google.maps.event.trigger(_this.map, "resize");
         });
 
-/*
+        /*
          const rectangle = new google.maps.Rectangle({
          bounds: {
          north: _this.context.ui.map.bounds.north,
@@ -421,19 +421,19 @@ class GoogleMapLayer extends MapLayer {
       this.map.setMapTypeId(style[0]);
       if (style[1]) {
         switch (style[1]) {
-          case "grayscale":
-            this.map.setOptions({
-              styles: [{
-                stylers: [{
-                  saturation: -100
-                }]
+        case "grayscale":
+          this.map.setOptions({
+            styles: [{
+              stylers: [{
+                saturation: -100
               }]
-            });
-            break;
-          default:
-            this.map.setOptions({
-              styles: []
-            });
+            }]
+          });
+          break;
+        default:
+          this.map.setOptions({
+            styles: []
+          });
         }
       } else {
         this.map.setOptions({
@@ -458,7 +458,7 @@ class GoogleMapLayer extends MapLayer {
           this.parent.boundsChanged();
         }
       });
-    })
+    });
   }
 
   zoomMap(center, increment) {
@@ -652,12 +652,12 @@ export default class Map {
     if (!this.mapInstance) {
       if (this.context.ui.map.showMap) {
         switch (this.context.ui.map.mapEngine) {
-          case "google":
-            this.mapInstance = new GoogleMapLayer(this.context, this);
-            break;
-          case "mapbox":
-            this.mapInstance = new MapboxLayer(this.context, this);
-            break;
+        case "google":
+          this.mapInstance = new GoogleMapLayer(this.context, this);
+          break;
+        case "mapbox":
+          this.mapInstance = new MapboxLayer(this.context, this);
+          break;
         }
       }
       if (!this.topojsonMap) {
@@ -699,7 +699,7 @@ export default class Map {
         obj[data.centroid] = data[Symbol.for("key")];
         return obj;
       }, {});
-  utils.forEach(this.keys, (val, key) => {
+    utils.forEach(this.keys, (val, key) => {
       const centroid = this.topojsonMap.centroid(key);
       if (!centroid) return;
       if ((!x1 && x1 != 0) || x1 > centroid[0]) {
@@ -738,7 +738,7 @@ export default class Map {
         .style("bottom", 0)
         .style("width", this.context.width + "px")
         .style("height", this.context.height + (this.context.ui.map.overflowBottom || 0) + "px");
-        this.mapInstance.rescaleMap();
+      this.mapInstance.rescaleMap();
     } else {
       this.topojsonMap.rescaleMap();
     }
@@ -816,10 +816,10 @@ export default class Map {
       if (!duration) duration = 0;
       return new Promise((resolve, reject) => {
         utils.delay(duration).then(() => {
-          this._showTopojson(300)
+          this._showTopojson(300);
           resolve();
         });
-      })
+      });
     } 
   }
   
@@ -939,8 +939,8 @@ export default class Map {
          _this.mapInstance.rescaleMap();
          } else {
          */
-//          _this.topojsonMap.rescaleMap();
-//        }
+        //          _this.topojsonMap.rescaleMap();
+        //        }
         this._showTopojson(300);
       }
     );

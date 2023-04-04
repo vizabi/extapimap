@@ -105,7 +105,7 @@ class _VizabiExtApiMap extends Chart {
     this.DOM = {
       chartSvg: this.element.select("svg"),
       zoomRect: this.element.select(".vzb-bc-zoom-rect")
-    }
+    };
     this.DOM.chartSvg.select(".vzb-bmc-graph").call(graph => 
       Object.assign(this.DOM, {
         graph,
@@ -263,7 +263,7 @@ class _VizabiExtApiMap extends Chart {
     this._updateMarkerSizeLimits();
     runInAction(() => {
       this._redrawData();
-    })
+    });
   }
 
   _redrawData(duration) {
@@ -291,7 +291,7 @@ class _VizabiExtApiMap extends Chart {
       }
  
       view
-        .classed("vzb-hidden", d.hidden)
+        .classed("vzb-hidden", d.hidden);
         
       if (view.classed("vzb-hidden") !== d.hidden || !duration) {
         view
@@ -335,7 +335,7 @@ class _VizabiExtApiMap extends Chart {
     if (d.centroid) {
       return this.map.centroid(d.centroid);
     }
-    utils.warn("_getPosition(): was unable to resolve bubble positions either via lat/long or centroid")
+    utils.warn("_getPosition(): was unable to resolve bubble positions either via lat/long or centroid");
     return [0,0];
   }
 
@@ -1073,7 +1073,7 @@ _VizabiExtApiMap.DEFAULT_UI = {
       "geoIdProperty": "BASKOD2010"
     }
   }
-}
+};
 
 export const VizabiExtApiMap = decorate(_VizabiExtApiMap, {
   "MDL": computed

@@ -89,7 +89,7 @@ export default class ExtApiMap extends BaseComponent {
     super(config);
     this.splashMarker = splashMarker;
   }
-};
+}
 
 ExtApiMap.mainComponent = VizabiExtApiMap;
 
