@@ -1,6 +1,7 @@
-import { LegacyUtils as utils} from "VizabiSharedComponents";
+import { LegacyUtils as utils} from "@vizabi/shared-components";
 import topojson from "./topojson.js";
 import d3GeoProjection from "./d3.geoProjection.js";
+import * as d3 from "d3";
 
 import GoogleMapsLoader from "google-maps";
 import mapboxgl from "mapbox-gl/dist/mapbox-gl.js";

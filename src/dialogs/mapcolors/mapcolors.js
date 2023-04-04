@@ -1,4 +1,4 @@
-import {Dialog, IndicatorPicker, ColorLegend} from "VizabiSharedComponents";
+import {Dialog, IndicatorPicker, ColorLegend} from "@vizabi/shared-components";
 
 /*!
  * VIZABI COLOR DIALOG

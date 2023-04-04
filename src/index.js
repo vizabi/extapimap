@@ -11,7 +11,7 @@ import {
   Dialogs,
   ButtonList,
   versionInfo
-} from "VizabiSharedComponents";
+} from "@vizabi/shared-components";
 import { VizabiExtApiMap } from "./component.js";
 
 import "./dialogs/mapoptions/mapoptions";
@@ -21,9 +21,9 @@ export default class ExtApiMap extends BaseComponent {
 
   constructor(config){
     const fullMarker = config.model.markers.bubble;
-    Vizabi.utils.applyDefaults(fullMarker.config, ExtApiMap.DEFAULT_CORE);  
+    config.Vizabi.utils.applyDefaults(fullMarker.config, ExtApiMap.DEFAULT_CORE);  
       
-    const frameType = Vizabi.stores.encodings.modelTypes.frame;
+    const frameType = config.Vizabi.stores.encodings.modelTypes.frame;
     const { marker, splashMarker } = frameType.splashMarker(fullMarker);
 
     config.name = "extapimap";
@@ -78,6 +78,8 @@ export default class ExtApiMap extends BaseComponent {
       <div class="vzb-datanotes"></div>
     `;
   
+    config.locale.Vizabi = config.Vizabi;
+    config.layout.Vizabi = config.Vizabi;
     config.services = {
       Vizabi: new CapitalVizabiService({Vizabi: config.Vizabi}),
       locale: new LocaleService(config.locale),

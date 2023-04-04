@@ -1,6 +1,7 @@
 import "./_mapoptions.scss";
-import {Dialog} from "VizabiSharedComponents";
+import {Dialog} from "@vizabi/shared-components";
 import { runInAction } from "mobx";
+import * as d3 from "d3";
 
 /*
  * Axes dialog

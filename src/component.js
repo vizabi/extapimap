@@ -5,7 +5,8 @@ import {
   LegacyUtils as utils,
   Icons,
   DateTimeBackground
-} from "VizabiSharedComponents";
+} from "@vizabi/shared-components";
+import * as d3 from "d3";
 import { runInAction, decorate, computed} from "mobx";
 
 import MapEngine from "./map";
