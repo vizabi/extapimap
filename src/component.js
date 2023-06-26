@@ -802,11 +802,6 @@ class _VizabiExtApiMap extends Chart {
 
   updateOpacity() {
     const _this = this;
-    /*
-     this.entityBubbles.classed("vzb-selected", function (d) {
-     return _this.model.marker.isSelected(d);
-     });
-     */
     this.map.updateOpacity();
     this.entityBubbles.style("opacity", d => _this.getOpacity(d));
 
@@ -888,22 +883,15 @@ class _VizabiExtApiMap extends Chart {
       const d = this.ui.map.showBubbles ? this.model.dataMap.get(highlightedKey) : this._getMarkerItemForArea(highlightedKey);
       const selectedKey = d[Symbol.for("key")];
 
-      ////const titles = _this._formatSTitleValues(values.size[utils.getKey(d, dataKeys.size)], values.color[utils.getKey(d, dataKeys.color)]);
-      ////_this._updateSTitle(titles[0], titles[1]);
-      // if (x + s < 0 || x - s > this.width || y + s < 0 || y - s > this.height) {
-      //   entityOutOfView = true;
-      // }
-
       //show tooltip
       const isSelected = selectedFilter.has(selectedKey);
-
       const text = isSelected ? "": this.__labelWithoutFrame(d);
       
       this._labels.highlight(null, false);
       this._labels.highlight({ [Symbol.for("key")]: selectedKey }, true);
 
       //set tooltip and show axis projections
-      if (text) {// && !entityOutOfView) {
+      if (text) {
         this._setTooltip({}, d);
       } else {
         this._setTooltip();
