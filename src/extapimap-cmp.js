@@ -329,7 +329,7 @@ class _VizabiExtApiMap extends Chart {
 
   _getPosition(d) {
     if (d.lat && d.lon) {
-      return this.map.geo2Point(d.lon, d.lat);
+      return this.map.geo2Point(d.lon, d.lat).map(m => m - 30); //weird magic constant
     }
     if (d.centroid) {
       return this.map.centroid(d.centroid);
