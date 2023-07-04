@@ -328,8 +328,8 @@ class _VizabiExtApiMap extends Chart {
   }
 
   _getPosition(d) {
-    if (d.lat && d.lng) {
-      return this.map.geo2Point(d.lng, d.lat);
+    if (d.lat && d.lon) {
+      return this.map.geo2Point(d.lon, d.lat);
     }
     if (d.centroid) {
       return this.map.centroid(d.centroid);
@@ -1043,19 +1043,19 @@ _VizabiExtApiMap.DEFAULT_UI = {
     },
     "path": null,
     "bounds": {
-      "north": 59.48,
-      "west": 17.72,
-      "south": 59.21,
-      "east": 18.32
+      "north": 70,
+      "west": 80,
+      "south": -50,
+      "east": -80
     },
     "projection": "mercator",
-    "topology": {
-      "path": "assets/sodertorn-basomr2010.json",
-      "objects": {
-        "geo": "c1e171fae817c0bfc26dc7df82219e08",
-        "boundaries": "c1e171fae817c0bfc26dc7df82219e08"
+    topology: {
+      path: "assets/world-50m.json",
+      objects: {
+        geo: "land",
+        boundaries: "countries"
       },
-      "geoIdProperty": "BASKOD2010"
+      geoIdProperty: null,
     }
   }
 };
