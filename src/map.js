@@ -137,7 +137,7 @@ class TopojsonLayer extends MapLayer {
         if (_this.mapFeature.features) {
           utils.forEach(_this.mapFeature.features, (feature) => {
             feature.key = feature.properties[_this.context.ui.map.topology.geoIdProperty] ?
-              feature.properties[_this.context.ui.map.topology.geoIdProperty].toString().toLowerCase() : feature.id;
+              feature.properties[_this.context.ui.map.topology.geoIdProperty].toString() : feature.id;
             _this.paths[feature.key] = feature;
           });
         }

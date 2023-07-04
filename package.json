@@ -57,6 +57,6 @@
   },
   "dependencies": {
     "google-maps": "^3.2.1",
-    "mapbox-gl": "^0.34.0"
+    "mapbox-gl": "^2.15.0"
   }
 }
