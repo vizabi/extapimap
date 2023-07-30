@@ -117,8 +117,8 @@ ExtApiMap.DEFAULT_UI = {
   }
 };
 
-ExtApiMap.DEFAULT_CORE = {
-
-};
+ExtApiMap.DEFAULT_CORE = (marker) => {
+  return {};
+}
 
 ExtApiMap.versionInfo = { version: __VERSION, build: __BUILD, package: __PACKAGE_JSON_FIELDS, sharedComponents: versionInfo};
