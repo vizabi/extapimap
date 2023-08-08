@@ -3,6 +3,8 @@
 @import "../node_modules/@vizabi/shared-components/src/styles/vizabi-old/_common.scss";
 @import "../node_modules/@vizabi/shared-components/src/styles/vizabi-old/_chart.scss";
 
+@import "../node_modules/mapbox-gl/dist/mapbox-gl";
+
 .vzb-tool {
   $vzb-bmc-date-size: 15em;
 
