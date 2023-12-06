@@ -201,7 +201,7 @@ class _VizabiExtApiMap extends Chart {
     this.treemenu = this.root.findChild({type: "TreeMenu"});
 
     // new scales and axes
-    this.sScale = this.MDL.size.scale.d3Scale.copy();
+    this.sScale = this.MDL.size.scale.d3Scale;
     this.cScale = color => color? this.MDL.color.scale.d3Scale(color) : COLOR_WHITEISH;
     this.mcScale = color => color? this.MDL.mapColor.scale.d3Scale(color) : COLOR_WHITEISH;
 
@@ -536,10 +536,7 @@ class _VizabiExtApiMap extends Chart {
     let minArea = utils.radiusToArea(Math.max(maxRadius * extent[0], minRadius));
     let maxArea = utils.radiusToArea(Math.max(maxRadius * extent[1], minRadius));
 
-    let range = minArea === maxArea ? [minArea, maxArea] :
-      d3.range(minArea, maxArea, (maxArea - minArea) / (this.sScale.domain().length - 1)).concat(maxArea);
-
-    this.sScale.range(range);
+    this.sScale.range([minArea, maxArea]);
   }
 
   _updateUIStrings() {
