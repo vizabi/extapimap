@@ -21,8 +21,8 @@ export default class ExtApiMap extends BaseComponent {
 
   constructor(config){
     const fullMarker = config.model.markers.bubble;
-    config.Vizabi.utils.applyDefaults(fullMarker.config, ExtApiMap.DEFAULT_CORE);  
-      
+    config.Vizabi.utils.applyDefaults(fullMarker.config, ExtApiMap.DEFAULT_CORE());  
+
     const frameType = config.Vizabi.stores.encodings.modelTypes.frame;
     const { marker, splashMarker } = frameType.splashMarker(fullMarker);
 
@@ -117,8 +117,24 @@ ExtApiMap.DEFAULT_UI = {
   }
 };
 
-ExtApiMap.DEFAULT_CORE = (marker) => {
-  return {};
-}
+ExtApiMap.DEFAULT_CORE = () => ({
+  encoding: {
+    "size": {
+      scale: {
+        modelType: "size",
+        allowedTypes: ["linear", "log", "genericLog", "pow"],
+      }
+    },
+    "size_label": {
+      data: {
+        constant: "_default"
+      },
+      scale: {
+        modelType: "size",
+        extent: [0, 0.34]
+      }
+    }
+  }
+});
 
 ExtApiMap.versionInfo = { version: __VERSION, build: __BUILD, package: __PACKAGE_JSON_FIELDS, sharedComponents: versionInfo};
