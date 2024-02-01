@@ -211,7 +211,7 @@ class TopojsonLayer extends MapLayer {
   rescaleMap(canvas, preserveAspectRatio) {
     //var topoCanvas =
     let emitEvent = false;
-    const margin = this.context.profileConstants ? this.context.profileConstants.margin : {left: 0, top: 0};
+    const margin = {left: 0, top: 0}; //the map is done in full bleed, so we don't care about margins
 
     const currentNW = this.zeroProjection([
       this.context.ui.map.bounds.west,
@@ -315,7 +315,7 @@ class TopojsonLayer extends MapLayer {
   zoomMap(center, increment) {
     return new Promise(resolve => {
       const point = this.geo2Point(center[0], center[1]);
-      const margin = this.context.profileConstants ? this.context.profileConstants.margin : {left: 0, top: 0};
+      const margin = {left: 0, top: 0}; //the map is done in full bleed, so we don't care about margins
       const leftOffset = margin.left;//this.context.width / 2 - point[0];
       const topOffset = margin.top;//this.context.height / 2 - point[1];
       const wMod = Math.min(2, Math.max(0, (point[0]) / this.context.chartWidth * 2));

@@ -57,24 +57,26 @@ class _VizabiExtApiMap extends Chart {
       <svg class="vzb-extapimap-svg vzb-export">
           <g class="vzb-bmc-map-background"></g>
           <g class="vzb-bmc-graph">
-              <g class="vzb-bmc-date"></g>
+              <g class="vzb-bmc-titles">
+                <g class="vzb-bmc-date"></g>
+                <g class="vzb-bmc-axis-y-title">
+                <text></text>
+                </g>
+
+                <g class="vzb-bmc-axis-c-title">
+                    <text></text>
+                </g>
+
+                <g class="vzb-bmc-axis-y-info vzb-noexport">
+                </g>
+
+                <g class="vzb-bmc-axis-c-info vzb-noexport">
+                </g>
+              </g>
+
 
               <g class="vzb-bmc-lines"></g>
               <g class="vzb-bmc-bubbles"></g>
-
-              <g class="vzb-bmc-axis-y-title">
-                  <text></text>
-              </g>
-
-              <g class="vzb-bmc-axis-c-title">
-                  <text></text>
-              </g>
-
-              <g class="vzb-bmc-axis-y-info vzb-noexport">
-              </g>
-
-              <g class="vzb-bmc-axis-c-info vzb-noexport">
-              </g>
 
               <g class="vzb-bmc-labels"></g>
               <rect class="vzb-bc-zoom-rect"></rect>
@@ -108,6 +110,7 @@ class _VizabiExtApiMap extends Chart {
     this.DOM.chartSvg.select(".vzb-bmc-graph").call(graph => 
       Object.assign(this.DOM, {
         graph,
+        titles: graph.select(".vzb-bmc-titles"),
         bubbleContainerCrop: graph.select(".vzb-bmc-bubbles-crop"),
         bubbleContainer: graph.select(".vzb-bmc-bubbles"),
         labelListContainer: graph.select(".vzb-bmc-bubble-labels"),
@@ -329,7 +332,7 @@ class _VizabiExtApiMap extends Chart {
 
   _getPosition(d) {
     if (d.lat && d.lon) {
-      return this.map.geo2Point(d.lon, d.lat).map(m => m - 30); //weird magic constant
+      return this.map.geo2Point(d.lon, d.lat);
     }
     if (d.centroid) {
       return this.map.centroid(d.centroid);
@@ -462,7 +465,7 @@ class _VizabiExtApiMap extends Chart {
     const infoElHeight = this.profileConstants.infoElHeight;
     const isRTL = this.services.locale.isRTL();
 
-    this.DOM.graph
+    this.DOM.titles
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     this._date.setConditions({
