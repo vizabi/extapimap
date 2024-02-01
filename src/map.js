@@ -131,7 +131,7 @@ class TopojsonLayer extends MapLayer {
       shapes => {
         _this.parent.inPreload = false;
         _this.shapes = shapes;
-        _this.mapFeature = topojson.feature(_this.shapes, _this.shapes.objects[this.context.ui.map.topology.objects.geo]);
+        _this.mapFeature = topojson.feature(_this.shapes, _this.shapes.objects[this.context.ui.map.topology.objects.boundaries]);
         _this.mapBounds = _this.mapPath.bounds(_this.mapFeature);
         _this.boundaries = topojson.mesh(_this.shapes, _this.shapes.objects[_this.context.ui.map.topology.objects.boundaries], (a, b) => a !== b);
         if (_this.mapFeature.features) {

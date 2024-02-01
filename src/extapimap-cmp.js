@@ -1036,10 +1036,10 @@ _VizabiExtApiMap.DEFAULT_UI = {
     "showAreas": false,
     "showMap": true,
     "offset": {
-      "top": 0.05,
-      "bottom": -0.12,
-      "left": 0,
-      "right": 0
+      top: 0.05,
+      right: 0.01,
+      bottom: 0.05,
+      left: -0.12
     },
     "path": null,
     "bounds": {
@@ -1052,10 +1052,9 @@ _VizabiExtApiMap.DEFAULT_UI = {
     topology: {
       path: "assets/world-50m.json",
       objects: {
-        geo: "land",
         boundaries: "countries"
       },
-      geoIdProperty: null,
+      geoIdProperty: "id",
     }
   }
 };
