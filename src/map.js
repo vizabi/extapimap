@@ -773,10 +773,8 @@ export default class Map {
   }
 
   getMapColor(key) {
-    if (this.keys[key]) {
-      return this.context.mcScale(this.context.model.dataMap.getByObjOrStr(null ,this.keys[key]).color_map);
-    }
-    return this.context.COLOR_WHITEISH;
+    const datapoint = this.context.model.dataMap.get(key);
+    return datapoint ? this.context.mcScale(datapoint.color_map) : this.context.COLOR_WHITEISH;
   }
 
   getOpacity(key) {
