@@ -382,9 +382,10 @@ class _VizabiExtApiMap extends Chart {
         if (_this.ui.cursorMode === "arrow") event.stopPropagation();
       },
       mouseover(event, d) {
-        if (_this.zooming || _this.map.zooming || _this.ui.cursorMode !== "arrow" || _this.MDL.frame.dragging) return;
+        if (_this.ui.panWithArrow && !event.shiftKey || _this.zooming || _this.map.zooming || _this.ui.cursorMode !== "arrow" || _this.MDL.frame.dragging) return;
 
         _this.hovered = d;
+        _this.MDL.highlighted.data.filter.clear(d);
         _this.MDL.highlighted.data.filter.set(d);
         _this._labels.showCloseCross(d, true);
         //put the exact value in the size title
