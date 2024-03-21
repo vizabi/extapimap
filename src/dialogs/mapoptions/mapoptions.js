@@ -16,21 +16,24 @@ const mapEngines = [{
 
 const mapStyles = {
   "google": [{
+    title: "Roadmap",
+    value: "roadmap"
+  }, {
     title: "Terrain",
     value: "terrain"
   }, {
-    title: "Grayscale",
-    value: "terrain grayscale"
-  }, {
     title: "Satellite",
     value: "satellite"
+  }, {
+    title: "Satellite + Road",
+    value: "hybrid"
   }],
   mapbox: [{
-    title: "Land",
-    value: "mapbox://styles/mapbox/streets-v9"
-  }, {
     title: "Grayscale",
     value: "mapbox://styles/mapbox/light-v9"
+  }, {
+    title: "Land",
+    value: "mapbox://styles/mapbox/streets-v9"
   }, {
     title: "Satellite",
     value: "mapbox://styles/mapbox/satellite-v9"
@@ -100,11 +103,11 @@ export class MapOptions extends Dialog {
     mapEngineForm.exit().remove();
 
     mapEngineForm.enter().append("label")
-      .attr("for", (d, i) => "a" + i)
+      .attr("for", (d, i) => "engine" + i)
       .each(function(d, i) {
         d3.select(this)
           .append("input")
-          .attr("id", "a" + i)
+          .attr("id", "engine" + i)
           .attr("type", "radio")
           .attr("name", "engine")
           .attr("value", d.value)
@@ -148,11 +151,11 @@ export class MapOptions extends Dialog {
     mapStyleForm.exit().remove();
 
     mapStyleForm.enter().append("label")
-      .attr("for", (d, i) => "a" + i)
+      .attr("for", (d, i) => "style" + i)
       .each(function(d, i) {
         d3.select(this)
           .append("input")
-          .attr("id", "a" + i)
+          .attr("id", "style" + i)
           .attr("type", "radio")
           .attr("name", "layer")
           .attr("value", d.value)
