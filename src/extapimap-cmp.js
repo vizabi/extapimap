@@ -59,19 +59,13 @@ class _VizabiExtApiMap extends Chart {
           <g class="vzb-bmc-graph">
               <g class="vzb-bmc-titles">
                 <g class="vzb-bmc-date"></g>
-                <g class="vzb-bmc-axis-y-title">
-                <text></text>
-                </g>
+                <g class="vzb-bmc-axis-s-title"><text></text></g>
+                <g class="vzb-bmc-axis-c-title"><text></text></g>
+                <g class="vzb-bmc-axis-a-title"><text></text></g>
 
-                <g class="vzb-bmc-axis-c-title">
-                    <text></text>
-                </g>
-
-                <g class="vzb-bmc-axis-y-info vzb-noexport">
-                </g>
-
-                <g class="vzb-bmc-axis-c-info vzb-noexport">
-                </g>
+                <g class="vzb-bmc-axis-s-info vzb-noexport"></g>
+                <g class="vzb-bmc-axis-c-info vzb-noexport"></g>
+                <g class="vzb-bmc-axis-a-info vzb-noexport"></g>
               </g>
 
 
@@ -114,10 +108,12 @@ class _VizabiExtApiMap extends Chart {
         bubbleContainerCrop: graph.select(".vzb-bmc-bubbles-crop"),
         bubbleContainer: graph.select(".vzb-bmc-bubbles"),
         labelListContainer: graph.select(".vzb-bmc-bubble-labels"),
-        yTitle: graph.select(".vzb-bmc-axis-y-title"),
+        sTitle: graph.select(".vzb-bmc-axis-s-title"),
         cTitle: graph.select(".vzb-bmc-axis-c-title"),
-        yInfo: graph.select(".vzb-bmc-axis-y-info"),
+        aTitle: graph.select(".vzb-bmc-axis-a-title"),
+        sInfo: graph.select(".vzb-bmc-axis-s-info"),
         cInfo: graph.select(".vzb-bmc-axis-c-info"),
+        aInfo: graph.select(".vzb-bmc-axis-a-info"),
         year: graph.select(".vzb-bmc-date")
       })
     );
@@ -369,7 +365,7 @@ class _VizabiExtApiMap extends Chart {
     if(!utils.isTouchDevice()){
       this.bubbles
         .on("mousedown", this._interact().mousedown)
-        .on("mouseover", this._interact().mouseover)
+        .on("mousemove", this._interact().mouseover)
         .on("mouseout", this._interact().mouseout)
         .on("click", this._interact().click);
     } else {
@@ -473,42 +469,69 @@ class _VizabiExtApiMap extends Chart {
     });
     this._date.resize(this.width, this.height - margin.top);
 
-    this.DOM.yTitle
+    //TITLES
+
+    //hide the first line about bubble size when no bubbles
+    const hideSTitle = !this.ui.map.showBubbles;
+    this.DOM.sTitle
       .style("font-size", infoElHeight)
-      .attr("transform", "translate(" + (isRTL ? this.chartWidth : 0) + "," + margin.top + ")");
+      .attr("transform", "translate(" + (isRTL ? this.chartWidth : 0) + "," + margin.top + ")")
+      .classed("vzb-hidden", hideSTitle);
 
-    const yTitleBB = this.DOM.yTitle.select("text").node().getBBox();
+    //hide the second line about color in large profile or when color is constant or no bubbles
+    const hideCTitle = this.services.layout.profile === "LARGE" || this.MDL.color.data.isConstant || !this.ui.map.showBubbles;
+    this.DOM.cTitle
+      .attr("transform", "translate(" + (isRTL ? this.chartWidth : 0) + "," + (margin.top + (hideSTitle ? 0 : infoElHeight)) + ")")
+      .classed("vzb-hidden", hideCTitle);
 
-    //hide the second line about color in large profile or when color is constant
-    this.DOM.cTitle.attr("transform", "translate(" + (isRTL ? this.width : 0) + "," + (margin.top + yTitleBB.height) + ")")
-      .classed("vzb-hidden", this.services.layout.profile === "LARGE" || this.MDL.color.data.isConstant);
+    //hide the second line about color in large profile or when color is constant or no bubbles
+    const hideATitle = !this.ui.map.showAreas;
+    this.DOM.aTitle
+      .attr("transform", "translate(" + (isRTL ? this.chartWidth : 0) + "," + (margin.top + (hideSTitle ? 0 : infoElHeight) + (hideCTitle ? 0 : infoElHeight)) + ")")
+      .classed("vzb-hidden", hideATitle);
 
-    if (this.DOM.yInfo.select("svg").node()) {
-      const titleBBox = this.DOM.yTitle.node().getBBox();
-      const t = utils.transform(this.DOM.yTitle.node());
+    // INFO ELEMENTS
+
+    this.DOM.cInfo.classed("vzb-hidden", hideSTitle);  
+
+    if (!hideSTitle && this.DOM.sInfo.select("svg").node()) {
+      const titleBBox = this.DOM.sTitle.node().getBBox();
+      const t = utils.transform(this.DOM.sTitle.node());
       const hTranslate = isRTL ? (titleBBox.x + t.translateX - infoElHeight * 1.4) : (titleBBox.x + t.translateX + titleBBox.width + infoElHeight * 0.4);
 
-      this.DOM.yInfo.select("svg")
+      this.DOM.sInfo
+        .attr("transform", `translate(${hTranslate},${t.translateY - infoElHeight * 0.8})`)
+        .select("svg")
         .attr("width", infoElHeight)
         .attr("height", infoElHeight);
-      this.DOM.yInfo.attr("transform", "translate("
-        + hTranslate + ","
-        + (t.translateY - infoElHeight * 0.8) + ")");
     }
 
-    this.DOM.cInfo.classed("vzb-hidden", this.DOM.cTitle.classed("vzb-hidden"));
+    this.DOM.cInfo.classed("vzb-hidden", hideCTitle);
 
-    if (!this.DOM.cInfo.classed("vzb-hidden") && this.DOM.cInfo.select("svg").node()) {
+    if (!hideCTitle && this.DOM.cInfo.select("svg").node()) {
       const titleBBox = this.DOM.cTitle.node().getBBox();
       const t = utils.transform(this.DOM.cTitle.node());
       const hTranslate = isRTL ? (titleBBox.x + t.translateX - infoElHeight * 1.4) : (titleBBox.x + t.translateX + titleBBox.width + infoElHeight * 0.4);
 
-      this.DOM.cInfo.select("svg")
+      this.DOM.cInfo  
+        .attr("transform", `translate(${hTranslate},${t.translateY - infoElHeight * 0.8})`)
+        .select("svg")
         .attr("width", infoElHeight)
         .attr("height", infoElHeight);
-      this.DOM.cInfo.attr("transform", "translate("
-        + hTranslate + ","
-        + (t.translateY - infoElHeight * 0.8) + ")");
+    }
+
+    this.DOM.aInfo.classed("vzb-hidden", hideATitle);
+
+    if (!hideATitle && this.DOM.aInfo.select("svg").node()) {
+      const titleBBox = this.DOM.aTitle.node().getBBox();
+      const t = utils.transform(this.DOM.cTitle.node());
+      const hTranslate = isRTL ? (titleBBox.x + t.translateX - infoElHeight * 1.4) : (titleBBox.x + t.translateX + titleBBox.width + infoElHeight * 0.4);
+
+      this.DOM.aInfo  
+        .attr("transform", `translate(${hTranslate},${t.translateY - infoElHeight * 0.8})`)
+        .select("svg")
+        .attr("width", infoElHeight)
+        .attr("height", infoElHeight);
     }
   }
 
@@ -549,15 +572,17 @@ class _VizabiExtApiMap extends Chart {
 
     const conceptPropsS = _this.MDL.size.data.conceptProps;
     const conceptPropsC = _this.MDL.color.data.conceptProps;
+    const conceptPropsA = _this.MDL.mapColor.data.conceptProps;
 
     this.strings = {
       title: {
         S: conceptPropsS.name || conceptPropsS.concept,
-        C: conceptPropsC.name || conceptPropsC.concept
+        C: conceptPropsC.name || conceptPropsC.concept,
+        A: conceptPropsA.name || conceptPropsA.concept
       }
     };
 
-    this.DOM.yTitle
+    this.DOM.sTitle
       .classed("vzb-disabled", this.treemenu.state.ownReadiness !== Utils.STATUS.READY)
       .select("text").text(this.localise("buttons/size") + ": " + this.strings.title.S)
       .on("click", () => {
@@ -581,11 +606,24 @@ class _VizabiExtApiMap extends Chart {
           .toggle();
       });
 
+    this.DOM.aTitle
+      .classed("vzb-disabled", this.treemenu.state.ownReadiness !== Utils.STATUS.READY)
+      .select("text").text(this.localise("buttons/mapcolors") + ": " + this.strings.title.A)
+      .on("click", () => {
+        this.treemenu
+          .encoding("color_map")
+          .alignX(isRTL ? "right" : "left")
+          .alignY("top")
+          .updateView()
+          .toggle();
+      });
+
     const toolRect = _this.root.element.node().getBoundingClientRect();
     const chartRect = _this.element.node().getBoundingClientRect();
 
-    this._drawInfoEl(this.DOM.yInfo, this.DOM.yTitle, this.MDL.size, {x: chartRect.left - toolRect.left});
+    this._drawInfoEl(this.DOM.sInfo, this.DOM.sTitle, this.MDL.size, {x: chartRect.left - toolRect.left});
     this._drawInfoEl(this.DOM.cInfo, this.DOM.cTitle, this.MDL.color);
+    this._drawInfoEl(this.DOM.aInfo, this.DOM.aTitle, this.MDL.mapColor);
   }
 
   _drawInfoEl(element, titleElement, model, posOffset = {}){
@@ -635,7 +673,7 @@ class _VizabiExtApiMap extends Chart {
   updateTitleNumbers() {
     const _this = this;
 
-    let mobile; // if is mobile device and only one bubble is selected, update the ytitle for the bubble
+    let mobile; // if is mobile device and only one bubble is selected, update the sTitle for the bubble
     if (_this.isMobile && _this.model.marker.select && _this.model.marker.select.length === 1) {
       mobile = _this.model.marker.select[0];
     }
@@ -643,6 +681,7 @@ class _VizabiExtApiMap extends Chart {
     if (_this.hovered || mobile) {
       const conceptPropsS = _this.model.marker.size.getConceptprops();
       const conceptPropsC = _this.model.marker.color.getConceptprops();
+      const conceptPropsA = _this.model.marker.mapColor.getConceptprops();
 
       const hovered = _this.hovered || mobile;
       const formatterS = _this.model.marker.size.getTickFormatter();
@@ -653,57 +692,66 @@ class _VizabiExtApiMap extends Chart {
 
       const valueS = _this.values.size[utils.getKey(hovered, _this.dataKeys.size)];
       let valueC = _this.values.color[utils.getKey(hovered, _this.dataKeys.color)];
+      let valueA = _this.values.color[utils.getKey(hovered, _this.dataKeys.map_color)];
 
       //resolve value for color from the color legend model
       if (_this.model.marker.color.isDiscrete() && valueC) {
         valueC = this.model.marker.color.getColorlegendMarker().label.getItems()[valueC] || "";
       }
 
-      _this.DOM.yTitle.select("text")
+      _this.DOM.sTitle.select("text")
         .text(_this.localise("buttons/size") + ": " + formatterS(valueS) + " " + unitS);
 
       _this.DOM.cTitle.select("text")
         .text(_this.localise("buttons/color") + ": " +
           (valueC || valueC === 0 ? formatterC(valueC) + " " + unitC : _this.localise("hints/nodata")));
 
-      this.DOM.yInfo.classed("vzb-hidden", true);
+      _this.DOM.aTitle.select("text")
+        .text(_this.localise("buttons/mapcolors") + ": " +
+          (valueA || valueA === 0 ? formatterC(valueA) + " " + unitA : _this.localise("hints/nodata")));
+  
+
+      this.DOM.sInfo.classed("vzb-hidden", true);
       this.DOM.cInfo.classed("vzb-hidden", true);
+      this.DOM.aInfo.classed("vzb-hidden", true);
     } else {
-      this.DOM.yTitle.select("text")
+      this.DOM.sTitle.select("text")
         .text(this.localise("buttons/size") + ": " + this.strings.title.S);
       this.DOM.cTitle.select("text")
         .text(this.localise("buttons/color") + ": " + this.strings.title.C);
+      this.DOM.aTitle.select("text")
+        .text(this.localise("buttons/mapcolors") + ": " + this.strings.title.A);
 
-      this.DOM.yInfo.classed("vzb-hidden", false);
+
+      this.DOM.sInfo.classed("vzb-hidden", this.DOM.sTitle.classed("vzb-hidden"));
       this.DOM.cInfo.classed("vzb-hidden", this.DOM.cTitle.classed("vzb-hidden"));
+      this.DOM.aInfo.classed("vzb-hidden", this.DOM.aTitle.classed("vzb-hidden"));
     }
   }
 
   fitSizeOfTitles() {
     // reset font sizes first to make the measurement consistent
-    const yTitleText = this.DOM.yTitle.select("text");
-    yTitleText.style("font-size", null);
+    const sTitleText = this.DOM.sTitle.select("text").style("font-size", null);
+    const cTitleText = this.DOM.cTitle.select("text").style("font-size", null);
+    const aTitleText = this.DOM.aTitle.select("text").style("font-size", null);
 
-    const cTitleText = this.DOM.cTitle.select("text");
-    cTitleText.style("font-size", null);
+    const maxTextW = d3.max([
+      this.DOM.sTitle.classed("vzb-hidden") ? null : sTitleText.node().getBBox().width,
+      this.DOM.cTitle.classed("vzb-hidden") ? null : cTitleText.node().getBBox().width,
+      this.DOM.cTitle.classed("vzb-hidden") ? null : aTitleText.node().getBBox().width,
+    ]);
 
-    const yTitleBB = yTitleText.node().getBBox();
-    const cTitleBB = this.DOM.cTitle.classed("vzb-hidden") ? yTitleBB : cTitleText.node().getBBox();
+    const maxFontSize = d3.max([
+      parseInt(sTitleText.style("font-size")),
+      parseInt(cTitleText.style("font-size")),
+      parseInt(aTitleText.style("font-size")),
+    ]);
 
-    const font =
-      Math.max(parseInt(yTitleText.style("font-size")), parseInt(cTitleText.style("font-size")))
-      * this.width / Math.max(yTitleBB.width, cTitleBB.width);
+    const font = maxTextW > this.width ? maxFontSize * this.width / maxTextW + "px" : null;
 
-    if (Math.max(yTitleBB.width, cTitleBB.width) > this.width) {
-      yTitleText.style("font-size", font + "px");
-      cTitleText.style("font-size", font + "px");
-    } else {
-
-      // Else - reset the font size to default so it won't get stuck
-      yTitleText.style("font-size", null);
-      cTitleText.style("font-size", null);
-    }
-
+    sTitleText.style("font-size", font);
+    cTitleText.style("font-size", font);
+    aTitleText.style("font-size", font);
   }
 
   _getDuration() {

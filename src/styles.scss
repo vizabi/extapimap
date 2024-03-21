@@ -184,7 +184,9 @@
         opacity: .8;
       }
 
-      .vzb-bmc-axis-y-title {
+      .vzb-bmc-axis-s-title,
+      .vzb-bmc-axis-c-title, 
+      .vzb-bmc-axis-a-title {
         @extend %vzb-chart-axis-title;
         @include rtl {
           text {
@@ -194,18 +196,9 @@
         }
       }
 
-      .vzb-bmc-axis-c-title {
-        @extend %vzb-chart-axis-title;
-        @include rtl {
-          text {
-            direction: rtl;
-            unicode-bidi: embed;
-          }
-        }
-      }
-
-      .vzb-bmc-axis-y-info,
-      .vzb-bmc-axis-c-info {
+      .vzb-bmc-axis-s-info,
+      .vzb-bmc-axis-c-info,
+      .vzb-bmc-axis-a-info {
         @extend %vzb-chart-info;
       }
 
@@ -217,8 +210,9 @@
   }
   &.vzb-large {
     .vzb-extapimap {
-      .vzb-bmc-axis-y-title,
-      .vzb-bmc-axis-c-title {
+      .vzb-bmc-axis-s-title,
+      .vzb-bmc-axis-c-title,
+      .vzb-bmc-axis-a-title {
         @extend %vzb-chart-axis-title-large;
       }
 
@@ -228,16 +222,16 @@
       }
 
       .vzb-bmc-bubble-labels,
-      .vzb-bmc-tooltip,
-      .vzb-bmc-axis-info {
+      .vzb-bmc-tooltip {
         @extend %vzb-chart-ticks-large;
       }
     }
   }
   &.vzb-medium {
     .vzb-extapimap {
-      .vzb-bmc-axis-y-title,
-      .vzb-bmc-axis-c-title {
+      .vzb-bmc-axis-s-title,
+      .vzb-bmc-axis-c-title,
+      .vzb-bmc-axis-a-title {
         @extend %vzb-chart-axis-title-medium;
       }
 
@@ -247,16 +241,16 @@
       }
 
       .vzb-bmc-bubble-labels,
-      .vzb-bmc-tooltip,
-      .vzb-bmc-axis-info {
+      .vzb-bmc-tooltip {
         @extend %vzb-chart-ticks-medium;
       }
     }
   }
   &.vzb-small {
     .vzb-extapimap {
-      .vzb-bmc-axis-y-title,
-      .vzb-bmc-axis-c-title {
+      .vzb-bmc-axis-s-title,
+      .vzb-bmc-axis-c-title,
+      .vzb-bmc-axis-a-title {
         @extend %vzb-chart-axis-title-small;
       }
 
@@ -266,17 +260,16 @@
       }
 
       .vzb-bmc-bubble-labels,
-      .vzb-bmc-tooltip,
-      .vzb-bmc-axis-info {
+      .vzb-bmc-tooltip {
         @extend %vzb-chart-ticks-small;
       }
     }
   }
   &.vzb-presentation {
     .vzb-extapimap {
-      .vzb-bmc-axis-y-title,
+      .vzb-bmc-axis-s-title,
       .vzb-bmc-axis-c-title,
-      .vzb-bmc-axis-info {
+      .vzb-bmc-axis-a-title {
         font-size: $vzb-font-size-largest;
       }
 
@@ -292,8 +285,9 @@
     }
 
     &.vzb-small {
-      .vzb-bmc-axis-y-title,
-      .vzb-bmc-axis-c-title {
+      .vzb-bmc-axis-s-title,
+      .vzb-bmc-axis-c-title,
+      .vzb-bmc-axis-a-title {
         font-size: $vzb-font-size-medium;
       }
     }
