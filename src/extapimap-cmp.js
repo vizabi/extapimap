@@ -186,6 +186,7 @@ class _VizabiExtApiMap extends Chart {
       frame: this.model.encoding.frame,
       selected: this.model.encoding.selected,
       highlighted: this.model.encoding.highlighted,
+      superHighlighted: this.model.encoding.superhighlighted,
       size: this.model.encoding.size,
       color: this.model.encoding.color,
       mapColor: this.model.encoding.color_map,
@@ -220,6 +221,7 @@ class _VizabiExtApiMap extends Chart {
         this.addReaction(this._updateMap);
         this.addReaction(this._updateMapColors);
         this.addReaction(this._updateOpacity);
+        this.addReaction(this._blinkSuperHighlighted);
         this.addReaction(this._updateUIStrings);
         this.addReaction(this._highlightDataPoints);
         this.addReaction(this._selectDataPoints);
@@ -771,29 +773,23 @@ class _VizabiExtApiMap extends Chart {
   _updateOpacity() {
     this.MDL.frame.value; //listen
 
-    const {
-      opacityHighlightDim,
-      opacitySelectDim,
-      opacityRegular,
-    } = this.ui;
+    this.someHighlighted = this.MDL.highlighted.data.filter.any() || this.MDL.superHighlighted.data.filter.any();
+    this.someSelected = this.MDL.selected.data.filter.any();
 
-    const _highlighted = this.MDL.highlighted.data.filter;
-    const _selected = this.MDL.selected.data.filter;
-    
-    const someHighlighted = this.someHighlighted = _highlighted.any();
-    const someSelected = this.someSelected = _selected.any();
+    if (this.ui.map.showAreas)
+      this.map.updateOpacity();
 
-    this.map.updateOpacity();
+    if (this.ui.map.showBubbles)
+      this.bubbles.style("opacity", d => this.getOpacity(d));
+  }
+
+  _blinkSuperHighlighted() {
+    if (!this.MDL.superHighlighted || !this.ui.map.showBubbles) return;
+
+    const superHighlightFilter = this.MDL.superHighlighted.data.filter;
+
     this.bubbles
-      .style("opacity", d => {
-        if (_highlighted.has(d)) return opacityRegular;
-        if (_selected.has(d)) return opacityRegular;
-
-        if (someSelected) return opacitySelectDim;
-        if (someHighlighted) return opacityHighlightDim;
-
-        return opacityRegular;
-      });
+      .classed("vzb-super-highlighted", d => superHighlightFilter.has(d));
   }
 
   _drawForecastOverlay() {
@@ -849,48 +845,27 @@ class _VizabiExtApiMap extends Chart {
     }
   }
 
-  updateOpacity() {
-    const _this = this;
-    this.map.updateOpacity();
-    this.entityBubbles.style("opacity", d => _this.getOpacity(d));
-
-    this.entityBubbles.classed("vzb-selected", d => _this.model.marker.isSelected(d));
-
-    const nonSelectedOpacityZero = _this.model.marker.opacitySelectDim < 0.01;
-
-    // when pointer events need update...
-    if (nonSelectedOpacityZero !== this.nonSelectedOpacityZero) {
-      this.entityBubbles.style("pointer-events", d => (!_this.someSelected || !nonSelectedOpacityZero || _this.model.marker.isSelected(d)) ?
-        "visible" : "none");
-    }
-
-    this.nonSelectedOpacityZero = _this.model.marker.opacitySelectDim < 0.01;
-  }
-
   getMapOpacity(key) {
-    if (this.ui.map.showBubbles) {
+    if (this.ui.map.showBubbles)
       return this.ui.opacitySelectDim;
-    }
-    const d = {};
-    d[Symbol.for("key")] = key;
-    return this.getOpacity(d);
+      
+    return this.getOpacity( {[Symbol.for("key")]: key} );
   }
 
   getOpacity(d) {
+    const {
+      opacityHighlightDim,
+      opacitySelectDim,
+      opacityRegular,
+    } = this.ui;
+    
+    if (this.MDL.highlighted.data.filter.has(d) || this.MDL.superHighlighted.data.filter.has(d)) return opacityRegular;
+    if (this.MDL.selected.data.filter.has(d)) return opacityRegular;
 
-    if (this.someHighlighted) {
-      //highlight or non-highlight
-      if (this.MDL.highlighted.data.filter.has(d)) return this.ui.opacityRegular;
-    }
+    if (this.someSelected) return opacitySelectDim;
+    if (this.someHighlighted) return opacityHighlightDim;
 
-    if (this.someSelected) {
-      //selected or non-selected
-      return this.MDL.selected.data.filter.has(d) ? this.ui.opacityRegular : this.ui.opacitySelectDim;
-    }
-
-    if (this.someHighlighted) return this.ui.opacitySelectDim;
-
-    return this.ui.opacityRegular;
+    return opacityRegular;
   }
 
   _setTooltip(event, d) {
