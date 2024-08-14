@@ -131,9 +131,11 @@ class TopojsonLayer extends MapLayer {
       shapes => {
         _this.parent.inPreload = false;
         _this.shapes = shapes;
-        _this.mapFeature = topojson.feature(_this.shapes, _this.shapes.objects[this.context.ui.map.topology.objects.boundaries]);
+        _this.mapFeature = topojson.feature(_this.shapes, _this.shapes.objects[this.context.ui.map.topology.objects.areas]);
         _this.mapBounds = _this.mapPath.bounds(_this.mapFeature);
-        _this.boundaries = topojson.mesh(_this.shapes, _this.shapes.objects[_this.context.ui.map.topology.objects.boundaries], (a, b) => a !== b);
+        _this.boundaries = _this.context.ui.map.topology.objects.boundaries 
+          ? topojson.mesh(_this.shapes, _this.shapes.objects[_this.context.ui.map.topology.objects.boundaries], (a, b) => a !== b)
+          : null;
         if (_this.mapFeature.features) {
           utils.forEach(_this.mapFeature.features, (feature) => {
             feature.key = feature.properties[_this.context.ui.map.topology.geoIdProperty] ?
@@ -173,7 +175,8 @@ class TopojsonLayer extends MapLayer {
           view
             .attr("id", d.key)
             .style("opacity", d => _this.parent.getOpacity(d.key))
-            .style("fill", d => _this.parent.getMapColor(d.key));
+            .style("fill", d => _this.parent.getMapColor(d.key))
+            .style("stroke", d => _this.parent.getStrokeColor(d.key));
         });
     } else {
       _this.mapGraph.insert("path")
@@ -181,9 +184,11 @@ class TopojsonLayer extends MapLayer {
         .attr("class", "land");
 
     }
-    _this.mapGraph.insert("path")
-      .datum(_this.boundaries)
-      .attr("class", "boundary");
+
+    if (_this.boundaries)
+      _this.mapGraph.insert("path")
+        .datum(_this.boundaries)
+        .attr("class", "boundary");
   }
 
   hideAreas() {
@@ -200,7 +205,8 @@ class TopojsonLayer extends MapLayer {
   updateMapColors() {
     const _this = this;
     this.mapLands
-      .style("fill", d => _this.parent.getMapColor(d.key));
+      .style("fill", d => _this.parent.getMapColor(d.key))
+      .style("stroke", d => _this.parent.getStrokeColor(d.key));
   }
 
   _loadShapes(assetName) {
@@ -774,14 +780,18 @@ export default class Map {
 
   getMapColor(key) {
     const datapoint = this.context.model.dataMap.get(key);
-    return datapoint ? this.context.mcScale(datapoint.color_map) : this.context.COLOR_WHITEISH;
+    return datapoint ? this.context.mcScale(datapoint.color_map) : (this.context.ui.map.missingDataColor || this.context.COLOR_WHITEISH);
+  }
+  getStrokeColor(key) {
+    const datapoint = this.context.model.dataMap.get(key);
+    return datapoint ? "#fff" : "none";
   }
 
   getOpacity(key) {
     if (this.keys[key]) {
       return this.context.getMapOpacity(this.keys[key]);
     }
-    return this.context.COLOR_WHITEISH;
+    return this.context.ui.opacityRegular;
   }
 
   updateColors() {

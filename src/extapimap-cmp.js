@@ -203,7 +203,7 @@ class _VizabiExtApiMap extends Chart {
     // new scales and axes
     this.sScale = this.MDL.size.scale.d3Scale;
     this.cScale = color => color? this.MDL.color.scale.d3Scale(color) : COLOR_WHITEISH;
-    this.mcScale = color => color? this.MDL.mapColor.scale.d3Scale(color) : COLOR_WHITEISH;
+    this.mcScale = color => color? this.MDL.mapColor.scale.d3Scale(color) : (this.ui.map.missingDataColor || COLOR_WHITEISH);
 
     this.TIMEDIM = this.MDL.frame.data.concept;
     this.KEYS = this.model.data.space.filter(dim => dim !== this.TIMEDIM);
@@ -1052,6 +1052,7 @@ class _VizabiExtApiMap extends Chart {
 
 _VizabiExtApiMap.DEFAULT_UI = {
   "map": {
+    "missingDataColor": "none", //"#FDFDFD" or "none" for transparent. "none" makes it faster
     "scale": 1,
     "preserveAspectRatio": true,
     "mapEngine": "mapbox",
@@ -1076,7 +1077,8 @@ _VizabiExtApiMap.DEFAULT_UI = {
     topology: {
       path: "assets/world-50m.json",
       objects: {
-        boundaries: "countries"
+        areas: "countries",
+        boundaries: "land"
       },
       geoIdProperty: "id",
     }
