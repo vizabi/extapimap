@@ -569,19 +569,17 @@ class _VizabiExtApiMap extends Chart {
   }
 
   _updateUIStrings() {
-    const _this = this;
+    const {
+      size, color, mapColor
+    } = this.MDL;
 
     const isRTL = this.services.locale.isRTL();
 
-    const conceptPropsS = _this.MDL.size.data.conceptProps;
-    const conceptPropsC = _this.MDL.color.data.conceptProps;
-    const conceptPropsA = _this.MDL.mapColor.data.conceptProps;
-
     this.strings = {
       title: {
-        S: conceptPropsS.name || conceptPropsS.concept,
-        C: conceptPropsC.name || conceptPropsC.concept,
-        A: conceptPropsA.name || conceptPropsA.concept
+        S: Utils.getConceptName(size, this.localise), 
+        C: Utils.getConceptName(color, this.localise),
+        A: Utils.getConceptName(mapColor, this.localise)
       }
     };
 
@@ -621,8 +619,8 @@ class _VizabiExtApiMap extends Chart {
           .toggle();
       });
 
-    const toolRect = _this.root.element.node().getBoundingClientRect();
-    const chartRect = _this.element.node().getBoundingClientRect();
+    const toolRect = this.root.element.node().getBoundingClientRect();
+    const chartRect = this.element.node().getBoundingClientRect();
 
     this._drawInfoEl(this.DOM.sInfo, this.DOM.sTitle, this.MDL.size, {x: chartRect.left - toolRect.left});
     this._drawInfoEl(this.DOM.cInfo, this.DOM.cTitle, this.MDL.color);
@@ -654,7 +652,7 @@ class _VizabiExtApiMap extends Chart {
       .select("svg")
       .attr("width", infoElHeight + "px").attr("height", infoElHeight + "px")
       .classed("vzb-hidden", 
-        !conceptProps.description && !conceptProps.sourceLink || titleElement.classed("vzb-hidden")
+        !conceptProps?.description && !conceptProps?.sourceLink || titleElement.classed("vzb-hidden")
       );
   }
 

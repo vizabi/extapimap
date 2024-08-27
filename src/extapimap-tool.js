@@ -123,7 +123,7 @@ ExtApiMap.DEFAULT_CORE = () => ({
     "size": {
       scale: {
         modelType: "size",
-        allowedTypes: ["linear", "log", "genericLog", "pow"],
+        allowedTypes: ["linear", "log", "genericLog", "pow", "point"],
       }
     },
     "size_label": {
