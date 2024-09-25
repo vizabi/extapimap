@@ -157,7 +157,7 @@ class TopojsonLayer extends MapLayer {
         .attr("d", _this.mapPath)
         .attr("class", "land")
         .style("opacity", _this.context.ui.opacitySelectDim)
-        .on("mouseover", (event, d) => {
+        .on("mousemove", (event, d) => {
           _this.parent._interact()._mouseover(event, d.key);
         })
         .on("mouseout", (event, d) => {
