@@ -903,11 +903,13 @@ export default class Map {
     if (this.context.ui.map.showAreas) {
       if (duration) {
         this.topojsonMap.mapGraph
+          .interrupt()
           .transition()
           .duration(duration)
           .style("opacity", 0);
       } else {
         this.topojsonMap.mapGraph
+          .interrupt()
           .style("opacity", 0);
       }
     }
