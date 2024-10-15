@@ -1,6 +1,6 @@
 {
   "name": "@vizabi/extapimap",
-  "version": "4.3.2",
+  "version": "4.4.0",
   "description": "Vizabi map from external API",
   "scripts": {
     "prepublishOnly": "npm run build",
