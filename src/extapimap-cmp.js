@@ -726,6 +726,7 @@ class _VizabiExtApiMap extends Chart {
 
       const unitS = conceptPropsS.unit || "";
       const unitC = conceptPropsC.unit || "";
+      const unitA = conceptPropsA.unit || "";
 
       const valueS = _this.values.size[utils.getKey(hovered, _this.dataKeys.size)];
       let valueC = _this.values.color[utils.getKey(hovered, _this.dataKeys.color)];
