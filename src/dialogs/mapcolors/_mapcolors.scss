@@ -1,0 +1,26 @@
+.vzb-dialogs {
+    .vzb-dialogs-dialog {
+      &[data-dlg='mapcolors'] {
+        >.vzb-dialog-modal {
+          >.vzb-dialog-content {
+            label {
+              display: inline;
+              margin-right: 5px;
+            }
+            .vzb-map-style, .vzb-map-layers {
+              label {
+                display: block;
+              }
+            }
+          }
+        }
+        &.vzb-sidebar, &.vzb-bivariate  {
+          .vzb-caxis-selector,
+          .vzb-clegend-container {
+            display: none;
+          }
+          }
+      }
+    }
+  }
+  
