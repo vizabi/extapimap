@@ -4,10 +4,12 @@ import {
   Utils,
   LegacyUtils as utils,
   Icons,
+  ColorLegend,
   DateTimeBackground
 } from "@vizabi/shared-components";
 import * as d3 from "d3";
 import { runInAction, decorate, computed} from "mobx";
+import { BivariateColorLegend } from "./BivariateColorLegend.js";
 
 import MapEngine from "./map";
 
@@ -76,6 +78,8 @@ class _VizabiExtApiMap extends Chart {
               <rect class="vzb-bc-zoom-rect"></rect>
           </g>
       </svg>
+      <div class="vzb-bmc-bivariate-legend vzb-invisible"></div>
+      <div class="vzb-bmc-color-legend vzb-invisible"></div>
     `;
 
     config.subcomponents = [{
@@ -91,6 +95,16 @@ class _VizabiExtApiMap extends Chart {
     },{
       type: DateTimeBackground,
       placeholder: ".vzb-bmc-date"
+    },{
+      type: BivariateColorLegend,
+      placeholder: ".vzb-bmc-bivariate-legend"
+    },{
+      type: ColorLegend,
+      placeholder: ".vzb-bmc-color-legend",
+      options: {
+        colorModelName: "color_map",
+        legendModelName: "legend_map"
+      }
     }];
 
     super(config);
@@ -114,6 +128,8 @@ class _VizabiExtApiMap extends Chart {
         sInfo: graph.select(".vzb-bmc-axis-s-info"),
         cInfo: graph.select(".vzb-bmc-axis-c-info"),
         aInfo: graph.select(".vzb-bmc-axis-a-info"),
+        bivariateLegend: this.element.select(".vzb-bmc-bivariate-legend"),
+        colorAreaLegend: this.element.select(".vzb-bmc-color-legend"),
         year: graph.select(".vzb-bmc-date")
       })
     );
@@ -466,6 +482,7 @@ class _VizabiExtApiMap extends Chart {
   repositionElements() {
     const margin = this.profileConstants.margin;
     const infoElHeight = this.profileConstants.infoElHeight;
+    const verticalSpacing = infoElHeight * 1.2;
     const isRTL = this.services.locale.isRTL();
 
     this.DOM.titles
@@ -481,20 +498,19 @@ class _VizabiExtApiMap extends Chart {
     //hide the first line about bubble size when no bubbles
     const hideSTitle = !this.ui.map.showBubbles;
     this.DOM.sTitle
-      .style("font-size", infoElHeight)
       .attr("transform", "translate(" + (isRTL ? this.chartWidth : 0) + "," + margin.top + ")")
       .classed("vzb-hidden", hideSTitle);
 
     //hide the second line about color in large profile or when color is constant or no bubbles
     const hideCTitle = this.services.layout.profile === "LARGE" || this.MDL.color.data.isConstant || !this.ui.map.showBubbles;
     this.DOM.cTitle
-      .attr("transform", "translate(" + (isRTL ? this.chartWidth : 0) + "," + (margin.top + (hideSTitle ? 0 : infoElHeight)) + ")")
+      .attr("transform", "translate(" + (isRTL ? this.chartWidth : 0) + "," + (margin.top + (hideSTitle ? 0 : verticalSpacing)) + ")")
       .classed("vzb-hidden", hideCTitle);
 
     //hide the second line about color in large profile or when color is constant or no bubbles
-    const hideATitle = !this.ui.map.showAreas;
+    const hideATitle = !this.ui.map.showAreas || this.ui.map.useBivariateColorScaleWithDataFromXY;
     this.DOM.aTitle
-      .attr("transform", "translate(" + (isRTL ? this.chartWidth : 0) + "," + (margin.top + (hideSTitle ? 0 : infoElHeight) + (hideCTitle ? 0 : infoElHeight)) + ")")
+      .attr("transform", "translate(" + (isRTL ? this.chartWidth : 0) + "," + (margin.top + (hideSTitle ? 0 : verticalSpacing) + (hideCTitle ? 0 : verticalSpacing)) + ")")
       .classed("vzb-hidden", hideATitle);
 
     // INFO ELEMENTS
@@ -507,7 +523,7 @@ class _VizabiExtApiMap extends Chart {
       const hTranslate = isRTL ? (titleBBox.x + t.translateX - infoElHeight * 1.4) : (titleBBox.x + t.translateX + titleBBox.width + infoElHeight * 0.4);
 
       this.DOM.sInfo
-        .attr("transform", `translate(${hTranslate},${t.translateY - infoElHeight * 0.8})`)
+        .attr("transform", `translate(${hTranslate},${t.translateY - verticalSpacing * 0.8})`)
         .select("svg")
         .attr("width", infoElHeight)
         .attr("height", infoElHeight);
@@ -521,7 +537,7 @@ class _VizabiExtApiMap extends Chart {
       const hTranslate = isRTL ? (titleBBox.x + t.translateX - infoElHeight * 1.4) : (titleBBox.x + t.translateX + titleBBox.width + infoElHeight * 0.4);
 
       this.DOM.cInfo  
-        .attr("transform", `translate(${hTranslate},${t.translateY - infoElHeight * 0.8})`)
+        .attr("transform", `translate(${hTranslate},${t.translateY - verticalSpacing * 0.8})`)
         .select("svg")
         .attr("width", infoElHeight)
         .attr("height", infoElHeight);
@@ -535,11 +551,25 @@ class _VizabiExtApiMap extends Chart {
       const hTranslate = isRTL ? (titleBBox.x + t.translateX - infoElHeight * 1.4) : (titleBBox.x + t.translateX + titleBBox.width + infoElHeight * 0.4);
 
       this.DOM.aInfo  
-        .attr("transform", `translate(${hTranslate},${t.translateY - infoElHeight * 0.8})`)
+        .attr("transform", `translate(${hTranslate},${t.translateY - verticalSpacing * 0.8})`)
         .select("svg")
         .attr("width", infoElHeight)
         .attr("height", infoElHeight);
     }
+
+    const hideBivariateLegend = !this.ui.map.useBivariateColorScaleWithDataFromXY || !this.ui.map.showAreas;
+    this.DOM.bivariateLegend
+      .style("font-size", infoElHeight + "px")
+      .style("top", (margin.top + (hideSTitle ? 0 : verticalSpacing) + (hideCTitle ? 0 : verticalSpacing) + (hideATitle ? 0 : verticalSpacing)) + "px")
+      .style(isRTL ? "right" : "left", (isRTL ? margin.right : margin.left) + "px")
+      .classed("vzb-invisible", hideBivariateLegend);
+
+    const hideColorAreaLegend = this.ui.map.useBivariateColorScaleWithDataFromXY || !this.ui.map.showAreas;
+    this.DOM.colorAreaLegend
+      //.style("font-size", infoElHeight + "px")
+      .style("top", (margin.top + (hideSTitle ? 0 : verticalSpacing) + (hideCTitle ? 0 : verticalSpacing) + (hideATitle ? 0 : verticalSpacing * 1.2)) + "px")
+      .style(isRTL ? "right" : "left", (isRTL ? margin.right : margin.left) + "px")
+      .classed("vzb-invisible", hideColorAreaLegend);
   }
 
   _updateMapColors() {
