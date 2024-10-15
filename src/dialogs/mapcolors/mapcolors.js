@@ -1,4 +1,5 @@
-import {Dialog, IndicatorPicker, ColorLegend} from "@vizabi/shared-components";
+import "./_mapcolors.scss";
+import {Dialog, IndicatorPicker, ColorLegend, SimpleCheckbox} from "@vizabi/shared-components";
 
 /*!
  * VIZABI COLOR DIALOG
@@ -19,6 +20,7 @@ export class Mapcolors extends Dialog {
 
         <div class="vzb-dialog-content vzb-dialog-scrollable">
           <div class="vzb-clegend-container"></div>
+          <div class="vzb-options-container"></div>
         </div>
 
         <div class="vzb-dialog-buttons">
@@ -45,11 +47,31 @@ export class Mapcolors extends Dialog {
         colorModelName: "color_map",
         legendModelName: "legend_map"
       }
+    }, {
+      type: SimpleCheckbox,
+      placeholder: ".vzb-options-container",
+      options: {
+        checkbox: "useBivariateColorScaleWithDataFromXY",
+        submodel: "root.ui.chart.map"
+      }
     }];
     
     super(config);
   }
 
+  setup(options) {
+    super.setup(options);
+  }
+
+  draw(){
+    super.draw();
+    this.addReaction(this.updateView);
+  }
+
+  updateView() {
+    this.element.classed("vzb-bivariate", !!this.root.ui.chart.map.useBivariateColorScaleWithDataFromXY);
+    this.findChild({type: "ColorLegend"})._updateView();
+  }
 }
 
 Dialog.add("mapcolors", Mapcolors);

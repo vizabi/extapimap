@@ -68,6 +68,37 @@
       }
     }
 
+    .vzb-bmc-color-legend {
+      position: absolute;
+      pointer-events: none;
+      max-width: 280px;
+      width: 280px;
+
+      div.vzb-cl-color-legend {
+        text-shadow:
+          -1px -1px 0 #fff,
+          1px -1px 0 #fff,
+          -1px 1px 0 #fff,
+          1px 1px 0 #fff;  
+      }
+    }
+    .vzb-bmc-bivariate-legend {
+      position: absolute;
+      pointer-events: none;
+      text {
+        paint-order: stroke;
+        stroke: white;
+        stroke-width: 2px;
+      }
+      span {
+        text-shadow:
+          -1px -1px 0 #fff,
+          1px -1px 0 #fff,
+          -1px 1px 0 #fff,
+          1px 1px 0 #fff;  
+      }
+    }
+
     .vzb-extapimap-svg {
       &.vzb-zoomin {
         cursor: zoom-in;
@@ -300,4 +331,5 @@
   }
 
   @import 'dialogs/mapoptions/_mapoptions.scss';
+  @import 'dialogs/mapcolors/_mapcolors.scss';
 }

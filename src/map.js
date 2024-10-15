@@ -1,6 +1,7 @@
 import { LegacyUtils as utils} from "@vizabi/shared-components";
 import topojson from "./topojson.js";
 import d3GeoProjection from "./d3.geoProjection.js";
+import {colorScaleLogic} from "./bivariateColorScale.js";
 import * as d3 from "d3";
 
 import GoogleMapsLoader from "google-maps";
@@ -779,8 +780,18 @@ export default class Map {
   }
 
   getMapColor(key) {
+    
     const datapoint = this.context.model.dataMap.get(key);
-    return datapoint ? this.context.mcScale(datapoint.color_map) : (this.context.ui.map.missingDataColor || this.context.COLOR_WHITEISH);
+    return datapoint 
+      ? colorScaleLogic({
+        context: this.context, 
+        typicalColorEnc: "mapColor", 
+        missing: this.context.ui.map.missingDataColor || COLOR_WHITEISH, 
+        color: datapoint.color_map, 
+        x: datapoint.x, 
+        y: datapoint.y
+      })
+      : (this.context.ui.map.missingDataColor || this.context.COLOR_WHITEISH);
   }
   getStrokeColor(key) {
     const datapoint = this.context.model.dataMap.get(key);
