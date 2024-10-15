@@ -573,6 +573,8 @@ class _VizabiExtApiMap extends Chart {
   }
 
   _updateMapColors() {
+    this.MDL.x?.scale?.zoomed;
+    this.MDL.y?.scale?.zoomed;
     this.map.updateColors();
   }
 

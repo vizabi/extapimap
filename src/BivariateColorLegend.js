@@ -72,6 +72,9 @@ class BivariateColorLegend extends BaseComponent {
     const Y = this.MDL.y;
 
     const bivariatePalette = bivariatePalettes[this.root.ui.chart.map.bivariateColorPalette];
+
+    if(!bivariatePalette) return;
+  
     const nSteps = Math.sqrt(bivariatePalette.length);
 
     const height = nSteps * wh ;
@@ -138,6 +141,9 @@ class BivariateColorLegend extends BaseComponent {
     const Y = this.MDL.y;
 
     const bivariatePalette = bivariatePalettes[this.ui.map.bivariateColorPalette];
+
+    if(!bivariatePalette) return;
+
     const nSteps = Math.sqrt(bivariatePalette.length);
 
     if (this.MDL.highlighted.data.filter.any() && this.MDL.highlighted.data.filter.markers.size === 1) {

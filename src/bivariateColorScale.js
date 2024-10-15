@@ -17,17 +17,13 @@ export const bivariatePalettes = {
 };
 
 export function colorScaleLogic({context, typicalColorEnc, missing, color, x, y}) {
-  context.MDL.x.scale.zoomed;
-  context.MDL.y.scale.zoomed;
-
   const isMeasure = enc => context.MDL[enc].data.conceptProps.concept_type === "measure";
 
   const bivariatePalette = bivariatePalettes[context.ui.map.bivariateColorPalette];
-  const nSteps = Math.sqrt(bivariatePalette.length);
-
+  const nSteps = Math.sqrt(bivariatePalette?.length || 0);
 
   // bivariate scale disabled — revert to regular color encoding
-  if (!context.ui.map.useBivariateColorScaleWithDataFromXY)
+  if (!context.ui.map.useBivariateColorScaleWithDataFromXY || !bivariatePalette)
     return color || color === 0 ? context.MDL[typicalColorEnc].scale.d3Scale(color) : missing;
     
   // one of x or y doesn't have data or both aren't measures
