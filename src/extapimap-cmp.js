@@ -190,6 +190,8 @@ class _VizabiExtApiMap extends Chart {
       size: this.model.encoding.size,
       color: this.model.encoding.color,
       mapColor: this.model.encoding.color_map,
+      x: this.model.encoding.x, //for bivariate area colors
+      y: this.model.encoding.y, //for bivariate area colors
       label: this.model.encoding.label,
       centroid: this.model.encoding.centroid
     };
@@ -203,7 +205,6 @@ class _VizabiExtApiMap extends Chart {
     // new scales and axes
     this.sScale = this.MDL.size.scale.d3Scale;
     this.cScale = color => color? this.MDL.color.scale.d3Scale(color) : COLOR_WHITEISH;
-    this.mcScale = color => color? this.MDL.mapColor.scale.d3Scale(color) : (this.ui.map.missingDataColor || COLOR_WHITEISH);
 
     this.TIMEDIM = this.MDL.frame.data.concept;
     this.KEYS = this.model.data.space.filter(dim => dim !== this.TIMEDIM);
