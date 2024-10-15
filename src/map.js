@@ -7,6 +7,7 @@ import * as d3 from "d3";
 import GoogleMapsLoader from "google-maps";
 import mapboxgl from "mapbox-gl/dist/mapbox-gl.js";
 
+const COLOR_WHITEISH = "rgb(253, 253, 253)";
 class MapLayer {
   /**
    * Map Instance initialization
@@ -791,7 +792,7 @@ export default class Map {
         x: datapoint.x, 
         y: datapoint.y
       })
-      : (this.context.ui.map.missingDataColor || this.context.COLOR_WHITEISH);
+      : (this.context.ui.map.missingDataColor || COLOR_WHITEISH);
   }
   getStrokeColor(key) {
     const datapoint = this.context.model.dataMap.get(key);

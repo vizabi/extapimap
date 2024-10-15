@@ -5,9 +5,11 @@ import {
 } from "@vizabi/shared-components";
 import {decorate, computed} from "mobx";
 import {bivariatePalettes, quantize} from "./bivariateColorScale.js";
+import * as d3 from "d3";
 
 const wh = 20;
-const margin = {top: 15, right: 20, bottom: 20, left: 30}
+const margin = {top: 15, right: 20, bottom: 20, left: 30};
+const isMeasure = encoding => encoding.data.conceptProps.concept_type === "measure";
 
 class BivariateColorLegend extends BaseComponent {
   constructor(config) {
@@ -31,7 +33,7 @@ class BivariateColorLegend extends BaseComponent {
   }
 
 
-  setup(options) {
+  setup() {
     this.DOM = {
       wrapper: this.element,
       titleY: this.element.select(".vzb-title-y"),
@@ -66,19 +68,17 @@ class BivariateColorLegend extends BaseComponent {
   }
 
   updateView() {
-    const { x, y } = this.MDL;
+    const X = this.MDL.x;
+    const Y = this.MDL.y;
 
     const bivariatePalette = bivariatePalettes[this.root.ui.chart.map.bivariateColorPalette];
     const nSteps = Math.sqrt(bivariatePalette.length);
 
-    
-
     const height = nSteps * wh ;
     const width = nSteps * wh ;
 
-    this.yScale = this.MDL.y.scale.d3Scale.copy().domain(this.MDL.y.scale.zoomed).range([height - wh, 0]).clamp(true);
-    this.xScale = this.MDL.x.scale.d3Scale.copy().domain(this.MDL.x.scale.zoomed).range([0, width - wh]).clamp(true);
-    const isMeasure = enc => this.MDL[enc].data.conceptProps.concept_type === "measure";
+    this.yScale = Y.scale.d3Scale.copy().domain(Y.scale.zoomed).range([height - wh, 0]).clamp(true);
+    this.xScale = X.scale.d3Scale.copy().domain(X.scale.zoomed).range([0, width - wh]).clamp(true);
 
     // GENERIC
     this.DOM.svg
@@ -89,21 +89,21 @@ class BivariateColorLegend extends BaseComponent {
 
     // AXES
     this.DOM.axisX
-      .classed("vzb-hidden", !isMeasure("x"))
+      .classed("vzb-hidden", !isMeasure(X))
       .attr("transform", `translate(${wh/2},${height + 3})`)
       .call(
         d3.axisBottom(this.xScale)
-          .tickValues(this.xScale.ticks().concat(this.MDL.x.scale.zoomed))
-          .tickFormat((n) => this.MDL.x.scale.zoomed.includes(n) ? this.localise(n) : "")
+          .tickValues(this.xScale.ticks().concat(X.scale.zoomed))
+          .tickFormat((n) => X.scale.zoomed.includes(n) ? this.localise(n) : "")
       );
 
     this.DOM.axisY
-      .classed("vzb-hidden", !isMeasure("y"))
+      .classed("vzb-hidden", !isMeasure(Y))
       .attr("transform", `translate(${-3},${wh/2}) rotate(90)`)
       .call(
         d3.axisBottom(this.yScale)
-          .tickValues(this.yScale.ticks().concat(this.MDL.y.scale.zoomed))
-          .tickFormat((n) => this.MDL.y.scale.zoomed.includes(n) ? this.localise(n) : "")
+          .tickValues(this.yScale.ticks().concat(Y.scale.zoomed))
+          .tickFormat((n) => Y.scale.zoomed.includes(n) ? this.localise(n) : "")
       );
 
     // PALETTE
@@ -116,19 +116,27 @@ class BivariateColorLegend extends BaseComponent {
       .attr("x", (d,i) => (i % nSteps) * wh)
       .attr("y", (d,i) => (nSteps - Math.floor(i / nSteps) - 1) * wh)
       //opacity hack for both univariate situations
-      .style("opacity", (d, i) => !isMeasure("x") && (i % nSteps !== 0) || !isMeasure("y") && (i >= nSteps) ? 0 : 1)
+      .style("opacity", (d, i) => !isMeasure(X) && (i % nSteps !== 0) || !isMeasure(Y) && (i >= nSteps) ? 0 : 1)
       .attr("fill", d => d);
 
     //AXIS TITLES
     this.DOM.titleY
-      .classed("vzb-hidden", !isMeasure("y"))
-      .text( "↑ " + Utils.getConceptName(this.MDL.y, this.localise));
+      .classed("vzb-hidden", !isMeasure(Y))
+      .text( "↑ " + Utils.getConceptName(Y, this.localise));
     this.DOM.titleX
-      .classed("vzb-hidden", !isMeasure("x"))
-      .text( "→ " + Utils.getConceptName(this.MDL.x, this.localise)).style("margin-left", margin.left + "px");
+      .classed("vzb-hidden", !isMeasure(X))
+      .text( "→ " + Utils.getConceptName(X, this.localise)).style("margin-left", margin.left + "px");
+
+    this.DOM.valueY
+      .classed("vzb-hidden", !isMeasure(Y));
+    this.DOM.valueX
+      .classed("vzb-hidden", !isMeasure(X));
   }
 
   updateHighlight() {
+    const X = this.MDL.x;
+    const Y = this.MDL.y;
+
     const bivariatePalette = bivariatePalettes[this.ui.map.bivariateColorPalette];
     const nSteps = Math.sqrt(bivariatePalette.length);
 
@@ -137,10 +145,14 @@ class BivariateColorLegend extends BaseComponent {
       const d = this.model.dataMap.get(key);
       const x = d.x;
       const y = d.y;
+
+      const xSteps = !isMeasure(X) ? 0 : quantize(this.MDL.x, d.x, nSteps);
+      const ySteps = nSteps - 1 - (!isMeasure(Y) ? 0 : quantize(Y, d.y, nSteps));
+
       this.DOM.dotOuter
         .classed("vzb-hidden", false)
-        .attr("x", quantize(this.MDL.x, d.x, nSteps) * wh)
-        .attr("y", (nSteps - quantize(this.MDL.y, d.y, nSteps) - 1) * wh)
+        .attr("x", xSteps * wh)
+        .attr("y", ySteps * wh)
         .attr("width", wh)
         .attr("height", wh)
         .attr("fill", "none")
@@ -148,16 +160,16 @@ class BivariateColorLegend extends BaseComponent {
         .attr("stroke-width", "2");
       this.DOM.dotInner
         .classed("vzb-hidden", false)
-        .attr("x", quantize(this.MDL.x, d.x, nSteps) * wh + 2)
-        .attr("y", (nSteps - quantize(this.MDL.y, d.y, nSteps) - 1) * wh + 2)
+        .attr("x", xSteps * wh + 2)
+        .attr("y", ySteps * wh + 2)
         .attr("width", wh - 4)
         .attr("height", wh - 4)
         .attr("fill", "none")
         .attr("stroke", "black")
         .attr("stroke-width", "2");
       
-      this.DOM.valueY.text(y || y === 0 ? " " + this.localise(y) : "")
-      this.DOM.valueX.text(x || x === 0 ? " " + this.localise(x) : "")
+      this.DOM.valueY.text(y || y === 0 ? " " + this.localise(y) : "");
+      this.DOM.valueX.text(x || x === 0 ? " " + this.localise(x) : "");
 
     } else {
       this.DOM.dotOuter.classed("vzb-hidden",true);
