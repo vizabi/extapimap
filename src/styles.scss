@@ -179,10 +179,13 @@
             unicode-bidi: embed;
           }
         }
-        rect {
-          pointer-events: visible;
+        .vzb-bmc-tooltip {
+          pointer-events: none;
         }
         .vzb-bmc-entity {
+          rect {
+            pointer-events: visible;
+          }
           .vzb-bmc-label-x {
             transition: opacity 200ms linear;
             fill: $vzb-color-primary;
