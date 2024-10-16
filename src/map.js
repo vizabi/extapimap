@@ -63,8 +63,8 @@ class MapLayer {
    * @param {Array} center
    * @param {bool} increment increase zoom if true
    */
-  zoomMap(center, increment) {
-    console.warn("zoomMap method should be implemented in map instance", center, increment);
+  zoomMap(center, increment, zooming) {
+    console.warn("zoomMap method should be implemented in map instance", center, increment, zooming);
   }
 
   /**
@@ -320,7 +320,7 @@ class TopojsonLayer extends MapLayer {
       .selectAll("path").attr("d", this.mapPath);
   }
 
-  zoomMap(center, increment) {
+  zoomMap(center, increment, zooming) {
     return new Promise(resolve => {
       const point = this.geo2Point(center[0], center[1]);
       const margin = {left: 0, top: 0}; //the map is done in full bleed, so we don't care about margins
@@ -337,7 +337,7 @@ class TopojsonLayer extends MapLayer {
           this.context.chartHeight + hScale * (2 - hMod) + topOffset
         ]
       ], true);
-      resolve();
+      resolve(zooming);
     });
   }
 }
@@ -469,7 +469,7 @@ class GoogleMapLayer extends MapLayer {
     });
   }
 
-  zoomMap(center, increment) {
+  zoomMap(center, increment, zooming) {
     const _this = this;
     return new Promise((resolve) => {
       const zoomPoint = this.geo2Point(center[0], center[1]);
@@ -477,7 +477,7 @@ class GoogleMapLayer extends MapLayer {
       const zoomPoint1 = this.geo2Point(center[0], center[1]);
       _this.map.panBy(zoomPoint1[0] - zoomPoint[0], zoomPoint1[1] - zoomPoint[1]);
       _this.google.maps.event.addListenerOnce(_this.map, "idle", () => {
-        resolve();
+        resolve(zooming);
       });
     });
   }
@@ -593,7 +593,7 @@ class MapboxLayer extends MapLayer {
     this.map.panBy([-dx, -dy], { duration: 0 });
   }
 
-  zoomMap(center, increment) {
+  zoomMap(center, increment, zooming) {
     const _this = this;
     return new Promise((resolve) => {
       this.map.easeTo({
@@ -603,7 +603,7 @@ class MapboxLayer extends MapLayer {
       });
       utils.delay(300).then(
         () => {
-          resolve();
+          resolve(zooming);
         }
       );
     });
@@ -639,7 +639,7 @@ export default class Map {
   constructor(context, domSelector) {
     this.context = context;
     this.domSelector = domSelector;
-    this.zooming = false;
+    this.zooming = 0;
     this.topojsonMap = null;
     this.keys = {};
     this.mapEngine = this.context.ui.map.mapEngine;
@@ -834,17 +834,20 @@ export default class Map {
         this.topojsonMap.rescaleMap(duration);
       }
       if (!duration) duration = 0;
+      const _this = this;
       return new Promise((resolve) => {
-        utils.delay(duration).then(() => {
-          this._showTopojson(300);
-          resolve();
+        utils.defer(() => {
+          utils.delay(duration).then(() => {
+            _this._showTopojson(300);
+            resolve();
+          });
         });
       });
     } 
   }
   
   panStarted() {
-    this.zooming = true;
+    this.zooming++;
     if (this.context.ui.map.showMap) {
       this._hideTopojson();
     }
@@ -860,7 +863,7 @@ export default class Map {
       east: se[0],
       south: se[1]
     };
-    this.zooming = false;
+    this.zooming = 0;
     this.boundsChanged();
     this._showTopojson(300);
   }
@@ -874,7 +877,7 @@ export default class Map {
       east: se[0],
       south: se[1]
     };
-    this.zooming = false;
+    this.zooming = 0;
     if (this.mapInstance) {
       this.mapInstance.rescaleMap();
     } else {
@@ -934,18 +937,19 @@ export default class Map {
     const _this = this;
     const geoCenter = this.point2Geo(center[0], center[1]);
     this.canvasBefore = this.getCanvas();
-    this.zooming = true;
+    this.zooming++;
     if (this.context.ui.map.showMap) {
       this._hideTopojson(100);
     }
     let response;
     if (this.mapInstance) {
-      response = this.mapInstance.zoomMap(geoCenter, increment);
+      response = this.mapInstance.zoomMap(geoCenter, increment, this.zooming);
     } else if (this.context.ui.map.showAreas) {
-      response = this.topojsonMap.zoomMap(geoCenter, increment);
+      response = this.topojsonMap.zoomMap(geoCenter, increment, this.zooming);
     }
     return response.then(
-      () => {
+      (zooming) => {
+        if (this.zooming !== zooming) return;
         const nw = this.point2Geo(this.canvasBefore[0][0], this.canvasBefore[0][1]);
         const se = this.point2Geo(this.canvasBefore[1][0], this.canvasBefore[1][1]);
         _this.context.ui.map.bounds = {
@@ -954,7 +958,7 @@ export default class Map {
           east: se[0],
           south: se[1]
         };
-        this.zooming = false;
+        this.zooming = 0;
         this.boundsChanged();
         /*
          if (_this.mapInstance) {
@@ -964,6 +968,7 @@ export default class Map {
         //          _this.topojsonMap.rescaleMap();
         //        }
         this._showTopojson(300);
+        return zooming;
       }
     );
   }

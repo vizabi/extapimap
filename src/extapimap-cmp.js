@@ -147,8 +147,10 @@ class _VizabiExtApiMap extends Chart {
       if (_this.ui.zoomOnScrolling) {
         const mouse = d3.pointer(event);
         _this._hideEntities();
+        const mapZooming = _this.map.zooming + 1;
         _this.map.zoomMap(mouse, event.wheelDelta > 0 ? 1 : -1).then(
-          () => {
+          (zooming) => {
+            if (mapZooming !== zooming) return;
             _this._showEntities(100);
           }
         );
@@ -191,7 +193,7 @@ class _VizabiExtApiMap extends Chart {
     this.root.element.on("custom-resetZoom.extapimap", () => {
       _this._hideEntities();
       _this.map.resetZoom(500).then(() => {
-        _this._showEntities();
+        _this._showEntities(300);
       });
     });
   
@@ -1043,8 +1045,10 @@ class _VizabiExtApiMap extends Chart {
             const mouse = d3.pointer(event, _this.DOM.graph.node());
             if (Math.abs(_this.origin.x - mouse[0]) < 5 || Math.abs(_this.origin.y - mouse[1]) < 5) {
               _this._hideEntities();
+              const mapZooming = _this.map.zooming + 1;
               _this.map.zoomMap(mouse, 1).then(
-                () => {
+                (zooming) => {
+                  if (mapZooming !== zooming) return;
                   _this._showEntities(300);
                 }
               );
@@ -1062,8 +1066,10 @@ class _VizabiExtApiMap extends Chart {
         if (_this.ui.cursorMode == "minus") {
           const mouse = d3.pointer(event, _this.DOM.graph.node());
           _this._hideEntities();
+          const mapZooming = _this.map.zooming + 1;
           _this.map.zoomMap(mouse, -1).then(
-            () => {
+            (zooming) => {
+              if (mapZooming !== zooming) return;
               _this._showEntities(300);
             }
           );
