@@ -156,7 +156,6 @@ class TopojsonLayer extends MapLayer {
       _this.mapLands = _this.mapGraph.selectAll(".land")
         .data(_this.mapFeature.features)
         .enter().insert("path")
-        .attr("d", _this.mapPath)
         .attr("class", "land")
         .style("opacity", _this.context.ui.opacitySelectDim)
         .on("mousemove", (event, d) => {
@@ -173,6 +172,7 @@ class TopojsonLayer extends MapLayer {
           event.stopPropagation();
         })
         .each(function(d) {
+          d["_bounds"] = _this.mapPath.bounds(d).map(b => _this.point2Geo(b[0], b[1])).flat();
           const view = d3.select(this);
           view
             .attr("id", d.key)
@@ -261,24 +261,43 @@ class TopojsonLayer extends MapLayer {
       .scale(scaleDelta)
       .precision(0.1);
 
-    this.mapGraph
-      .selectAll("path").attr("d", this.mapPath);
+    const chartWidth = this.context.chartWidth;
+    const chartHeight = this.context.chartHeight;
+
+    if (this.mapFeature.features) {
+      const landInView = this.mapFeature.features.map(d => {
+        const bounds = d["_bounds"];
+        const b0 = this.geo2Point(bounds[0], bounds[1]);
+        const b1 = this.geo2Point(bounds[2], bounds[3]);
+        return b0[0] < chartWidth &&
+          b0[1] < chartHeight &&
+          b1[0] > 0 &&
+          b1[1] > 0;
+      })
+      this.mapLands.attr("d", (d, i) => landInView[i] ? this.mapPath(d) : "");
+      
+      if (this.boundaries)
+        this.mapGraph.select(".boundary").attr("d", this.mapPath);
+    } else {
+      this.mapGraph
+        .selectAll("path").attr("d", this.mapPath);
+    }
 
     // resize and put in center
     this.parent.mapSvg
       .style("transform", "translate(" + margin.left + "px," + margin.top + "px)")
-      .attr("width", this.context.chartWidth)
-      .attr("height", this.context.chartHeight);
+      .attr("width", chartWidth)
+      .attr("height", chartHeight);
 
     // set skew function used for bubbles in chart
-    this.geo2Point(
-      this.context.ui.map.bounds.west,
-      this.context.ui.map.bounds.north
-    );
-    this.geo2Point(
-      this.context.ui.map.bounds.east,
-      this.context.ui.map.bounds.south
-    );
+    // this.geo2Point(
+    //   this.context.ui.map.bounds.west,
+    //   this.context.ui.map.bounds.north
+    // );
+    // this.geo2Point(
+    //   this.context.ui.map.bounds.east,
+    //   this.context.ui.map.bounds.south
+    // );
 
     // if canvas not received this map is main and shound trigger redraw points on tool
     if (emitEvent) {
