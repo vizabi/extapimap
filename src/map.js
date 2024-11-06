@@ -261,18 +261,19 @@ class TopojsonLayer extends MapLayer {
       .scale(scaleDelta)
       .precision(0.1);
 
-    const chartWidth = this.context.chartWidth;
-    const chartHeight = this.context.chartHeight;
+    const width = this.context.width;
+    const height = this.context.height;
 
     if (this.mapFeature.features) {
       const landInView = this.mapFeature.features.map(d => {
         const bounds = d["_bounds"];
         const b0 = this.geo2Point(bounds[0], bounds[1]);
         const b1 = this.geo2Point(bounds[2], bounds[3]);
-        return b0[0] < chartWidth &&
-          b0[1] < chartHeight &&
+        return b0[0] < width &&
+          b0[1] < height &&
           b1[0] > 0 &&
-          b1[1] > 0;
+          b1[1] > 0 &&
+          (b1[0] - b0[0]) * (b1[1] - b0[1]) > 10;
       })
       this.mapLands.attr("d", (d, i) => landInView[i] ? this.mapPath(d) : "");
       
@@ -286,8 +287,8 @@ class TopojsonLayer extends MapLayer {
     // resize and put in center
     this.parent.mapSvg
       .style("transform", "translate(" + margin.left + "px," + margin.top + "px)")
-      .attr("width", chartWidth)
-      .attr("height", chartHeight);
+      .attr("width", this.context.chartWidth)
+      .attr("height", this.context.chartHeight);
 
     // set skew function used for bubbles in chart
     // this.geo2Point(
