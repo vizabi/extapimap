@@ -62,10 +62,16 @@ class BivariateColorLegend extends BaseComponent {
   }
 
   draw() {
-    this.localise = this.services.locale.auto();
+    this.addReaction(this.updateLocalisers);
     this.addReaction(this.updateView);
     this.addReaction(this.updateHighlight);
   }
+
+  updateLocalisers(){
+    this.localise = this.services.locale.auto();
+    this.localiseX = this.services.locale.auto(this.MDL.x.data?.conceptProps?.format);
+    this.localiseY = this.services.locale.auto(this.MDL.y.data?.conceptProps?.format);
+  };
 
   updateView() {
     const X = this.MDL.x;
@@ -97,7 +103,7 @@ class BivariateColorLegend extends BaseComponent {
       .call(
         d3.axisBottom(this.xScale)
           .tickValues(this.xScale.ticks().concat(X.scale.zoomed))
-          .tickFormat((n) => X.scale.zoomed.includes(n) ? this.localise(n) : "")
+          .tickFormat((n) => X.scale.zoomed.includes(n) ? this.localiseX(n) : "")
       );
 
     this.DOM.axisY
@@ -106,7 +112,7 @@ class BivariateColorLegend extends BaseComponent {
       .call(
         d3.axisBottom(this.yScale)
           .tickValues(this.yScale.ticks().concat(Y.scale.zoomed))
-          .tickFormat((n) => Y.scale.zoomed.includes(n) ? this.localise(n) : "")
+          .tickFormat((n) => Y.scale.zoomed.includes(n) ? this.localiseY(n) : "")
       );
 
     // PALETTE
@@ -174,8 +180,8 @@ class BivariateColorLegend extends BaseComponent {
         .attr("stroke", "black")
         .attr("stroke-width", "2");
       
-      this.DOM.valueY.text(y || y === 0 ? " " + this.localise(y) : "");
-      this.DOM.valueX.text(x || x === 0 ? " " + this.localise(x) : "");
+      this.DOM.valueY.text(y || y === 0 ? " " + this.localiseY(y) : "");
+      this.DOM.valueX.text(x || x === 0 ? " " + this.localiseX(x) : "");
 
     } else {
       this.DOM.dotOuter.classed("vzb-hidden",true);
