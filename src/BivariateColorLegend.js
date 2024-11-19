@@ -131,10 +131,10 @@ class BivariateColorLegend extends BaseComponent {
     //AXIS TITLES
     this.DOM.titleY
       .classed("vzb-hidden", !isMeasure(Y))
-      .text( "↑ " + Utils.getConceptName(Y, this.localise));
+      .text( "↑ " + Utils.getConceptShortName(Y, this.localise));
     this.DOM.titleX
       .classed("vzb-hidden", !isMeasure(X))
-      .text( "→ " + Utils.getConceptName(X, this.localise)).style("margin-left", margin.left + "px");
+      .text( "→ " + Utils.getConceptShortName(X, this.localise)).style("margin-left", margin.left + "px");
 
     this.DOM.valueY
       .classed("vzb-hidden", !isMeasure(Y));

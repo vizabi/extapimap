@@ -81,6 +81,17 @@
           -1px 1px 0 #fff,
           1px 1px 0 #fff;  
       }
+      .vzb-cl-holder{
+        overflow: visible;
+        .vzb-cl-rainbow-holder {
+          left: -15px;
+          right: -15px;
+          .vzb-cl-rainbow, .vzb-cl-subtitle{
+            left: 15px;
+            right: 15px;
+          }
+        }
+      }      
     }
     .vzb-bmc-bivariate-legend {
       position: absolute;
