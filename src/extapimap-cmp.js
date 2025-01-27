@@ -216,7 +216,7 @@ class _VizabiExtApiMap extends Chart {
   }
 
   draw(){
-    this.localise = this.services.locale.auto(this.MDL.frame.interval);
+    this.localise = this.services.locale.auto({interval: this.MDL.frame.interval});
 
     this.treemenu = this.root.findChild({type: "TreeMenu"});
 

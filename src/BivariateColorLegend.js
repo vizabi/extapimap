@@ -69,8 +69,8 @@ class BivariateColorLegend extends BaseComponent {
 
   updateLocalisers(){
     this.localise = this.services.locale.auto();
-    this.localiseX = this.services.locale.auto(this.MDL.x.data?.conceptProps?.format);
-    this.localiseY = this.services.locale.auto(this.MDL.y.data?.conceptProps?.format);
+    this.localiseX = this.services.locale.auto({shareOrPercent: this.MDL.x.data?.conceptProps?.format});
+    this.localiseY = this.services.locale.auto({shareOrPercent: this.MDL.y.data?.conceptProps?.format});
   };
 
   updateView() {
