@@ -34,6 +34,19 @@
       fill: none;
       stroke: $vzb-color-grey;
     }
+    #vzb-map-background {
+      .mapboxgl-ctrl-bottom-left {
+        transform: rotate(-90deg);
+        bottom: 50%;
+        left: -25px;
+      }
+      .mapboxgl-ctrl {
+        opacity: 0.3;
+      }
+      .mapboxgl-ctrl:hover {
+        opacity: 1;
+      }
+    }
     .vzb-bmc-map-background {
       position: absolute;
 
