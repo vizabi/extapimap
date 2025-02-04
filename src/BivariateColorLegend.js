@@ -7,7 +7,7 @@ import {decorate, computed} from "mobx";
 import {bivariatePalettes, quantize} from "./bivariateColorScale.js";
 import * as d3 from "d3";
 
-const wh = 20;
+const paletteWidthHeight = 120;
 const margin = {top: 15, right: 20, bottom: 20, left: 30};
 const isMeasure = encoding => encoding.data.conceptProps.concept_type === "measure";
 
@@ -82,6 +82,7 @@ class BivariateColorLegend extends BaseComponent {
     if(!bivariatePalette) return;
   
     const nSteps = Math.sqrt(bivariatePalette.length);
+    const wh = paletteWidthHeight / nSteps;
 
     const height = nSteps * wh ;
     const width = nSteps * wh ;
@@ -151,6 +152,7 @@ class BivariateColorLegend extends BaseComponent {
     if(!bivariatePalette) return;
 
     const nSteps = Math.sqrt(bivariatePalette.length);
+    const wh = paletteWidthHeight / nSteps;
 
     if (this.MDL.highlighted.data.filter.any() && this.MDL.highlighted.data.filter.markers.size === 1) {
       const [key] = [...this.MDL.highlighted.data.filter.markers.keys()];
