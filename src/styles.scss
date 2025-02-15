@@ -34,7 +34,7 @@
       fill: none;
       stroke: $vzb-color-grey;
     }
-    #vzb-map-background {
+    .vzb-map-background {
       .mapboxgl-ctrl-bottom-left {
         transform: rotate(-90deg);
         bottom: 50%;
@@ -47,6 +47,11 @@
         opacity: 1;
       }
     }
+
+    .vzb-map-foreground {
+      position: absolute;
+    }
+
     .vzb-bmc-map-background {
       position: absolute;
 
@@ -138,6 +143,7 @@
       }
       @extend %vzb-chart-svg;
       position: absolute;
+      pointer-events: none;
 
       .vzb-bmc-date {
         font-size: $vzb-bmc-date-size;

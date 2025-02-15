@@ -12,10 +12,20 @@ import { runInAction, decorate, computed} from "mobx";
 import { BivariateColorLegend } from "./BivariateColorLegend.js";
 
 import MapEngine from "./map";
+import { GeoJsonLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
+import { Deck, MapView } from "@deck.gl/core";
+import LabelBackgroundLayer from "./layers/label-layer/label-background-layer/label-background-layer.js";
+import LabelMultiIconLayer from "./layers/label-layer/label-multi-icon-layer/label-multi-icon-layer.js";
+import LabelLayer from "./layers/label-layer/label-layer.js";
 
 const {ICON_QUESTION} = Icons;
 //const COLOR_BLACKISH = "rgb(51, 51, 51)";
 const COLOR_WHITEISH = "rgb(253, 253, 253)";
+const CHARACTER_SET =
+'ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖabcdefghijklmnopqrstuvwxyzåäéö0123456789+-−–*/%,.²:() '.split('');
+
+const KEY = Symbol.for("key");
+const TRAIL_KEY = Symbol.for("trailHeadKey");
 
 const MAX_RADIUS_EM = 0.05;
 
@@ -55,7 +65,8 @@ class _VizabiExtApiMap extends Chart {
   constructor(config) {
 
     config.template = `
-      <div id="vzb-map-background"></div>
+      <div class="vzb-map-background"></div>
+      <div class="vzb-map-foreground"></div>
       <svg class="vzb-extapimap-svg vzb-export">
           <g class="vzb-bmc-map-background"></g>
           <g class="vzb-bmc-graph">
@@ -108,12 +119,24 @@ class _VizabiExtApiMap extends Chart {
     }];
 
     super(config);
+
+    this.activeObject = undefined;
+    this.labelOffset = {};
+    this.labelDragged = {};
+    this.dragX0;
+    this.dragY0;
+    this.dragX;
+    this.dragY;
+    this.redrawUpdateTrigger = 0;
+    this.opacityUpdateTrigger = 0;
+    this.dataUpdateTrigger = 0;
   }
 
   setup() {
     this.DOM = {
       chartSvg: this.element.select("svg"),
-      zoomRect: this.element.select(".vzb-bc-zoom-rect")
+      zoomRect: this.element.select(".vzb-bc-zoom-rect"),
+      mapForeground: this.element.select(".vzb-map-foreground"),
     };
     this.DOM.chartSvg.select(".vzb-bmc-graph").call(graph => 
       Object.assign(this.DOM, {
@@ -196,7 +219,10 @@ class _VizabiExtApiMap extends Chart {
         _this._showEntities(300);
       });
     });
-  
+
+    this.FONT_FAMILY = this.element.style("font-family").split(",")[0];
+    this.deckMap = this.getDeck();
+    this.props = this.getProps();    
   }
 
   get MDL(){
@@ -222,7 +248,8 @@ class _VizabiExtApiMap extends Chart {
 
     // new scales and axes
     this.sScale = this.MDL.size.scale.d3Scale;
-    this.cScale = color => color? this.MDL.color.scale.d3Scale(color) : COLOR_WHITEISH;
+    this.cScale = color => color || color == 0 ? this.MDL.color.scale.d3Scale(color) : COLOR_WHITEISH;
+    this.cMapScale = color => this.MDL.mapColor.scale.d3Scale(color);
 
     this.TIMEDIM = this.MDL.frame.data.concept;
     this.KEYS = this.model.data.space.filter(dim => dim !== this.TIMEDIM);
@@ -232,23 +259,36 @@ class _VizabiExtApiMap extends Chart {
     runInAction(() => {
       this.preload().then(() => {
         if (this.map.inPreload) return;
+        this.addReaction(this._filterFeatures);
         this.addReaction(this._updateSize);
         //this.addReaction(this._updateMarkerSizeLimits);
         this.addReaction(this._getDuration);
         this.addReaction(this._drawData);
         this.addReaction(this._mapReady);
         this.addReaction(this._updateMap);
-        this.addReaction(this._updateMapColors);
-        this.addReaction(this._updateOpacity);
+        //this.addReaction(this._updateMapColors);
+        //this.addReaction(this._updateOpacity);
         this.addReaction(this._blinkSuperHighlighted);
         this.addReaction(this._updateUIStrings);
-        this.addReaction(this._highlightDataPoints);
-        this.addReaction(this._selectDataPoints);
+        this.addReaction(this._redrawOpacity);
+        this.addReaction(this._updateHighlighted);
+        this.addReaction(this._updateSelected);
+        //this.addReaction(this._highlightDataPoints);
+        //this.addReaction(this._selectDataPoints);
         //this.addReaction(this._redrawData);
 
         this.addReaction(this._setupCursorMode);
       });
     });
+  }
+
+  _filterFeatures() {
+    if (this.ui.map.showAreas) {
+      const keys = new Set(this.model.dataMapCache.values().map(m=>m[KEY]));
+      this.__filteredFeatures = this.map.topojsonMap.mapFeature.features.filter(f => keys.has(f.key));
+    } else {
+      this.__filteredFeatures = [];
+    }
   }
 
   _mapReady() {
@@ -278,14 +318,31 @@ class _VizabiExtApiMap extends Chart {
 
   _drawData() {
     this._processFrameData();
-    this._createAndDeleteBubbles();
+    //this._createAndDeleteBubbles();
     this._updateMarkerSizeLimits();
     runInAction(() => {
+      this.dataUpdateTrigger++;
       this._redrawData();
     });
   }
 
   _redrawData(duration) {
+    this.redrawUpdateTrigger++;
+    this.deckMap.setProps({layers: this.getMapLayers()});
+  }
+
+  _redrawOpacity() {
+    this.ui.opacityRegular;
+    this.ui.opacitySelect;
+    this.ui.opacitySelectDim;
+    this.ui.opacityHighlight;
+    this.ui.opacityHighlightDim;
+
+    this.opacityUpdateTrigger++;
+    this.deckMap.setProps({layers: this.getMapLayers(this.__data, false, 0)});
+  }
+
+  _redrawData_(duration) {
     this.services.layout.size;
     
     //this._processFrameData();
@@ -825,8 +882,8 @@ class _VizabiExtApiMap extends Chart {
 
     const superHighlightFilter = this.MDL.superHighlighted.data.filter;
 
-    this.bubbles
-      .classed("vzb-super-highlighted", d => superHighlightFilter.has(d));
+    // this.bubbles
+    //   .classed("vzb-super-highlighted", d => superHighlightFilter.has(d));
   }
 
   _drawForecastOverlay() {
@@ -872,7 +929,9 @@ class _VizabiExtApiMap extends Chart {
     this._redrawData();
     //this.updateMarkerSizeLimits();
     //this.redrawDataPoints(null, true);
-    if (!this.ui.map.showBubbles) this.updateLabels(null);
+    if (!this.ui.map.showBubbles) {
+      // //this.updateLabels(null);
+    }
   }
 
   updateLabels() {
@@ -932,6 +991,40 @@ class _VizabiExtApiMap extends Chart {
     if (typeof d.label == "object") return Object.values(d.label).join(", ");
     if (d.label != null) return "" + d.label;
     return d[Symbol.for("key")];
+  }
+
+  _updateHighlighted() {
+    const highlightedFilter = this.MDL.highlighted.data.filter;
+
+    this.__someHighlighted = highlightedFilter.any();
+    this.__highlightedMarkers = new Map(highlightedFilter.markers);
+    this.activeObject = this.__highlightedMarkers.size == 1 ? Object.assign({}, this.model.dataMap.get(this.__highlightedMarkers.keys().next().value)) : null;
+    this.activeObjectData = this.activeObject ? [this.activeObject] : [];
+    this.opacityUpdateTrigger++;
+    this.deckMap.setProps({layers: this.getMapLayers(undefined, false)})
+  }
+
+  _updateSelected() {
+    const selectedFilter = this.MDL.selected.data.filter;
+    
+    this.__someSelected = selectedFilter.any();
+    this.__selectedMarkers = new Map(selectedFilter.markers);
+    this.__selectedKeys = [...this.__selectedMarkers.keys()];
+
+
+    Object.keys(this.labelOffset).forEach(key => {
+      if (!this.__selectedMarkers.has(key)) delete this.labelOffset[key];
+    });
+    Object.keys(this.labelDragged).forEach(key => {
+      if (!this.__selectedMarkers.has(key)) delete this.labelDragged[key];
+    });
+
+    runInAction(() => {
+      if (!this.MDL.trail?.show) {
+        this.__labelData = this.__selectedKeys.map(key => this.model.dataMap.get(key));
+        this.deckMap.setProps({layers: this.getMapLayers(undefined, false)});
+      }
+    });
   }
 
   _highlightDataPoints() {
@@ -1085,11 +1178,391 @@ class _VizabiExtApiMap extends Chart {
   }
 
   _initMap() {
-    this.map = new MapEngine(this, "#vzb-map-background").getMap();
+    this.map = new MapEngine(this, ".vzb-map-background", ".vzb-map-foreground").getMap();
+    this.topojsonMap = this.map.topojsonMap;
     return this.map.initMap();
   }
 
+  getDeck() {
+    this.__viewState = {
+      longitude: 0,
+      latitude: 0,
+      pitch: 0,
+      zoom: 0,
+    };
+
+    return new Deck({
+      // The HTML container to render into
+      parent: this.DOM.mapForeground.node(),
+      views: new MapView({
+        id: 'map', 
+        altitude: 1,
+      }),
+      viewState: this.__viewState,
+      getCursor: ({isDragging, isHovering}) => 
+        isDragging ? 'grabbing' : isHovering ? 'pointer' : 'default'
+      ,
+      onViewStateChange: e => {
+        //console.log("onviewstatechange", e);
+        this.__viewState = e.viewState;
+        this.deckMap.setProps({ viewState: this.__viewState });
+      },
+      // onResize: ({ width, height }) => {
+      //   console.log("onresize", this, width, height);
+      //   const targetDelta = [(this.__viewState.width - width) * 0.5, (this.__viewState.height - height) * 0.5, 0];
+      //   this.deckMap.setProps({ viewState: { ...this.__viewState, target: this.__viewState.target.map((v, i) => v - targetDelta[i])}});
+      // }
+    });
+  }
+
+  getProps() {
+    return {
+      getMapLabelText: (d) => {
+        if (!d) return;
+        return this.__labelWithoutFrame(d);
+      },
+      getMapLabelPosition: (d) => {
+        if (!d) return;
+        const centroid = this.map.centroid(d[KEY]);
+        return centroid;
+      },
+      getMapFillColor: (d, { target }) => {
+        if (!d) return;
+        const c = this.map.getMapColor(d.properties.id);
+        const color = c ? d3.color(c).formatRgb().slice(4, -1).split(",").map(v=>+v) : [0, 0, 0];
+        target[0] = color[0];
+        target[1] = color[1];
+        target[2] = color[2];
+        target[3] = c ? this.map.getOpacity(d.properties.id) * 255 : 0;
+        return target;
+      },
+      getMapLineColor: (d, { target }) => {
+        if (!d) return;
+        const c = this.map.getStrokeColor(d.properties.id);
+        const color = c ? d3.color(c).formatRgb().slice(4, -1).split(",").map(v=>+v) : [0, 0, 0];
+        target[0] = color[0];
+        target[1] = color[1];
+        target[2] = color[2];
+        target[3] = c ? 255 : 0;
+        return target;
+      },
+      onMapHover: ({ object: d }) => {
+        //console.log("onhover", d, activeObject);  
+        const invalidate = d?.properties?.id !== this.activeObject?.[KEY]
+        this.activeObject = d ? this.model.dataMap.get(d.properties.id) : d;
+        if (invalidate) {
+          //setTimeout(() => {
+          //console.log("invalid d?.properties?.idate", d, activeObject);  
+          this.deckMap.setProps({layers: this.getMapLayers(undefined, false, false)})
+          //}, 0);
+        }
+      },
+      onMapClick: ({ object: d }) => {
+        if (!d) return;
+        let dataKey = {[KEY]: d?.properties?.id}
+        console.log("click pretoggle", d, dataKey);
+        runInAction(() => {
+          this.model.encoding.selected.data.filter.toggle(dataKey);
+          console.log("click toggle", dataKey);
+        })      
+        this.deckMap.setProps({layers: this.getMapLayers(undefined, false, false)})
+      },
+      getFillColor: (d, { target }) => {
+        if (!d) return;
+        const c = d3.color(this.__getColor(d[TRAIL_KEY] || d[KEY], d.color)).formatRgb().slice(4, -1).split(",").map(v=>+v);
+        target[0] = c[0];
+        target[1] = c[1];
+        target[2] = c[2];
+        target[3] = this._getBubbleOpacity(d) * 255;
+        return target;
+      },
+      getLineColor: (d, { target }) => {
+        if (!d) return;
+        target[0] = 0x3;
+        target[1] = 0x3;
+        target[2] = 0x3;
+        target[3] = this._getBubbleOpacity(d) * 255;
+        return target;
+      },
+      getPosition: (d) => {
+        if (!d) return;
+        let zHover = 0;
+        if (this.activeObject && this.activeObject[KEY] == d[KEY]) {
+          //zHover = -0.05;
+          //console.log("zHover", zHover, d, this.activeObject)
+        }
+        //console.log(d[KEY],this.xScale(d.x), this.yScale(d.y), d.uz ? d.uz : this.zScale(d.size))
+        //return [this.xScale(d.x), this.yScale(d.y), d.uz ? d.uz : this.zScale(d.size)]
+        return [this.xScale(d.x), this.yScale(d.y), d.uz ? d.uz : this.zScale(d.size)]
+      },
+      getRadius: (d) => {
+        if (!d) return;
+        return d.r;
+      },
+      getDragged: (d) => {
+        if (!d) return;
+        const key = d[TRAIL_KEY] || d[KEY];
+        return this.labelDragged[key];
+      },
+      onHover: ({ object: d }) => {
+        //console.log("onhover", d, this.activeObject);
+        //zero opacity for non-selected markers
+        if (d && this._getBubbleOpacity(d) == 0) return;
+        const invalidate = d?.[KEY] !== this.activeObject?.[KEY]
+        //this.activeObject = d;
+        if (invalidate) {
+          //setTimeout(() => {
+          //console.log("invalidate", d, this.activeObject);
+          if (!d) {
+            runInAction(() => {
+              this.MDL.highlighted.data.filter.clear();
+              //console.log("clear highlighted");
+            })        
+          } else {
+            runInAction(() => {
+              this.MDL.highlighted.data.filter.clear();
+            })        
+            runInAction(() => {
+              this.MDL.highlighted.data.filter.set({[KEY]: d[KEY]});
+              //console.log("highlight", d[KEY]);
+            })        
+          }
+          //}, 0);
+        }
+      },
+      onClick: ({ object:d, index }) => {
+        //console.log("onclick", d, this.activeObject);  
+        if (!d) return;
+        //zero opacity for non-selected markers
+        if (this._getBubbleOpacity(d) == 0) return;
+
+        let dataKey = {[KEY]: d[KEY]}
+        console.log("click pretoggle", d, dataKey);
+        if (d[TRAIL_KEY]) {
+          const nextIndex = index + 1;
+          if (this.__data[nextIndex]?.[TRAIL_KEY] == d[TRAIL_KEY]) {
+            return;
+          } else {
+            dataKey = {[KEY]: d[TRAIL_KEY]}
+          }
+        }
+        //const invalidate = d?.[KEY] !== this.activeObject?.[KEY]
+        runInAction(() => {
+          this.MDL.selected.data.filter.toggle(dataKey);
+          console.log("click toggle", dataKey);
+        })      
+        //this.activeObject = d;
+        //if (invalidate) {
+          //setTimeout(() => {
+          //console.log("invalidate", d, this.activeObject);  
+        this.deckMap.setProps({layers: this.getMapLayers(undefined, false, 0, false)})
+          //}, 0);
+        //}
+      },
+      getCoordinates: (d) => {
+        if (!this.map.keys[d.__source.object.key])
+          return [
+            [0, 0],
+            [0, 0]
+          ];
+        return d.geometry.coordinates;  
+      }
+    }
+  }
+
+  getMapLayers(__data, transitions = true, dataDiff = true) {
+    return [
+      this.ui.map.showAreas && new GeoJsonLayer({
+        id: "geoJsonLayer",
+        data: this.__filteredFeatures,
+        getFillColor: this.props.getMapFillColor,
+        getLineColor: this.props.getMapLineColor,
+        getLineWidth: 0.5,
+        lineWidthUnits: "pixels",
+        pickable: !this.ui.map.showBubbles,
+        onHover: this.props.onMapHover,
+        onClick: this.props.onMapClick,
+        updateTriggers: {
+          getFillColor: [this.activeObject, this.opacityUpdateTrigger, this.redrawUpdateTrigger, this.__labelData],
+          //getLineColor: [activeObject],
+          //getPosition: [activeObject]
+        },
+      }),
+      this.ui.map.showBubbles && new ScatterplotLayer({
+        parameters: {depthTest: false},
+        id: "scatterPlotLayer",//_"+s,
+        data: data,//.slice(0),//.slice(s, s+chunkCount),
+        stroked: true,
+        getPosition: this.props.getPosition,
+        getRadius: this.props.getRadius,
+        radiusUnits: 'pixels',
+        getFillColor: this.props.getFillColor,
+        getLineColor: this.props.getLineColor,
+        getLineWidth: 1.0,
+        lineWidthUnits: 'pixels',
+        padding: [6, 4],
+        pickable: true,
+        onHover: this.props.onHover,
+        onClick: this.props.onClick,
+        updateTriggers: {
+          getFillColor: [this.activeObject, this.opacityUpdateTrigger],
+          getLineColor: [this.activeObject, this.opacityUpdateTrigger],
+          getPosition: [this.redrawUpdateTrigger]
+        },
+        //numInstances: 10,
+        transitions: t ? { 
+          getPosition: { 
+            duration,
+            onStart: (e) => {
+              console.log("start", e);
+            },
+            onEnd: (e) => {
+              console.log("end", e);
+            }
+          },
+          getRadius: {
+            duration,
+          },
+          // getFillColor: {
+          //   duration,
+          // },
+          // getLineColor: {
+          //   duration,
+          // }
+        } : null,
+        //_dataDiff: (newData, oldData) => {
+        //  console.log("_datediff", newData, oldData, _updateRanges);
+          //return dataDiff ? playing ? _updateRanges : null : null;
+        //}
+      }),
+      this.ui.map.showBubbles && new ScatterplotLayer({
+        parameters: {depthTest: false},
+        id: "activeObjectscatterPlotLayer",//_"+s,
+        data: this.activeObjectData,//.slice(0),//.slice(s, s+chunkCount),
+        stroked: true,
+        getPosition: this.props.getPosition,
+        getRadius: this.props.getRadius,
+        radiusUnits: 'pixels',
+        getFillColor: this.props.getFillColor,
+        getLineColor: this.props.getLineColor,
+        getLineWidth: 1.0,
+        lineWidthUnits: 'pixels',
+        pickable: false,
+        onHover: this.props.onHover,
+        onClick: this.props.onClick,
+        //padding: this.activeObject ? [6, 4] : 0,
+        updateTriggers: {
+          getFillColor: [this.activeObject, this.opacityUpdateTrigger],
+          getLineColor: [this.activeObject, this.opacityUpdateTrigger],
+          getPosition: [this.activeObject, this.redrawUpdateTrigger]
+        },
+        //numInstances: 10,
+        transitions: t ? { 
+          getPosition: { 
+            duration,
+          },
+          getRadius: {
+            duration,
+          },
+        } : null,
+        visible: !!this.activeObject,
+        //_dataDiff: (newData, oldData) => {
+        //  console.log("_datediff", newData, oldData, _updateRanges);
+          //return dataDiff ? playing ? _updateRanges : null : null;
+        //}
+      }),
+      new TextLayer({
+        id: 'tooltipMapTextLayer',
+        _subLayerProps: {
+          background: {
+            type: LabelBackgroundLayer,
+            cornerRadius: 5,
+            edgeMaxCoord: 1
+          },
+          characters: {
+            type: LabelMultiIconLayer,
+            updateTriggers: {
+              getPixelOffset: [this.dragX, this.dragY],
+              getDragged: [this.dragX0, this.dragY0],
+            },   
+          }
+        },
+        data: this.activeObject ? [this.activeObject] : [],
+        getPosition: this.props.getMapLabelPosition,
+        getPixelOffset: [-5, -5],//this.props.getPixelOffset,
+        getText: this.props.getMapLabelText,
+        getColor: [10, 10, 10],
+        getSize: 16,
+        getTextAnchor: 'end',
+        getAlignmentBaseline: 'bottom',
+        getDragged: this.props.getDragged,
+        pickable: true,
+        background: true,
+        backgroundPadding: [5, 4],
+        getBorderWidth: 1,
+        characterSet: CHARACTER_SET,
+        billboard: true,
+        edgeMaxCoord: 1,
+        //lineWidthUnits: 'pixels',
+        //radiusUnits: 'pixels',
+      }),
+      new LabelLayer({
+        //parameters: {depthTest: false},
+        id: 'labelMapTextLayer',
+        _subLayerProps: {
+          background: {
+            type: LabelBackgroundLayer,
+            cornerRadius: 5,
+            edgeMaxCoord: 1
+          },
+          characters: {
+            type: LabelMultiIconLayer,
+            updateTriggers: {
+              getPixelOffset: [this.dragX, this.dragY],
+              getDragged: [this.dragX0, this.dragY0],
+            },   
+          }
+        },
+        data: this.__labelData,
+        fontSettings: {
+          sdf: true,
+          fontSize: 20,
+        },
+        getPosition: this.props.getMapLabelPosition,
+        getPixelOffset: [-5, -5],//this.props.getPixelOffset,
+        getText: this.props.getMapLabelText,
+        getColor: [10, 10, 10],
+        getSize: 16,
+        getTextAnchor: 'end',
+        getAlignmentBaseline: 'bottom',
+        getDragged: 0,
+        //getPolygonOffset: null,//({layerIndex}) => [0, layerIndex * 100],
+        //onDragStart: (info, e) => this.props.onLabelDragStart(info, e, false),
+        //onDrag: (info, e) => this.props.onLabelDrag(info, e, false),
+        //onDragEnd: (info, e) => this.props.onLabelDrag(info, e, true),
+        //onHover: props.onLabelHover,
+        onClick: this.props.onLabelClick,
+        characterSet: CHARACTER_SET,
+        pickable: true,
+        outlineColor: [255, 255, 255],
+        outlineWidth: 3,
+        //background: true,
+        backgroundPadding: [5, 4],
+        getBorderWidth: 1,
+        billboard: true,
+        lineWidthUnits: 'pixels',
+        radiusUnits: 'pixels',
+        edgeMaxCoord: 1,
+        //updateTriggers: {
+          //getPixelOffset: [dragX, dragY]
+        //},        
+      }),
+    ]
+  }
+
 }
+
+
 
 _VizabiExtApiMap.DEFAULT_UI = {
   "map": {

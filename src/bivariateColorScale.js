@@ -24,15 +24,14 @@ export const bivariatePalettes = {
   "BlPu4": ["#e8e8e8", "#b4e5e5", "#73e0e0", "#00d9d9", "#e0add6", "#b4add6", "#73add6", "#00add6", "#d86dc2", "#b46dc2", "#736dc2", "#006dc2", "#c900a1", "#b400a1", "#7300a1", "#0000a1"],
 };
 
-export function colorScaleLogic({context, typicalColorEnc, missing, color, x, y}) {
+export function colorScaleLogic({context, typicalColorScale, missing, color, x, y}) {
   const isMeasure = enc => context.MDL[enc].data.conceptProps.concept_type === "measure";
-
   const bivariatePalette = bivariatePalettes[context.ui.map.bivariateColorPalette];
-  const nSteps = Math.sqrt(bivariatePalette?.length || 0);
+  const nSteps = () => Math.sqrt(bivariatePalette?.length || 0);
 
   // bivariate scale disabled — revert to regular color encoding
   if (!context.ui.map.useBivariateColorScaleWithDataFromXY || !bivariatePalette)
-    return color || color === 0 ? context.MDL[typicalColorEnc].scale.d3Scale(color) : missing;
+    return color || color === 0 ? typicalColorScale(color) : missing;
     
   // one of x or y doesn't have data or both aren't measures
   else if ( !x && x !== 0 || !y && y !== 0 || !isMeasure("x") && !isMeasure("y"))
@@ -40,17 +39,19 @@ export function colorScaleLogic({context, typicalColorEnc, missing, color, x, y}
 
   // y is not a measure — univariate scale
   else if ( isMeasure("x") && !isMeasure("y") ) {
-    return bivariatePalette[quantize(context.MDL["x"], x, nSteps)];
+    return bivariatePalette[quantize(context.MDL["x"], x, nSteps())];
   }
 
   // x is not a measure — univariate scale
   else if ( !isMeasure("x") && isMeasure("y") ) {
-    return bivariatePalette[quantize(context.MDL["y"], y, nSteps) * nSteps];
+    const _nSteps = nSteps();
+    return bivariatePalette[quantize(context.MDL["y"], y, _nSteps) * _nSteps];
   }
 
   // both x and y are measures and have data — actual bivariate scale
   else {
-    return bivariatePalette[quantize(context.MDL["x"], x, nSteps) + quantize(context.MDL["y"], y, nSteps) * nSteps];
+    const _nSteps = nSteps();
+    return bivariatePalette[quantize(context.MDL["x"], x, _nSteps) + quantize(context.MDL["y"], y, _nSteps) * _nSteps];
   }
   
 }

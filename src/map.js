@@ -6,6 +6,7 @@ import * as d3 from "d3";
 
 import GoogleMapsLoader from "google-maps";
 import mapboxgl from "mapbox-gl/dist/mapbox-gl.js";
+import { WebMercatorViewport } from "@deck.gl/core";
 
 const COLOR_WHITEISH = "rgb(253, 253, 253)";
 class MapLayer {
@@ -106,8 +107,8 @@ class TopojsonLayer extends MapLayer {
 
   initMap() {
     const _this = this;
-    this.mapGraph = this.parent.mapSvg.html("").append("g")
-      .attr("class", "vzb-bmc-map-graph");
+    // this.mapGraph = this.parent.mapSvg.html("").append("g")
+    //   .attr("class", "vzb-bmc-map-graph");
     
     const assetName = utils.getProp(this.context, ["ui", "map", "topology", "path"])
       || ("assets/world-50m.json");
@@ -124,9 +125,7 @@ class TopojsonLayer extends MapLayer {
       .scale(1)
       .translate([0, 0]);
 
-    this.mapPath = d3.geoPath()
-      .projection(this.projection);
-
+    this.mapPath = d3.geoPath(this.projection);
 
     this.context.ui.map.scale = 1;
     return this.context.ui.map.skipShapesLoading ? Promise.resolve() : this._loadShapes(assetName).then(
@@ -153,6 +152,9 @@ class TopojsonLayer extends MapLayer {
     const _this = this;
     this.areasAreShown = true;
     if (_this.mapFeature.features) {
+      /* //_this.mapFeature.features.forEach(d => {
+        d["_bounds"] = _this.mapPath.bounds(d).map(b => _this.point2Geo(b[0], b[1])).flat();
+      });
       _this.mapLands = _this.mapGraph.selectAll(".land")
         .data(_this.mapFeature.features)
         .enter().insert("path")
@@ -179,36 +181,36 @@ class TopojsonLayer extends MapLayer {
             .style("opacity", d => _this.parent.getOpacity(d.key))
             .style("fill", d => _this.parent.getMapColor(d.key))
             .style("stroke", d => _this.parent.getStrokeColor(d.key));
-        });
+        });// */
     } else {
-      _this.mapGraph.insert("path")
-        .datum(_this.mapFeature)
-        .attr("class", "land");
-
+      // // _this.mapGraph.insert("path")
+      // //   .datum(_this.mapFeature)
+      // //   .attr("class", "land");
     }
 
-    if (_this.boundaries)
-      _this.mapGraph.insert("path")
-        .datum(_this.boundaries)
-        .attr("class", "boundary");
+    if (_this.boundaries) {
+      // // _this.mapGraph.insert("path")
+      // //   .datum(_this.boundaries)
+      // //   .attr("class", "boundary");
+    }
   }
 
   hideAreas() {
     this.areasAreShown = false;
-    this.mapGraph.selectAll("*").remove();
+    // // this.mapGraph.selectAll("*").remove();
   }
 
   updateOpacity() {
     const _this = this;
-    this.mapLands
-      .style("opacity", d => _this.parent.getOpacity(d.key));
+    // // this.mapLands
+    // //   .style("opacity", d => _this.parent.getOpacity(d.key));
   }
 
   updateMapColors() {
     const _this = this;
-    this.mapLands
-      .style("fill", d => _this.parent.getMapColor(d.key))
-      .style("stroke", d => _this.parent.getStrokeColor(d.key));
+    // // this.mapLands
+    // //   .style("fill", d => _this.parent.getMapColor(d.key))
+    // //   .style("stroke", d => _this.parent.getStrokeColor(d.key));
   }
 
   _loadShapes(assetName) {
@@ -265,7 +267,7 @@ class TopojsonLayer extends MapLayer {
     const height = this.context.height + (this.context.ui.map.overflowBottom || 0);
 
     if (this.mapFeature.features) {
-      const landInView = this.mapFeature.features.map(d => {
+      /* //const landInView = this.mapFeature.features.map(d => {
         const bounds = d["_bounds"];
         const b0 = this.geo2Point(bounds[0], bounds[1]);
         const b1 = this.geo2Point(bounds[2], bounds[3]);
@@ -275,20 +277,43 @@ class TopojsonLayer extends MapLayer {
           b1[1] > 0 &&
           (b1[0] - b0[0]) * (b1[1] - b0[1]) > 10;
       })
-      this.mapLands.attr("d", (d, i) => landInView[i] ? this.mapPath(d) : "");
+      this.mapLands.attr("d", (d, i) => landInView[i] ? this.mapPath(d) : "");// */
       
-      if (this.boundaries)
-        this.mapGraph.select(".boundary").attr("d", this.mapPath);
+      if (this.boundaries) {
+        // // this.mapGraph.select(".boundary").attr("d", this.mapPath);
+      }
     } else {
-      this.mapGraph
-        .selectAll("path").attr("d", this.mapPath);
+      // // this.mapGraph
+      // //   .selectAll("path").attr("d", this.mapPath);
     }
 
     // resize and put in center
     this.parent.mapSvg
       .style("transform", "translate(" + margin.left + "px," + margin.top + "px)")
-      .attr("width", this.context.chartWidth)
-      .attr("height", this.context.chartHeight);
+      .style("width", width + "px")
+      .style("height", height + "px");
+
+    if (canvas) {
+      const viewport = this.context.deckMap.getViewports()[0] || new WebMercatorViewport({
+        width: canvas[1][0],
+        height: canvas[1][1]
+      });
+      const { longitude, latitude, zoom } = viewport.fitBounds([[
+        this.context.ui.map.bounds.west,
+        this.context.ui.map.bounds.north
+      ],[
+        this.context.ui.map.bounds.east,
+        this.context.ui.map.bounds.south
+      ]]);
+      this.context.__viewState = {
+        longitude,
+        latitude,
+        zoom
+      };
+      this.context.deckMap.setProps({ 
+        viewState: this.context.__viewState
+      });
+    }
 
     // set skew function used for bubbles in chart
     // this.geo2Point(
@@ -308,10 +333,9 @@ class TopojsonLayer extends MapLayer {
 
   centroid(key) {
     if ((key || key == 0) && this.paths[key]) {
-      if (this.resolvedCentroidCache[key]) return this.geo2Point(this.resolvedCentroidCache[key][0], this.resolvedCentroidCache[key][1]);
+      if (this.resolvedCentroidCache[key]) return this.resolvedCentroidCache[key];
       const centroid = this.mapPath.centroid(this.paths[key]);
-      this.resolvedCentroidCache[key] = this.point2Geo(centroid[0], centroid[1]);
-      return centroid;
+      return this.resolvedCentroidCache[key] = this.point2Geo(centroid[0], centroid[1]);
     }
     return null;
   }
@@ -336,8 +360,8 @@ class TopojsonLayer extends MapLayer {
     this.projection
       .translate([translate[0] + x, translate[1] + y]);
 
-    this.mapGraph
-      .selectAll("path").attr("d", this.mapPath);
+    // // this.mapGraph
+    // //   .selectAll("path").attr("d", this.mapPath);
   }
 
   zoomMap(center, increment, zooming) {
@@ -629,6 +653,10 @@ class MapboxLayer extends MapLayer {
     });
   }
 
+  getZoom() {
+    return this.map.getZoom();
+  }
+
   updateLayer() {
     if (this.map) {
       this.map.setStyle(this.context.ui.map.mapStyle);
@@ -656,7 +684,7 @@ class MapboxLayer extends MapLayer {
 }
 
 export default class Map {
-  constructor(context, domSelector) {
+  constructor(context, domSelector, domMapSelector) {
     this.context = context;
     this.domSelector = domSelector;
     this.zooming = 0;
@@ -666,13 +694,13 @@ export default class Map {
     this.mapInstance = null;
     if (this.context.element instanceof d3.selection) {
       this.mapRoot = this.context.element.select(domSelector);
-      this.mapSvg = this.context.element.select(".vzb-bmc-map-background");
+      this.mapSvg = this.context.element.select(domMapSelector);
     } else {
       this.mapRoot = d3.select(this.context.element).select(domSelector);
-      this.mapSvg = d3.select(this.context.element).select(".vzb-bmc-map-background");
+      this.mapSvg = d3.select(this.context.element).select(domMapSelector);
     }
     this.mapRoot.html("");
-    this.mapSvg.html("");
+    //this.mapSvg.html("");
     return this;
   }
 
@@ -744,13 +772,13 @@ export default class Map {
       }
     });
     if (x1 < x2 && y1 < y2) {
-      const nw = this.topojsonMap.point2Geo(x1, y1);
-      const se = this.topojsonMap.point2Geo(x2, y2);
+      // const nw = this.topojsonMap.point2Geo(x1, y1);
+      // const se = this.topojsonMap.point2Geo(x2, y2);
       this._bounds = {
-        west: nw[0],
-        north: nw[1],
-        east: se[0],
-        south: se[1]
+        west: x1,
+        north: y1,
+        east: x2,
+        south: y2
       };
     }
     this.context.mapBoundsChanged();
@@ -800,23 +828,22 @@ export default class Map {
     }
   }
 
-  getMapColor(key) {
-    
+  getMapColor(key) {  
     const datapoint = this.context.model.dataMap.get(key);
     return datapoint 
       ? colorScaleLogic({
         context: this.context, 
-        typicalColorEnc: "mapColor", 
-        missing: this.context.ui.map.missingDataColor || COLOR_WHITEISH, 
+        typicalColorScale: this.context.cMapScale, 
+        missing: this.context.ui.map.missingDataColor ?? COLOR_WHITEISH, 
         color: datapoint.color_map, 
         x: datapoint.x, 
         y: datapoint.y
       })
-      : (this.context.ui.map.missingDataColor || COLOR_WHITEISH);
+      : (this.context.ui.map.missingDataColor ?? COLOR_WHITEISH);
   }
   getStrokeColor(key) {
     const datapoint = this.context.model.dataMap.get(key);
-    return datapoint ? "#fff" : "none";
+    return datapoint ? "#fff" : false;
   }
 
   getOpacity(key) {
@@ -868,9 +895,9 @@ export default class Map {
   
   panStarted() {
     this.zooming++;
-    if (this.context.ui.map.showMap) {
-      this._hideTopojson();
-    }
+    // // if (this.context.ui.map.showMap) {
+    // //  this._hideTopojson();
+    // // }
     this.canvasBefore = this.getCanvas();
   }
 
@@ -885,7 +912,7 @@ export default class Map {
     };
     this.zooming = 0;
     this.boundsChanged();
-    this._showTopojson(300);
+    // // this._showTopojson(300);
   }
 
   zoomRectangle(x1, y1, x2, y2) {
@@ -926,26 +953,26 @@ export default class Map {
   _hideTopojson(duration) {
     if (this.context.ui.map.showAreas) {
       if (duration) {
-        this.topojsonMap.mapGraph
-          .interrupt()
-          .transition()
-          .duration(duration)
-          .style("opacity", 0);
+        // // this.topojsonMap.mapGraph
+        // //   .interrupt()
+        // //   .transition()
+        // //   .duration(duration)
+        // //   .style("opacity", 0);
       } else {
-        this.topojsonMap.mapGraph
-          .interrupt()
-          .style("opacity", 0);
+        // // this.topojsonMap.mapGraph
+        // //   .interrupt()
+        // //   .style("opacity", 0);
       }
     }
   }
 
   _showTopojson(duration) {
     if (this.context.ui.map.showAreas) {
-      this.topojsonMap.mapGraph
-        .interrupt()
-        .transition()
-        .duration(duration)
-        .style("opacity", duration);
+      // // this.topojsonMap.mapGraph
+      // //   .interrupt()
+      // //   .transition()
+      // //   .duration(duration)
+      // //   .style("opacity", duration);
     }
   }
 
