@@ -9,6 +9,9 @@ import mapboxgl from "mapbox-gl/dist/mapbox-gl.js";
 import { WebMercatorViewport } from "@deck.gl/core";
 
 const COLOR_WHITEISH = "rgb(253, 253, 253)";
+
+const KEY = Symbol.for("key");
+
 class MapLayer {
   /**
    * Map Instance initialization
@@ -139,9 +142,9 @@ class TopojsonLayer extends MapLayer {
           : null;
         if (_this.mapFeature.features) {
           utils.forEach(_this.mapFeature.features, (feature) => {
-            feature.key = feature.properties[_this.context.ui.map.topology.geoIdProperty] ?
+            feature[KEY] = feature.properties[_this.context.ui.map.topology.geoIdProperty] ?
               feature.properties[_this.context.ui.map.topology.geoIdProperty].toString() : feature.id;
-            _this.paths[feature.key] = feature;
+            _this.paths[feature[KEY]] = feature;
           });
         }
       }
@@ -754,7 +757,7 @@ export default class Map {
     //   }, {});
     this.keys = _this.context.__dataProcessed
       .reduce((obj, data) => {
-        obj[data.centroid] = data[Symbol.for("key")];
+        obj[data.centroid] = data[KEY];
         return obj;
       }, {});
     utils.forEach(this.keys, (val, key) => {

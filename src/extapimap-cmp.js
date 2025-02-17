@@ -292,7 +292,7 @@ class _VizabiExtApiMap extends Chart {
   _filterFeatures() {
     if (this.ui.map.showAreas) {
       const keys = new Set(this.model.dataMapCache.values().map(m=>m[KEY]));
-      this.__filteredFeatures = this.map.topojsonMap.mapFeature.features.filter(f => keys.has(f.key));
+      this.__filteredFeatures = this.map.topojsonMap.mapFeature.features.filter(f => keys.has(f[KEY]));
     } else {
       this.__filteredFeatures = [];
     }
@@ -1218,17 +1218,17 @@ class _VizabiExtApiMap extends Chart {
       },
       getMapFillColor: (d, { target }) => {
         if (!d) return;
-        const c = this.map.getMapColor(d.properties.id);
+        const c = this.map.getMapColor(d[KEY]);
         const color = c ? d3.color(c).formatRgb().slice(4, -1).split(",").map(v=>+v) : [0, 0, 0];
         target[0] = color[0];
         target[1] = color[1];
         target[2] = color[2];
-        target[3] = c ? this.map.getOpacity(d.properties.id) * 255 : 0;
+        target[3] = c ? this.map.getOpacity(d[KEY]) * 255 : 0;
         return target;
       },
       getMapLineColor: (d, { target }) => {
         if (!d) return;
-        const c = this.map.getStrokeColor(d.properties.id);
+        const c = this.map.getStrokeColor(d[KEY]);
         const color = c ? d3.color(c).formatRgb().slice(4, -1).split(",").map(v=>+v) : [0, 0, 0];
         target[0] = color[0];
         target[1] = color[1];
@@ -1239,8 +1239,8 @@ class _VizabiExtApiMap extends Chart {
       onMapHover: ({ object: d }) => {
         //console.log("onhover", d, this.activeObject);
         //zero opacity for non-selected markers
-        if (d && this.map.getOpacity(d.properties.id) == 0) return;
-        const invalidate = d?.properties?.id !== this.activeObject?.[KEY]
+        if (d && this.map.getOpacity(d[KEY]) == 0) return;
+        const invalidate = d?.[KEY] !== this.activeObject?.[KEY]
         //this.activeObject = d;
         if (invalidate) {
           //setTimeout(() => {
@@ -1255,7 +1255,7 @@ class _VizabiExtApiMap extends Chart {
               this.MDL.highlighted.data.filter.clear();
             })        
             runInAction(() => {
-              this.MDL.highlighted.data.filter.set({[KEY]: d.properties.id});
+              this.MDL.highlighted.data.filter.set({[KEY]: d[KEY]});
               //console.log("highlight", d[KEY]);
             })        
           }
@@ -1264,8 +1264,8 @@ class _VizabiExtApiMap extends Chart {
       },
       onMapClick: ({ object: d }) => {
         if (!d) return;
-        if (d && this.map.getOpacity(d.properties.id) == 0) return;
-        let dataKey = {[KEY]: d?.properties?.id}
+        if (d && this.map.getOpacity(d[KEY]) == 0) return;
+        let dataKey = {[KEY]: d?.[KEY]}
         console.log("click pretoggle", d, dataKey);
         runInAction(() => {
           this.model.encoding.selected.data.filter.toggle(dataKey);
