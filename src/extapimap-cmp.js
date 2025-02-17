@@ -120,6 +120,7 @@ class _VizabiExtApiMap extends Chart {
 
     super(config);
 
+    this.hideAllLayers = false;
     this.activeObject = undefined;
     this.labelOffset = {};
     this.labelDragged = {};
@@ -222,7 +223,13 @@ class _VizabiExtApiMap extends Chart {
 
     this.FONT_FAMILY = this.element.style("font-family").split(",")[0];
     this.deckMap = this.getDeck();
-    this.props = this.getProps();    
+    this.props = this.getProps();
+    this.DOM.mapForeground.select("canvas").on("mouseleave", () => {
+      if (this.MDL.highlighted.data.filter.any()) {
+        this.MDL.highlighted.data.filter.clear();
+      }
+    });
+
   }
 
   get MDL(){
@@ -895,34 +902,13 @@ class _VizabiExtApiMap extends Chart {
   }
 
   _hideEntities(duration) {
-    this.DOM.graph.select("." + this._labels.options.LABELS_CONTAINER_CLASS)
-      .transition()
-      .duration(duration)
-      .style("opacity", 0);
-    this.DOM.graph.select("." + this._labels.options.LINES_CONTAINER_CLASS)
-      .transition()
-      .duration(duration)
-      .style("opacity", 0);
-    this.DOM.bubbleContainer
-      .transition()
-      .duration(duration)
-      .style("opacity", 0);
+    this.hideAllLayers = true;
+    this.deckMap.setProps({layers: this.getMapLayers()});
   }
 
   _showEntities(duration) {
-    this.DOM.graph.select("." + this._labels.options.LABELS_CONTAINER_CLASS)
-      .transition()
-      .duration(duration)
-      .style("opacity", 1);
-    this.DOM.graph.select("." + this._labels.options.LINES_CONTAINER_CLASS)
-      .transition()
-      .duration(duration)
-      .style("opacity", 1);
-    this.DOM.bubbleContainer
-      .transition()
-      .duration(duration)
-      .style("opacity", 1);
-
+    this.hideAllLayers = false;
+    this.deckMap.setProps({layers: this.getMapLayers()});
   }
 
   mapBoundsChanged() {
@@ -958,8 +944,8 @@ class _VizabiExtApiMap extends Chart {
     if (this.MDL.highlighted.data.filter.has(d) || this.MDL.superHighlighted.data.filter.has(d)) return opacityRegular;
     if (this.MDL.selected.data.filter.has(d)) return opacityRegular;
 
-    if (this.someSelected) return opacitySelectDim;
-    if (this.someHighlighted) return opacityHighlightDim;
+    if (this.__someSelected) return opacitySelectDim;
+    if (this.__someHighlighted) return opacityHighlightDim;
 
     return opacityRegular;
   }
@@ -1063,23 +1049,27 @@ class _VizabiExtApiMap extends Chart {
   }
 
   _setupCursorMode() {
-    const svg = this.DOM.chartSvg;
+    const wrapper = this.DOM.mapForeground;
     if (this.ui.cursorMode === "plus") {
-      svg.classed("vzb-zoomin", true);
-      svg.classed("vzb-zoomout", false);
-      svg.classed("vzb-panhand", false);
+      wrapper.classed("vzb-zoomin", true);
+      wrapper.classed("vzb-zoomout", false);
+      wrapper.classed("vzb-panhand", false);
+      this.deckMap.setProps({ _pickable: false });
     } else if (this.ui.cursorMode === "minus") {
-      svg.classed("vzb-zoomin", false);
-      svg.classed("vzb-zoomout", true);
-      svg.classed("vzb-panhand", false);
+      wrapper.classed("vzb-zoomin", false);
+      wrapper.classed("vzb-zoomout", true);
+      wrapper.classed("vzb-panhand", false);
+      this.deckMap.setProps({ _pickable: false });
     } else if (this.ui.cursorMode === "hand") {
-      svg.classed("vzb-zoomin", false);
-      svg.classed("vzb-zoomout", false);
-      svg.classed("vzb-panhand", true);
+      wrapper.classed("vzb-zoomin", false);
+      wrapper.classed("vzb-zoomout", false);
+      wrapper.classed("vzb-panhand", true);
+      this.deckMap.setProps({ _pickable: true });
     } else {
-      svg.classed("vzb-zoomin", false);
-      svg.classed("vzb-zoomout", false);
-      svg.classed("vzb-panhand", false);
+      wrapper.classed("vzb-zoomin", false);
+      wrapper.classed("vzb-zoomout", false);
+      wrapper.classed("vzb-panhand", false);
+      this.deckMap.setProps({ _pickable: true });
     }
   }
 
@@ -1247,18 +1237,34 @@ class _VizabiExtApiMap extends Chart {
         return target;
       },
       onMapHover: ({ object: d }) => {
-        //console.log("onhover", d, activeObject);  
+        //console.log("onhover", d, this.activeObject);
+        //zero opacity for non-selected markers
+        if (d && this.map.getOpacity(d.properties.id) == 0) return;
         const invalidate = d?.properties?.id !== this.activeObject?.[KEY]
-        this.activeObject = d ? this.model.dataMap.get(d.properties.id) : d;
+        //this.activeObject = d;
         if (invalidate) {
           //setTimeout(() => {
-          //console.log("invalid d?.properties?.idate", d, activeObject);  
-          this.deckMap.setProps({layers: this.getMapLayers(undefined, false, false)})
+          //console.log("invalidate", d, this.activeObject);
+          if (!d) {
+            runInAction(() => {
+              this.MDL.highlighted.data.filter.clear();
+              //console.log("clear highlighted");
+            })        
+          } else {
+            runInAction(() => {
+              this.MDL.highlighted.data.filter.clear();
+            })        
+            runInAction(() => {
+              this.MDL.highlighted.data.filter.set({[KEY]: d.properties.id});
+              //console.log("highlight", d[KEY]);
+            })        
+          }
           //}, 0);
         }
       },
       onMapClick: ({ object: d }) => {
         if (!d) return;
+        if (d && this.map.getOpacity(d.properties.id) == 0) return;
         let dataKey = {[KEY]: d?.properties?.id}
         console.log("click pretoggle", d, dataKey);
         runInAction(() => {
@@ -1387,6 +1393,7 @@ class _VizabiExtApiMap extends Chart {
           //getLineColor: [activeObject],
           //getPosition: [activeObject]
         },
+        visible: !this.hideAllLayers
       }),
       this.ui.map.showBubbles && new ScatterplotLayer({
         parameters: {depthTest: false},
@@ -1430,10 +1437,7 @@ class _VizabiExtApiMap extends Chart {
           //   duration,
           // }
         } : null,
-        //_dataDiff: (newData, oldData) => {
-        //  console.log("_datediff", newData, oldData, _updateRanges);
-          //return dataDiff ? playing ? _updateRanges : null : null;
-        //}
+        visible: !this.hideAllLayers
       }),
       this.ui.map.showBubbles && new ScatterplotLayer({
         parameters: {depthTest: false},
@@ -1465,7 +1469,7 @@ class _VizabiExtApiMap extends Chart {
             duration,
           },
         } : null,
-        visible: !!this.activeObject,
+        visible: !this.hideAllLayers && !!this.activeObject,
         //_dataDiff: (newData, oldData) => {
         //  console.log("_datediff", newData, oldData, _updateRanges);
           //return dataDiff ? playing ? _updateRanges : null : null;
@@ -1496,13 +1500,14 @@ class _VizabiExtApiMap extends Chart {
         getTextAnchor: 'end',
         getAlignmentBaseline: 'bottom',
         getDragged: this.props.getDragged,
-        pickable: true,
+        pickable: false,
         background: true,
         backgroundPadding: [5, 4],
         getBorderWidth: 1,
         characterSet: CHARACTER_SET,
         billboard: true,
         edgeMaxCoord: 1,
+        visible: !this.hideAllLayers,
         //lineWidthUnits: 'pixels',
         //radiusUnits: 'pixels',
       }),
@@ -1553,6 +1558,7 @@ class _VizabiExtApiMap extends Chart {
         lineWidthUnits: 'pixels',
         radiusUnits: 'pixels',
         edgeMaxCoord: 1,
+        visible: !this.hideAllLayers,
         //updateTriggers: {
           //getPixelOffset: [dragX, dragY]
         //},        

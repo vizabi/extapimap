@@ -266,7 +266,7 @@ class TopojsonLayer extends MapLayer {
     const width = this.context.width;
     const height = this.context.height + (this.context.ui.map.overflowBottom || 0);
 
-    if (this.mapFeature.features) {
+    if (this.mapFeature?.features) {
       /* //const landInView = this.mapFeature.features.map(d => {
         const bounds = d["_bounds"];
         const b0 = this.geo2Point(bounds[0], bounds[1]);
@@ -294,20 +294,22 @@ class TopojsonLayer extends MapLayer {
       .style("height", height + "px");
 
     if (canvas) {
-      const viewport = this.context.deckMap.getViewports()[0] || new WebMercatorViewport({
-        width: canvas[1][0],
-        height: canvas[1][1]
-      });
-      const { longitude, latitude, zoom } = viewport.fitBounds([[
-        this.context.ui.map.bounds.west,
-        this.context.ui.map.bounds.north
-      ],[
-        this.context.ui.map.bounds.east,
-        this.context.ui.map.bounds.south
-      ]]);
+      // const viewport = this.context.deckMap.getViewports()[0] || new WebMercatorViewport({
+      //   width: canvas[1][0],
+      //   height: canvas[1][1]
+      // });
+      // const { longitude, latitude, zoom } = viewport.fitBounds([[
+      //   this.context.ui.map.bounds.west,
+      //   this.context.ui.map.bounds.north
+      // ],[
+      //   this.context.ui.map.bounds.east,
+      //   this.context.ui.map.bounds.south
+      // ]]);
+      const pos = this.parent._getCenter();
+      const zoom = this.parent._getZoom();
       this.context.__viewState = {
-        longitude,
-        latitude,
+        longitude: pos.lng,
+        latitude: pos.lat,
         zoom
       };
       this.context.deckMap.setProps({ 
@@ -864,6 +866,13 @@ export default class Map {
       return this.mapInstance.getCenter();
     }
     return this.topojsonMap.getCenter();
+  }
+
+  _getZoom() {
+    if (this.mapInstance) {
+      return this.mapInstance.getZoom();
+    }
+    return this.topojsonMap.getZoom();
   }
   
   resetZoom(duration) {

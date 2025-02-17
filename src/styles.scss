@@ -50,6 +50,19 @@
 
     .vzb-map-foreground {
       position: absolute;
+
+      &.vzb-zoomin canvas {
+        cursor: zoom-in!important;
+      }
+      &.vzb-zoomout canvas {
+        cursor: zoom-out!important;
+      }
+      &.vzb-panhand canvas {
+        cursor: grab!important;
+      }
+      &.vzb-panhand.vzb-zooming canvas {
+        cursor: grabbing!important;
+      }
     }
 
     .vzb-bmc-map-background {
