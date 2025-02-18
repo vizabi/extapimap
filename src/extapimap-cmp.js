@@ -185,10 +185,6 @@ class _VizabiExtApiMap extends Chart {
       }
     };
 
-    this.element.call(this._createMapDragger());
-    this.element.on("mousewheel", zoomOnWheel)
-      .on("wheel", zoomOnWheel);
-
     const _this = this;
     d3.select("body")
       .on("keydown", event => {
@@ -229,6 +225,10 @@ class _VizabiExtApiMap extends Chart {
         this.MDL.highlighted.data.filter.clear();
       }
     });
+
+    this.element.call(this._createMapDragger());
+    this.element.on("mousewheel", zoomOnWheel)
+      .on("wheel", zoomOnWheel);
 
   }
 
@@ -1075,6 +1075,7 @@ class _VizabiExtApiMap extends Chart {
 
   _createMapDragger() {
     const _this = this;
+    let labelDragging = false;
     return d3.drag()
       .on("start", function(event) {
         if (
@@ -1094,9 +1095,7 @@ class _VizabiExtApiMap extends Chart {
           _this.ui.cursorMode == "hand" ||
           (_this.ui.panWithArrow && _this.ui.cursorMode === "arrow")
         ) {
-          _this.dragAction = "panning";
-          _this._hideEntities();
-          _this.map.panStarted();
+          _this.dragAction = "panning0";
           _this.DOM.chartSvg.classed("vzb-zooming", true);
         }
       })
@@ -1111,7 +1110,17 @@ class _VizabiExtApiMap extends Chart {
             .attr("height", Math.abs(mouse[1] - _this.origin.y));
           break;
         }
+        case "panning0": {
+          _this.dragAction = "panning";
+          if (_this.__labelDragging) {
+            labelDragging = true;
+            return;
+          }
+          _this._hideEntities();
+          _this.map.panStarted();
+        }
         case "panning": {
+          if (labelDragging) return;
           _this.map.moveOver(event.dx, event.dy);
           break;
         }
@@ -1141,9 +1150,13 @@ class _VizabiExtApiMap extends Chart {
           }
           break;
         case "panning":
+          _this.DOM.chartSvg.classed("vzb-zooming", false);
+          if (labelDragging) {
+            labelDragging = false;
+            return; 
+          }  
           _this.map.panFinished();
           _this._showEntities(300);
-          _this.DOM.chartSvg.classed("vzb-zooming", false);
           break;
         }
         if (_this.ui.cursorMode == "minus") {
@@ -1207,15 +1220,6 @@ class _VizabiExtApiMap extends Chart {
 
   getProps() {
     return {
-      getMapLabelText: (d) => {
-        if (!d) return;
-        return this.__labelWithoutFrame(d);
-      },
-      getMapLabelPosition: (d) => {
-        if (!d) return;
-        const centroid = this.map.centroid(d[KEY]);
-        return centroid;
-      },
       getMapFillColor: (d, { target }) => {
         if (!d) return;
         const c = this.map.getMapColor(d[KEY]);
@@ -1292,14 +1296,8 @@ class _VizabiExtApiMap extends Chart {
       },
       getPosition: (d) => {
         if (!d) return;
-        let zHover = 0;
-        if (this.activeObject && this.activeObject[KEY] == d[KEY]) {
-          //zHover = -0.05;
-          //console.log("zHover", zHover, d, this.activeObject)
-        }
-        //console.log(d[KEY],this.xScale(d.x), this.yScale(d.y), d.uz ? d.uz : this.zScale(d.size))
-        //return [this.xScale(d.x), this.yScale(d.y), d.uz ? d.uz : this.zScale(d.size)]
-        return [this.xScale(d.x), this.yScale(d.y), d.uz ? d.uz : this.zScale(d.size)]
+        const centroid = this.map.centroid(d[KEY]);
+        return centroid;
       },
       getRadius: (d) => {
         if (!d) return;
@@ -1365,14 +1363,102 @@ class _VizabiExtApiMap extends Chart {
           //}, 0);
         //}
       },
-      getCoordinates: (d) => {
-        if (!this.map.keys[d.__source.object.key])
-          return [
-            [0, 0],
-            [0, 0]
-          ];
-        return d.geometry.coordinates;  
-      }
+      getLabelText: (d) => {
+        if (!d) return;
+        return this.__labelWithoutFrame(d);
+      },
+      getTooltipPixelOffset: (d) => {
+        if (!d) return;
+        const r = (this.ui.map.showBubbles ? d.r / Math.sqrt(2) : 0) + 7;
+        return [-r, -r];
+      },
+      getPixelOffset: (d) => {
+        if (!d) return;
+        const key = d[TRAIL_KEY] || d[KEY];
+        const offsetX = this.labelOffset[key] && this.labelOffset[key][0] || 0;
+        const offsetY = this.labelOffset[key] && this.labelOffset[key][1] || 0;
+        const r = (this.ui.map.showBubbles ? d.r / Math.sqrt(2) : 0) + 4;
+        return [offsetX || -r, offsetY || -r];
+      },
+      onLabelDragStart: ({ object:d, x, y, coordinate, sourceLayer, viewport }, evt) => {
+        console.log("onLabelDragStart", d, x, y, coordinate, viewport, sourceLayer)
+        if (!d) return;
+        this.__labelDragging = true;
+        const key = d[TRAIL_KEY] || d[KEY];
+        if (!this.labelOffset[key]) {
+          const r = (this.ui.map.showBubbles ? d.r / Math.sqrt(2) : 0) + 4;
+          this.labelOffset[key] = [-r, -r];
+        }
+  
+        //adjust label offset if label with current offset located outside of vieport
+        const offset = this.labelOffset[key];
+        const pPos = viewport.project(this.props.getPosition(d).slice(0,2));
+        const vW = viewport.width;
+        const vH = viewport.height;
+        const [lW, lH] = sourceLayer.parent.state.labelSize;
+        const [lPaddL, lPaddT, lPaddR = lPaddL, lPaddB = lPaddT] = sourceLayer.parent.props.backgroundPadding;
+  
+        if (!this.labelDragged[key]) {
+          this.labelDragged[key] = 1.0;
+  
+          if(pPos[0] + offset[0] < lW + lPaddL) {
+            offset[0] = lW - offset[0];
+          }
+          if(pPos[1] + offset[1] < lH + lPaddT) {
+            offset[1] = lH - offset[1];
+          }    
+        }
+  
+        if(pPos[0] + offset[0] < lW + lPaddL) {
+          offset[0] = lW + lPaddL - pPos[0];
+        } else if(pPos[0] + offset[0] > vW - lPaddR) {
+          offset[0] = vW - lPaddR - pPos[0];
+        }
+        
+        if(pPos[1] + offset[1] < lH + lPaddT) {
+          offset[1] = lH + lPaddT - pPos[1];
+        } else if(pPos[1] + offset[1] > vH - lPaddB) {
+          offset[1] = vH - lPaddB - pPos[1];
+        }
+  
+        console.log("offset", offset, "point", pPos, lW, lH, viewport);
+        this.dragX0 = this.labelOffset[key][0] - x;
+        this.dragY0 = this.labelOffset[key][1] - y;
+        //this.deckMap.setProps({layers: this.getMapLayers(undefined, false, 0, false), controller: { dragPan: dragFlag }}); 
+        return true;
+      },
+      onLabelDrag: ({ object:d, x, y, coordinate, sourceLayer, viewport }, evt) => {
+        if (!d) return;
+        
+        this.dragX = this.dragX0 + x;
+        this.dragY = this.dragY0 + y;
+        const key = d[TRAIL_KEY] || d[KEY];
+        this.labelOffset[key][0] = this.dragX;
+        this.labelOffset[key][1] = this.dragY;
+        const pos = this.props.getPosition(d).slice(0,2);
+        //console.log("offset", this.labelOffset[key], "point", sourceLayer.project(pos),  viewport.getBounds(), viewport);
+        this.deckMap.setProps({layers: this.getMapLayers(undefined, false, 0, false),}); //views: this.getViews({ dragPan: dragFlag }),}); 
+        return true;
+      },
+      onLabelDragEnd: () => {
+        //if (!d) return;
+        this.__labelDragging = false;  
+        return true;
+      },
+      onLabelClick: ({ object:d, layer, sourceLayer }) => {
+        if (!d) return;
+        if (sourceLayer.id !== "labelTextLayer-close") return;
+        
+        const dataKey = {[KEY]: d[TRAIL_KEY] || d[KEY]}
+        console.log("click pretoggle", d, dataKey);
+        runInAction(() => {
+          this.MDL.selected.data.filter.toggle(dataKey);
+          console.log("click toggle", dataKey);
+        })
+        layer.setState({closeData: []});
+        
+        this.deckMap.setProps({layers: this.getMapLayers(undefined, false, 0, false)});
+      },
     }
   }
 
@@ -1476,12 +1562,11 @@ class _VizabiExtApiMap extends Chart {
         //}
       }),
       new TextLayer({
-        id: 'tooltipMapTextLayer',
+        id: 'tooltipTextLayer',
         _subLayerProps: {
           background: {
             type: LabelBackgroundLayer,
             cornerRadius: 5,
-            edgeMaxCoord: 1
           },
           characters: {
             type: LabelMultiIconLayer,
@@ -1492,9 +1577,9 @@ class _VizabiExtApiMap extends Chart {
           }
         },
         data: this.activeObject ? [this.activeObject] : [],
-        getPosition: this.props.getMapLabelPosition,
+        getPosition: this.props.getPosition,
         getPixelOffset: [-5, -5],//this.props.getPixelOffset,
-        getText: this.props.getMapLabelText,
+        getText: this.props.getLabelText,
         getColor: [10, 10, 10],
         getSize: 16,
         getTextAnchor: 'end',
@@ -1506,26 +1591,29 @@ class _VizabiExtApiMap extends Chart {
         getBorderWidth: 1,
         characterSet: CHARACTER_SET,
         billboard: true,
-        edgeMaxCoord: 1,
         visible: !this.hideAllLayers,
         //lineWidthUnits: 'pixels',
         //radiusUnits: 'pixels',
       }),
       new LabelLayer({
         //parameters: {depthTest: false},
-        id: 'labelMapTextLayer',
+        id: 'labelTextLayer',
         _subLayerProps: {
           background: {
             type: LabelBackgroundLayer,
             cornerRadius: 5,
-            edgeMaxCoord: 1
+            getDragged: this.props.getDragged,
+            updateTriggers: {
+              getDragged: [this.dragX0, this.dragY0],
+            },   
           },
           characters: {
             type: LabelMultiIconLayer,
+            getDragged: this.props.getDragged,
             updateTriggers: {
-              getPixelOffset: [this.dragX, this.dragY],
               getDragged: [this.dragX0, this.dragY0],
             },   
+            padding: [6, 4],
           }
         },
         data: this.__labelData,
@@ -1533,35 +1621,35 @@ class _VizabiExtApiMap extends Chart {
           sdf: true,
           fontSize: 20,
         },
-        getPosition: this.props.getMapLabelPosition,
-        getPixelOffset: [-5, -5],//this.props.getPixelOffset,
-        getText: this.props.getMapLabelText,
+        getPosition: this.props.getPosition,
+        getPixelOffset: this.props.getPixelOffset,
+        getText: this.props.getLabelText,
         getColor: [10, 10, 10],
         getSize: 16,
         getTextAnchor: 'end',
         getAlignmentBaseline: 'bottom',
-        getDragged: 0,
+        getDragged: this.props.getDragged,
         //getPolygonOffset: null,//({layerIndex}) => [0, layerIndex * 100],
-        //onDragStart: (info, e) => this.props.onLabelDragStart(info, e, false),
-        //onDrag: (info, e) => this.props.onLabelDrag(info, e, false),
-        //onDragEnd: (info, e) => this.props.onLabelDrag(info, e, true),
-        //onHover: props.onLabelHover,
+        onDragStart: this.props.onLabelDragStart,
+        onDrag: this.props.onLabelDrag,
+        onDragEnd: this.props.onLabelDragEnd,
+        //onHover: this.props.onLabelHover,
         onClick: this.props.onLabelClick,
         characterSet: CHARACTER_SET,
         pickable: true,
         outlineColor: [255, 255, 255],
         outlineWidth: 3,
         //background: true,
-        backgroundPadding: [5, 4],
+        backgroundPadding: [6, 4],
         getBorderWidth: 1,
         billboard: true,
         lineWidthUnits: 'pixels',
         radiusUnits: 'pixels',
-        edgeMaxCoord: 1,
+        updateTriggers: {
+          getPixelOffset: [this.dragX, this.dragY],
+          getDragged: [this.dragX0, this.dragY0],
+        },        
         visible: !this.hideAllLayers,
-        //updateTriggers: {
-          //getPixelOffset: [dragX, dragY]
-        //},        
       }),
     ]
   }
