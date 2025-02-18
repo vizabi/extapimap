@@ -158,6 +158,10 @@
       position: absolute;
       pointer-events: none;
 
+      .vzb-bmc-titles {
+        pointer-events: all;
+      }
+
       .vzb-bmc-date {
         font-size: $vzb-bmc-date-size;
         fill: $vzb-color-grey;
