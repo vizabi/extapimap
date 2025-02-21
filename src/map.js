@@ -755,7 +755,7 @@ export default class Map {
     //     obj[_this.context.values.hook_centroid[key]] = key;
     //     return obj;
     //   }, {});
-    this.keys = _this.context.__dataProcessed
+    this.keys = _this.context.__data
       .reduce((obj, data) => {
         obj[data.centroid] = data[KEY];
         return obj;

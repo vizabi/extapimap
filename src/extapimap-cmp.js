@@ -1,6 +1,6 @@
 import { 
   Chart,
-  Labels,
+  LabelSizeHelper,
   Utils,
   LegacyUtils as utils,
   Icons,
@@ -26,6 +26,8 @@ const CHARACTER_SET =
 
 const KEY = Symbol.for("key");
 const TRAIL_KEY = Symbol.for("trailHeadKey");
+const OPACITY_KEY = Symbol.for("opacity");
+const R = Symbol("r");
 
 const MAX_RADIUS_EM = 0.05;
 
@@ -94,14 +96,8 @@ class _VizabiExtApiMap extends Chart {
     `;
 
     config.subcomponents = [{
-      type: Labels,
+      type: LabelSizeHelper,
       placeholder: ".vzb-bmc-labels",      
-      options: {
-        CSS_PREFIX: "vzb-bmc",
-        LABELS_CONTAINER_CLASS: "vzb-bmc-labels",
-        LINES_CONTAINER_CLASS: "vzb-bmc-lines",
-        SUPPRESS_HIGHLIGHT_DURING_PLAY: false
-      },
       name: "labels"
     },{
       type: DateTimeBackground,
@@ -165,7 +161,7 @@ class _VizabiExtApiMap extends Chart {
     this._date = this.findChild({type: "DateTimeBackground"});
     this._date.setConditions({ xAlign: "left", yAlign: "bottom" });
 
-    this._labels = this.findChild({type: "Labels"});
+    this._labels = this.findChild({type: "LabelSizeHelper"});
 
     const zoomOnWheel = function(event) {
       if (_this.ui.zoomOnScrolling) {
@@ -244,7 +240,8 @@ class _VizabiExtApiMap extends Chart {
       x: this.model.encoding.x, //for bivariate area colors
       y: this.model.encoding.y, //for bivariate area colors
       label: this.model.encoding.label,
-      centroid: this.model.encoding.centroid
+      centroid: this.model.encoding.centroid,
+      trail: this.model.encoding.trail
     };
   }
 
@@ -269,17 +266,18 @@ class _VizabiExtApiMap extends Chart {
         this.addReaction(this._filterFeatures);
         this.addReaction(this._updateSize);
         //this.addReaction(this._updateMarkerSizeLimits);
-        this.addReaction(this._getDuration);
+        //this.addReaction(this._getDuration);
+        this.addReaction(this._updateLabelFontSizes);
+        this.addReaction(this._updateSelected);
+        this.addReaction(this._updateUIStrings);
         this.addReaction(this._drawData);
         this.addReaction(this._mapReady);
         this.addReaction(this._updateMap);
         //this.addReaction(this._updateMapColors);
         //this.addReaction(this._updateOpacity);
         this.addReaction(this._blinkSuperHighlighted);
-        this.addReaction(this._updateUIStrings);
         this.addReaction(this._redrawOpacity);
         this.addReaction(this._updateHighlighted);
-        this.addReaction(this._updateSelected);
         //this.addReaction(this._highlightDataPoints);
         //this.addReaction(this._selectDataPoints);
         //this.addReaction(this._redrawData);
@@ -323,14 +321,33 @@ class _VizabiExtApiMap extends Chart {
 
   }
 
+  get duration() {
+    return this.MDL.frame.playing ? this.MDL.frame.speed || 0 : 0;
+  }
+
   _drawData() {
+    this._updateMarkerSizeLimits();
     this._processFrameData();
     //this._createAndDeleteBubbles();
-    this._updateMarkerSizeLimits();
-    runInAction(() => {
-      this.dataUpdateTrigger++;
-      this._redrawData();
-    });
+    if (this.model.encoding.frame.playing) {
+      //requestAnimationFrame(() => {
+        this.deckMap.setProps({layers: this.getMapLayers(this.__oldData)});
+        requestAnimationFrame(() => {
+          this.redrawUpdateTrigger++;
+          this.deckMap.setProps({layers: this.getMapLayers(this.__oldData, true, 0.001)})
+          requestAnimationFrame(() => {
+            this.redrawUpdateTrigger++;
+            this.__labelData = this.__newLabelData;
+            this.deckMap.setProps({layers: this.getMapLayers(this.__data, true, this.duration)});
+          });
+        });
+      //});
+    } else {
+      runInAction(() => {
+        this.dataUpdateTrigger++;
+        this._redrawData();
+      });
+    }
   }
 
   _redrawData(duration) {
@@ -344,9 +361,11 @@ class _VizabiExtApiMap extends Chart {
     this.ui.opacitySelectDim;
     this.ui.opacityHighlight;
     this.ui.opacityHighlightDim;
+    this.MDL.color.scale.d3Scale;
+    this.MDL.mapColor.scale.d3Scale;
 
     this.opacityUpdateTrigger++;
-    this.deckMap.setProps({layers: this.getMapLayers(this.__data, false, 0)});
+    this.deckMap.setProps({layers: this.getMapLayers()});
   }
 
   _redrawData_(duration) {
@@ -427,12 +446,43 @@ class _VizabiExtApiMap extends Chart {
   }
 
   _processFrameData() {
-    return this.__dataProcessed = this.model.dataArray
-      .concat()
-      .map(this.getValue)
-      //TODO sorting can be done via order encoding
-      .sort((a, b) => b.size - a.size);
+    if (!this.ui.map.showBubbles) {
+      this.__data = this.model.dataArray;
+      return;
+    }
+    let newData;
+    if (this.MDL.trail?.show) {
+      newData = this.model.dataArray.filter(d => {
+        if (d[TRAIL_KEY]) return false;
+        d[R] = utils.areaToRadius(this.sScale(d.size) || 0);
+        return true;
+      });
+    } else {
+      newData = this.model.dataArray;
+      newData.forEach(d => {
+        d[R] = utils.areaToRadius(this.sScale(d.size) || 0);
+      });
+    }
+    this.__newLabelData = this.__selectedKeys.map(key => this.model.dataMap.get(key));
+    if (this.model.encoding.frame.playing) {
+      this.__oldData = this.resortData(this.__data, newData);
+    } else {
+      this.__labelData = this.__newLabelData;
+    }
+    this.__data = newData;
   }
+
+  resortData(data, newData) {
+    const keyToIndex = {};
+    data.forEach((d, i) => {
+        keyToIndex[d[KEY]] = d;
+    });
+    return newData.map(d => {
+      return keyToIndex[d[KEY]] || Object.assign({ [OPACITY_KEY]: 0 }, d);
+    });
+  }
+
+
   _createAndDeleteBubbles() {
 
     this.bubbles = this.DOM.bubbleContainer.selectAll(".vzb-bmc-bubble")
@@ -941,7 +991,8 @@ class _VizabiExtApiMap extends Chart {
       opacityRegular,
     } = this.ui;
     
-    if (this.MDL.highlighted.data.filter.has(d) || this.MDL.superHighlighted.data.filter.has(d)) return opacityRegular;
+    //if (this.MDL.highlighted.data.filter.has(d) || this.MDL.superHighlighted.data.filter.has(d)) return opacityRegular;
+    if (this.MDL.highlighted.data.filter.has(d)) return opacityRegular;
     if (this.MDL.selected.data.filter.has(d)) return opacityRegular;
 
     if (this.__someSelected) return opacitySelectDim;
@@ -987,7 +1038,7 @@ class _VizabiExtApiMap extends Chart {
     this.activeObject = this.__highlightedMarkers.size == 1 ? Object.assign({}, this.model.dataMap.get(this.__highlightedMarkers.keys().next().value)) : null;
     this.activeObjectData = this.activeObject ? [this.activeObject] : [];
     this.opacityUpdateTrigger++;
-    this.deckMap.setProps({layers: this.getMapLayers(undefined, false)})
+    this.deckMap.setProps({layers: this.getMapLayers()})
   }
 
   _updateSelected() {
@@ -997,7 +1048,8 @@ class _VizabiExtApiMap extends Chart {
     this.__selectedMarkers = new Map(selectedFilter.markers);
     this.__selectedKeys = [...this.__selectedMarkers.keys()];
 
-
+    this.labelZScale = d3.scaleLinear([0, this.__selectedMarkers.size - 1],[-10, -1]);
+    
     Object.keys(this.labelOffset).forEach(key => {
       if (!this.__selectedMarkers.has(key)) delete this.labelOffset[key];
     });
@@ -1006,9 +1058,9 @@ class _VizabiExtApiMap extends Chart {
     });
 
     runInAction(() => {
-      if (!this.MDL.trail?.show) {
+      if (!this.ui.map.showBubbles || !this.MDL.trail?.show) {
         this.__labelData = this.__selectedKeys.map(key => this.model.dataMap.get(key));
-        this.deckMap.setProps({layers: this.getMapLayers(undefined, false)});
+        this.deckMap.setProps({layers: this.getMapLayers()});
       }
     });
   }
@@ -1071,6 +1123,15 @@ class _VizabiExtApiMap extends Chart {
       wrapper.classed("vzb-panhand", false);
       this.deckMap.setProps({ _pickable: true });
     }
+  }
+
+  _updateLabelFontSizes() {
+    this._labels.MDL.size_label.scale.extent;
+
+    this.__defaultFontSize = this._labels.defaultFontSize;
+    this.__isConstantFontSize = this._labels.MDL.size_label.data.isConstant;
+    this.__fontSize = this._labels.getFontSize(this._labels.MDL.size_label.data.constant);
+    this.deckMap.setProps({layers: this.getMapLayers()})
   }
 
   _createMapDragger() {
@@ -1200,6 +1261,7 @@ class _VizabiExtApiMap extends Chart {
       views: new MapView({
         id: 'map', 
         altitude: 1,
+        orthographic: true
       }),
       viewState: this.__viewState,
       getCursor: ({isDragging, isHovering}) => 
@@ -1275,15 +1337,15 @@ class _VizabiExtApiMap extends Chart {
           this.model.encoding.selected.data.filter.toggle(dataKey);
           console.log("click toggle", dataKey);
         })      
-        this.deckMap.setProps({layers: this.getMapLayers(undefined, false, false)})
+        this.deckMap.setProps({layers: this.getMapLayers()})
       },
       getFillColor: (d, { target }) => {
         if (!d) return;
-        const c = d3.color(this.__getColor(d[TRAIL_KEY] || d[KEY], d.color)).formatRgb().slice(4, -1).split(",").map(v=>+v);
+        const c = d3.color(this.cScale(d.color)).formatRgb().slice(4, -1).split(",").map(v=>+v);
         target[0] = c[0];
         target[1] = c[1];
         target[2] = c[2];
-        target[3] = this._getBubbleOpacity(d) * 255;
+        target[3] = this.getOpacity(d) * 255;
         return target;
       },
       getLineColor: (d, { target }) => {
@@ -1291,7 +1353,7 @@ class _VizabiExtApiMap extends Chart {
         target[0] = 0x3;
         target[1] = 0x3;
         target[2] = 0x3;
-        target[3] = this._getBubbleOpacity(d) * 255;
+        target[3] = this.getOpacity(d) * 255;
         return target;
       },
       getPosition: (d) => {
@@ -1301,7 +1363,7 @@ class _VizabiExtApiMap extends Chart {
       },
       getRadius: (d) => {
         if (!d) return;
-        return d.r;
+        return d[R];
       },
       getDragged: (d) => {
         if (!d) return;
@@ -1311,7 +1373,7 @@ class _VizabiExtApiMap extends Chart {
       onHover: ({ object: d }) => {
         //console.log("onhover", d, this.activeObject);
         //zero opacity for non-selected markers
-        if (d && this._getBubbleOpacity(d) == 0) return;
+        if (d && this.getOpacity(d) == 0) return;
         const invalidate = d?.[KEY] !== this.activeObject?.[KEY]
         //this.activeObject = d;
         if (invalidate) {
@@ -1338,7 +1400,7 @@ class _VizabiExtApiMap extends Chart {
         //console.log("onclick", d, this.activeObject);  
         if (!d) return;
         //zero opacity for non-selected markers
-        if (this._getBubbleOpacity(d) == 0) return;
+        if (this.getOpacity(d) == 0) return;
 
         let dataKey = {[KEY]: d[KEY]}
         console.log("click pretoggle", d, dataKey);
@@ -1359,17 +1421,26 @@ class _VizabiExtApiMap extends Chart {
         //if (invalidate) {
           //setTimeout(() => {
           //console.log("invalidate", d, this.activeObject);  
-        this.deckMap.setProps({layers: this.getMapLayers(undefined, false, 0, false)})
+        this.deckMap.setProps({layers: this.getMapLayers()})
           //}, 0);
         //}
+      },
+      getLabelPositionZ: (d, { index }) => {
+        if (!d) return;
+        const centroid = this.map.centroid(d[KEY]);
+        return centroid.concat(this.labelZScale(index));
       },
       getLabelText: (d) => {
         if (!d) return;
         return this.__labelWithoutFrame(d);
       },
+      getLabelFontSize: (d) => {
+        if (!d) return;
+        return this._labels.getFontSize(d.size_label);
+      },
       getTooltipPixelOffset: (d) => {
         if (!d) return;
-        const r = (this.ui.map.showBubbles ? d.r / Math.sqrt(2) : 0) + 7;
+        const r = (this.ui.map.showBubbles ? d[R] / Math.sqrt(2) : 0) + 7;
         return [-r, -r];
       },
       getPixelOffset: (d) => {
@@ -1377,7 +1448,7 @@ class _VizabiExtApiMap extends Chart {
         const key = d[TRAIL_KEY] || d[KEY];
         const offsetX = this.labelOffset[key] && this.labelOffset[key][0] || 0;
         const offsetY = this.labelOffset[key] && this.labelOffset[key][1] || 0;
-        const r = (this.ui.map.showBubbles ? d.r / Math.sqrt(2) : 0) + 4;
+        const r = (this.ui.map.showBubbles ? d[R] / Math.sqrt(2) : 0) + 4;
         return [offsetX || -r, offsetY || -r];
       },
       onLabelDragStart: ({ object:d, x, y, coordinate, sourceLayer, viewport }, evt) => {
@@ -1386,7 +1457,7 @@ class _VizabiExtApiMap extends Chart {
         this.__labelDragging = true;
         const key = d[TRAIL_KEY] || d[KEY];
         if (!this.labelOffset[key]) {
-          const r = (this.ui.map.showBubbles ? d.r / Math.sqrt(2) : 0) + 4;
+          const r = (this.ui.map.showBubbles ? d[R] / Math.sqrt(2) : 0) + 4;
           this.labelOffset[key] = [-r, -r];
         }
   
@@ -1437,7 +1508,7 @@ class _VizabiExtApiMap extends Chart {
         this.labelOffset[key][1] = this.dragY;
         const pos = this.props.getPosition(d).slice(0,2);
         //console.log("offset", this.labelOffset[key], "point", sourceLayer.project(pos),  viewport.getBounds(), viewport);
-        this.deckMap.setProps({layers: this.getMapLayers(undefined, false, 0, false),}); //views: this.getViews({ dragPan: dragFlag }),}); 
+        this.deckMap.setProps({layers: this.getMapLayers(),}); //views: this.getViews({ dragPan: dragFlag }),}); 
         return true;
       },
       onLabelDragEnd: () => {
@@ -1457,14 +1528,26 @@ class _VizabiExtApiMap extends Chart {
         })
         layer.setState({closeData: []});
         
-        this.deckMap.setProps({layers: this.getMapLayers(undefined, false, 0, false)});
+        this.deckMap.setProps({layers: this.getMapLayers()});
       },
+      onLabelHover: ({ object:d, layer, x, y }) => {
+        if (d && this.__selectedKeys.at(-1) !== d[KEY]) {
+          const index = this.__selectedKeys.indexOf(d[KEY]);
+          this.__selectedKeys.push(this.__selectedKeys.splice(index, 1)[0]);
+          const data = this.__labelData.splice(index, 1);
+          this.__labelData = [...this.__labelData, ...data];
+          layer.setState({ closeData: [layer.state.closeData[0]]});
+          layer.state.closeData[0].dataIndex = this.__selectedKeys.length - 1;
+          this.deckMap.setProps({layers: this.getMapLayers()});
+        }
+      }
     }
   }
 
-  getMapLayers(__data, transitions = true, dataDiff = true) {
+  getMapLayers(data = this.__data, t = false, duration = 0) {
     return [
       this.ui.map.showAreas && new GeoJsonLayer({
+        parameters: {depthTest: false},
         id: "geoJsonLayer",
         data: this.__filteredFeatures,
         getFillColor: this.props.getMapFillColor,
@@ -1500,11 +1583,11 @@ class _VizabiExtApiMap extends Chart {
         updateTriggers: {
           getFillColor: [this.activeObject, this.opacityUpdateTrigger],
           getLineColor: [this.activeObject, this.opacityUpdateTrigger],
-          getPosition: [this.redrawUpdateTrigger]
+          getRadius: [this.redrawUpdateTrigger]
         },
         //numInstances: 10,
         transitions: t ? { 
-          getPosition: { 
+          getRadius: {
             duration,
             onStart: (e) => {
               console.log("start", e);
@@ -1512,9 +1595,6 @@ class _VizabiExtApiMap extends Chart {
             onEnd: (e) => {
               console.log("end", e);
             }
-          },
-          getRadius: {
-            duration,
           },
           // getFillColor: {
           //   duration,
@@ -1548,9 +1628,6 @@ class _VizabiExtApiMap extends Chart {
         },
         //numInstances: 10,
         transitions: t ? { 
-          getPosition: { 
-            duration,
-          },
           getRadius: {
             duration,
           },
@@ -1576,26 +1653,31 @@ class _VizabiExtApiMap extends Chart {
             },   
           }
         },
-        data: this.activeObject ? [this.activeObject] : [],
+        data: this.activeObject && this.__tooltipDataFilter() ? this.activeObjectData : null,
+        fontSettings: this.ui.labels.removeLabelBox ? {
+          sdf: true,
+          fontSize: 24
+        } : { sdf: false },
         getPosition: this.props.getPosition,
         getPixelOffset: [-5, -5],//this.props.getPixelOffset,
         getText: this.props.getLabelText,
         getColor: [10, 10, 10],
-        getSize: 16,
+        getSize: this.__defaultFontSize,
         getTextAnchor: 'end',
         getAlignmentBaseline: 'bottom',
         getDragged: this.props.getDragged,
         pickable: false,
-        background: true,
-        backgroundPadding: [5, 4],
+        background: !this.ui.labels.removeLabelBox,
+        backgroundPadding: [6, 4],
         getBorderWidth: 1,
         characterSet: CHARACTER_SET,
+        fontFamily: this.FONT_FAMILY,
         billboard: true,
+        outlineColor: [255, 255, 255],
+        outlineWidth: this.ui.labels.removeLabelBox ? 4 : 0,
         visible: !this.hideAllLayers,
-        //lineWidthUnits: 'pixels',
-        //radiusUnits: 'pixels',
       }),
-      new LabelLayer({
+      this.ui.labels.enabled && new LabelLayer({
         //parameters: {depthTest: false},
         id: 'labelTextLayer',
         _subLayerProps: {
@@ -1617,29 +1699,31 @@ class _VizabiExtApiMap extends Chart {
           }
         },
         data: this.__labelData,
-        fontSettings: {
+        fontSettings: this.ui.labels.removeLabelBox ? {
           sdf: true,
-          fontSize: 20,
-        },
-        getPosition: this.props.getPosition,
+          fontSize: 24
+        } : { sdf: false },
+        getPosition: this.props.getLabelPositionZ,
         getPixelOffset: this.props.getPixelOffset,
+        getLineSourceFillOffset: this.ui.map.showBubbles ? this.props.getRadius : 0,
         getText: this.props.getLabelText,
         getColor: [10, 10, 10],
-        getSize: 16,
+        getSize: this.__isConstantFontSize ? this.__fontSize : this.props.getLabelFontSize,
         getTextAnchor: 'end',
         getAlignmentBaseline: 'bottom',
         getDragged: this.props.getDragged,
-        //getPolygonOffset: null,//({layerIndex}) => [0, layerIndex * 100],
+        getPolygonOffset: null,//({layerIndex}) => [0, layerIndex * 100],
         onDragStart: this.props.onLabelDragStart,
         onDrag: this.props.onLabelDrag,
         onDragEnd: this.props.onLabelDragEnd,
-        //onHover: this.props.onLabelHover,
+        onHover: this.props.onLabelHover,
         onClick: this.props.onLabelClick,
         characterSet: CHARACTER_SET,
+        fontFamily: this.FONT_FAMILY,
         pickable: true,
         outlineColor: [255, 255, 255],
-        outlineWidth: 3,
-        //background: true,
+        outlineWidth: 4,
+        background: !this.ui.labels.removeLabelBox,
         backgroundPadding: [6, 4],
         getBorderWidth: 1,
         billboard: true,
@@ -1648,15 +1732,22 @@ class _VizabiExtApiMap extends Chart {
         updateTriggers: {
           getPixelOffset: [this.dragX, this.dragY],
           getDragged: [this.dragX0, this.dragY0],
-        },        
+        },
+        transitions: t ? {
+          getLineSourceFillOffset: {
+            duration,
+          }
+        } : null,
         visible: !this.hideAllLayers,
       }),
     ]
   }
 
+  __tooltipDataFilter() {
+    return this.ui.labels.enabled ? !this.activeObject[TRAIL_KEY] && this.__selectedKeys.indexOf(this.activeObject[KEY]) == -1 : true;
+  }
+
 }
-
-
 
 _VizabiExtApiMap.DEFAULT_UI = {
   "map": {
@@ -1694,7 +1785,8 @@ _VizabiExtApiMap.DEFAULT_UI = {
 };
 
 export const VizabiExtApiMap = decorate(_VizabiExtApiMap, {
-  "MDL": computed
+  "MDL": computed,
+  "duration": computed
 });
 
 Chart.add("extapimap", VizabiExtApiMap);
