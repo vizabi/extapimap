@@ -1701,7 +1701,8 @@ class _VizabiExtApiMap extends Chart {
         data: this.__labelData,
         fontSettings: this.ui.labels.removeLabelBox ? {
           sdf: true,
-          fontSize: 24
+          fontSize: 24,
+          buffer: 10
         } : { sdf: false },
         getPosition: this.props.getLabelPositionZ,
         getPixelOffset: this.props.getPixelOffset,
