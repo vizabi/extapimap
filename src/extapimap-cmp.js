@@ -1177,7 +1177,7 @@ class _VizabiExtApiMap extends Chart {
             labelDragging = true;
             return;
           }
-          _this._hideEntities();
+          //_this._hideEntities();
           _this.map.panStarted();
         }
         case "panning": {
@@ -1217,7 +1217,7 @@ class _VizabiExtApiMap extends Chart {
             return; 
           }  
           _this.map.panFinished();
-          _this._showEntities(300);
+          if (_this.hideAllLayers) _this._showEntities(300);
           break;
         }
         if (_this.ui.cursorMode == "minus") {
@@ -1253,6 +1253,7 @@ class _VizabiExtApiMap extends Chart {
       latitude: 0,
       pitch: 0,
       zoom: 0,
+      transitionDuration: 1
     };
 
     return new Deck({

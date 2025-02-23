@@ -361,12 +361,17 @@ class TopojsonLayer extends MapLayer {
   }
 
   moveOver(x, y) {
-    const translate = this.projection.translate();
-    this.projection
-      .translate([translate[0] + x, translate[1] + y]);
-
-    // // this.mapGraph
-    // //   .selectAll("path").attr("d", this.mapPath);
+    const vp = this.context.deckMap.getViewports()[0];
+    const pos = vp.project([this.context.__viewState.longitude, this.context.__viewState.latitude]);
+    const uPos = vp.unproject([pos[0] - x, pos[1] - y]);
+    this.context.__viewState = {
+      ...this.context.__viewState,
+      longitude: uPos[0],
+      latitude: uPos[1]
+    }
+    this.context.deckMap.setProps({ 
+      viewState: this.context.__viewState
+    });
   }
 
   zoomMap(center, increment, zooming) {
@@ -947,6 +952,7 @@ export default class Map {
 
   moveOver(dx, dy) {
     if (this.mapInstance) {
+      this.topojsonMap.moveOver(dx, dy);
       return this.mapInstance.moveOver(dx, dy);
     }
     this.topojsonMap.moveOver(dx, dy);
