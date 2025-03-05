@@ -101,7 +101,7 @@ ExtApiMap.DEFAULT_UI = {
       
     },
     map: {
-      "missingDataColor": "none", //"#FDFDFD" or "none" for transparent. "none" makes it faster
+      "missingDataColor": false, //"#FDFDFD" or "none" for transparent. "none" makes it faster
       "showBubbles": true,
       "showAreas": false,
       "showMap": true,
