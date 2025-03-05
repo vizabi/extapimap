@@ -69,8 +69,8 @@ class BivariateColorLegend extends BaseComponent {
 
   updateLocalisers(){
     this.localise = this.services.locale.auto();
-    this.localiseX = this.services.locale.auto({shareOrPercent: this.MDL.x.data?.conceptProps?.format});
-    this.localiseY = this.services.locale.auto({shareOrPercent: this.MDL.y.data?.conceptProps?.format});
+    this.localiseX = this.services.locale.auto({shareOrPercent: this.MDL.x?.data?.conceptProps?.format});
+    this.localiseY = this.services.locale.auto({shareOrPercent: this.MDL.y?.data?.conceptProps?.format});
   };
 
   updateView() {
@@ -79,7 +79,7 @@ class BivariateColorLegend extends BaseComponent {
 
     const bivariatePalette = bivariatePalettes[this.root.ui.chart.map.bivariateColorPalette];
 
-    if(!bivariatePalette) return;
+    if(!bivariatePalette || !X || !Y) return;
   
     const nSteps = Math.sqrt(bivariatePalette.length);
     const wh = paletteWidthHeight / nSteps;
@@ -149,7 +149,7 @@ class BivariateColorLegend extends BaseComponent {
 
     const bivariatePalette = bivariatePalettes[this.ui.map.bivariateColorPalette];
 
-    if(!bivariatePalette) return;
+    if(!bivariatePalette || !X || !Y) return;
 
     const nSteps = Math.sqrt(bivariatePalette.length);
     const wh = paletteWidthHeight / nSteps;
