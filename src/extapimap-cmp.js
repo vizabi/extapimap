@@ -264,7 +264,7 @@ class _VizabiExtApiMap extends Chart {
       this.preload().then(() => {
         if (this.map.inPreload) return;
         this.addReaction(this._filterFeatures);
-        this.addReaction(this._updateSize);
+        this.addReaction(this.updateSize, {throttle_ms: 50});
         //this.addReaction(this._updateMarkerSizeLimits);
         //this.addReaction(this._getDuration);
         this.addReaction(this._updateLabelFontSizes);
@@ -808,7 +808,7 @@ class _VizabiExtApiMap extends Chart {
       );
   }
 
-  _updateSize() {
+  updateSize() {
     this.services.layout.size;
 
     this.DOM.chartSvg
