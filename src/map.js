@@ -647,15 +647,15 @@ class MapboxLayer extends MapLayer {
     this.map.panBy([-dx, -dy], { duration: 0 });
   }
 
-  zoomMap(center, increment, zooming) {
+  zoomMap(center, increment, zooming, duration = 300) {
     const _this = this;
     return new Promise((resolve) => {
       this.map.easeTo({
-        duration: 300,
+        duration,
         around: center,
         zoom: _this.map.getZoom() + 1 * increment
       });
-      utils.delay(300).then(
+      utils.delay(duration).then(
         () => {
           resolve(zooming);
         }

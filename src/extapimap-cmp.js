@@ -216,16 +216,16 @@ class _VizabiExtApiMap extends Chart {
     this.FONT_FAMILY = this.element.style("font-family").split(",")[0];
     this.deckMap = this.getDeck();
     this.props = this.getProps();
-    this.DOM.mapForeground.select("canvas").on("mouseleave", () => {
-      if (this.MDL.highlighted.data.filter.any()) {
-        this.MDL.highlighted.data.filter.clear();
-      }
-    });
-
-    this.element.call(this._createMapDragger());
-    this.element.on("mousewheel", zoomOnWheel)
-      .on("wheel", zoomOnWheel);
-
+    this.DOM.mapForeground.select("canvas")
+      .call(this._createMapZoomer())
+      .call(this._createMapDragger())
+      .on("mousewheel", zoomOnWheel)
+      .on("wheel", zoomOnWheel)
+      .on("mouseleave", () => {
+        if (this.MDL.highlighted.data.filter.any()) {
+          this.MDL.highlighted.data.filter.clear();
+        }
+      });
   }
 
   get MDL(){
@@ -1138,6 +1138,23 @@ class _VizabiExtApiMap extends Chart {
     const _this = this;
     let labelDragging = false;
     return d3.drag()
+      .subject(function(event) {
+        if (_this.zoomAction) return null;
+        /*
+         * Do not drag if zoom-pinching on touchmove
+         * events.
+         */
+        if ((event.sourceEvent.type === "touchstart") &&
+          (event.sourceEvent.touches.length > 1 || event.sourceEvent.targetTouches.length > 1)) {
+          return null;
+        }
+
+  
+        return {
+          x: d3.pointer(event, this)[0],
+          y: d3.pointer(event, this)[1]
+        };
+      })
       .on("start", function(event) {
         if (
           ((event.sourceEvent.metaKey || event.sourceEvent.ctrlKey) && _this.ui.cursorMode == "arrow") ||
@@ -1233,6 +1250,38 @@ class _VizabiExtApiMap extends Chart {
         }
         _this.dragAction = null;
         _this.zooming = false;
+      });
+  }
+
+  _createMapZoomer() {
+    return d3.zoom()
+      .filter(function(event) {
+        if (event?.touches?.length > 1) {
+          return Array.from(event.touches).every(t => t.target === this);
+        }
+        return false;
+      })
+      .on("start", (event) => {
+        const touches = event.sourceEvent.touches;
+        this.zoomAction = "zooming";
+        this.__zoomTouchesDist = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+        this._hideEntities();
+      })
+      .on("zoom", (event) => {
+        const touches = event.sourceEvent.touches;
+        if (touches.length < 2) return;
+        const newTouchesDist = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+        this.__zoomResponse = this.map.mapInstance.zoomMap(this.map.point2Geo((touches[0].clientX + touches[1].clientX) * 0.5, (touches[0].clientY + touches[1].clientY) * 0.5), newTouchesDist / this.__zoomTouchesDist - 1, 0, 0);
+        this.__zoomTouchesDist = newTouchesDist;
+      })
+      .on("end", (event) => {
+        this.__zoomResponse.then(() => {
+          this.map.zooming = 0;
+          this.map.boundsChanged();
+          this._showEntities();
+          this.zoomAction = null;
+          this.__zoomResponse = null;
+        });
       });
   }
 
