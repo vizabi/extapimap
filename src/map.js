@@ -958,14 +958,14 @@ export default class Map {
     this.topojsonMap.moveOver(dx, dy);
   }
 
-  _interact() {
-    return this.context._mapInteract();
-  }
+  // // _interact() {
+  // //   return this.context._mapInteract();
+  // // }
 
   updateOpacity() {
-    if (this.context.ui.map.showAreas) {
-      this.topojsonMap.updateOpacity();
-    }
+    // // if (this.context.ui.map.showAreas) {
+    // //   this.topojsonMap.updateOpacity();
+    // // }
   }
 
   _hideTopojson(duration) {
