@@ -21,6 +21,7 @@ import LabelLayer from "./layers/label-layer/label-layer.js";
 const {ICON_QUESTION} = Icons;
 //const COLOR_BLACKISH = "rgb(51, 51, 51)";
 const COLOR_WHITEISH = "rgb(253, 253, 253)";
+const SUPERHIGHLIGHT_DELAY = 500;
 const CHARACTER_SET =
 'ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖabcdefghijklmnopqrstuvwxyzåäéö0123456789+-−–*/%,.²:() '.split('');
 
@@ -723,9 +724,32 @@ class _VizabiExtApiMap extends Chart {
     if (!this.MDL.superHighlighted || !this.ui.map.showBubbles) return;
 
     const superHighlightFilter = this.MDL.superHighlighted.data.filter;
+    if (!superHighlightFilter.any() || this.duration) {
+      if (this.__superHLTimeoutID) {
+        clearTimeout(this.__superHLTimeoutID);
+        this.__superHLTimeoutID = null;
+        this.opacityUpdateTrigger++;
+        this.__superHLBlink = false;
+        this.deckMap.setProps({ layers: this.getMapLayers() });
+      }
+      return;
+    }
 
-    // this.bubbles
-    //   .classed("vzb-super-highlighted", d => superHighlightFilter.has(d));
+    const _this = this;
+    this.superHighlightFilter = superHighlightFilter;
+    this.__superHLBlink = false;
+    loop();
+
+    function loop() {
+      _this.__superHLTimeoutID = setTimeout(() => {
+        _this.__superHLBlink = !_this.__superHLBlink;
+        _this.opacityUpdateTrigger++;
+        _this.deckMap.setProps({ layers: _this.getMapLayers() });
+
+        loop();
+      }, SUPERHIGHLIGHT_DELAY);
+    }
+
   }
 
   _drawForecastOverlay() {
@@ -1107,6 +1131,10 @@ class _VizabiExtApiMap extends Chart {
       },
       getFillColor: (d, { target }) => {
         if (!d) return;
+        if (this.__superHLBlink && this.superHighlightFilter.has(d)) {
+          target[3] = 0;
+          return target;
+        }
         const c = d3.color(this.cScale(d.color)).formatRgb().slice(4, -1).split(",").map(v=>+v);
         target[0] = c[0];
         target[1] = c[1];
@@ -1116,9 +1144,13 @@ class _VizabiExtApiMap extends Chart {
       },
       getLineColor: (d, { target }) => {
         if (!d) return;
-        target[0] = 0x3;
-        target[1] = 0x3;
-        target[2] = 0x3;
+        if (this.__superHLBlink && this.superHighlightFilter.has(d)) {
+          target[3] = 0;
+          return target;
+        }
+        target[0] = 0x33;
+        target[1] = 0x33;
+        target[2] = 0x33;
         target[3] = this.getOpacity(d) * 255;
         return target;
       },
