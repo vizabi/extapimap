@@ -896,6 +896,10 @@ class _VizabiExtApiMap extends Chart {
         };
       })
       .on("start", function(event) {
+        if (_this.__labelDragging) {
+          labelDragging = true;
+          return;
+        }
         if (
           ((event.sourceEvent.metaKey || event.sourceEvent.ctrlKey) && _this.ui.cursorMode == "arrow") ||
           _this.ui.cursorMode == "plus"
@@ -918,6 +922,9 @@ class _VizabiExtApiMap extends Chart {
         }
       })
       .on("drag", function(event) {
+        if (_this.__labelDragging) {
+          return;
+        }
         switch (_this.dragAction) {
         case "zooming": {
           const mouse = d3.pointer(event, _this.DOM.graph.node());
@@ -930,10 +937,7 @@ class _VizabiExtApiMap extends Chart {
         }
         case "panning0": {
           _this.dragAction = "panning";
-          if (_this.__labelDragging) {
-            labelDragging = true;
-            return;
-          }
+          
           //_this._hideEntities();
           _this.map.panStarted();
         }
@@ -945,6 +949,10 @@ class _VizabiExtApiMap extends Chart {
         }
       })
       .on("end", function(event) {
+        if (_this.__labelDragging) {
+          labelDragging = false;
+          return; 
+        }  
         switch (_this.dragAction) {
         case "zooming":
           _this.DOM.zoomRect
@@ -969,10 +977,7 @@ class _VizabiExtApiMap extends Chart {
           break;
         case "panning":
           _this.DOM.chartSvg.classed("vzb-zooming", false);
-          if (labelDragging) {
-            labelDragging = false;
-            return; 
-          }  
+          
           _this.map.panFinished();
           if (_this.hideAllLayers) _this._showEntities(300);
           break;
