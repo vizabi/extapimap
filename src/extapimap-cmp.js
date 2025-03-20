@@ -1602,7 +1602,7 @@ class _VizabiExtApiMap extends Chart {
 
 _VizabiExtApiMap.DEFAULT_UI = {
   "map": {
-    "missingDataColor": false, //"#FDFDFD" or false for transparent. false makes it faster
+    "missingDataColor": false, //"#FDFDFD" or false for transparent
     "scale": 1,
     "preserveAspectRatio": true,
     "mapEngine": "mapbox",
