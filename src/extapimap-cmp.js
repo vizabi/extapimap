@@ -28,6 +28,7 @@ const CHARACTER_SET =
 const KEY = Symbol.for("key");
 const TRAIL_KEY = Symbol.for("trailHeadKey");
 const OPACITY_KEY = Symbol.for("opacity");
+const BOUNDS_KEY = "_bounds";
 const R = Symbol("r");
 
 const MAX_RADIUS_EM = 0.05;
@@ -264,6 +265,7 @@ class _VizabiExtApiMap extends Chart {
         if (this.map.inPreload) return;
         this.addReaction(this._filterFeatures);
         this.addReaction(this.updateSize, {throttle_ms: 50});
+        this.addReaction(this._updateFeatureBounds);
         //this.addReaction(this._updateMarkerSizeLimits);
         this.addReaction(this._updateLabelFontSizes);
         this.addReaction(this._updateSelected);
@@ -277,6 +279,7 @@ class _VizabiExtApiMap extends Chart {
         //this.addReaction(this._redrawData);
 
         this.addReaction(this._setupCursorMode);
+        this.addReaction(this._adaptMinMaxZoom);
       });
     });
   }
@@ -288,6 +291,15 @@ class _VizabiExtApiMap extends Chart {
     } else {
       this.__filteredFeatures = [];
     }
+  }
+
+  _updateFeatureBounds() {
+    if (!this.ui.adaptMinMaxZoom) return;
+    this.model.dataMapCache;
+
+    this.__filteredFeatures.forEach(f => {
+      if (!f[BOUNDS_KEY]) f[BOUNDS_KEY] = this.map.topojsonMap.mapPath.bounds(f).map(b => this.map.topojsonMap.point2Geo(b[0], b[1])).flat();
+    });
   }
 
   _mapReady() {
@@ -872,6 +884,31 @@ class _VizabiExtApiMap extends Chart {
     this.__isConstantFontSize = this._labels.MDL.size_label.data.isConstant;
     this.__fontSize = this._labels.getFontSize(this._labels.MDL.size_label.data.constant);
     this.deckMap.setProps({layers: this.getMapLayers()})
+  }
+
+  _adaptMinMaxZoom() {
+    if (!this.ui.adaptMinMaxZoom) return;
+
+    const selectedFilter = this.MDL.selected.data.filter;
+
+    if (!selectedFilter.any()) {
+      runInAction(() => {
+        this.map.resetZoom();
+      });
+      return;
+    }
+
+    const selectedBounds = this.__filteredFeatures.filter(f => this.__selectedKeys.includes(f[KEY])).map(f => f[BOUNDS_KEY]);
+    const bounds = selectedBounds[0].slice(0);
+    selectedBounds.forEach(b => {
+      bounds[0] = Math.min(bounds[0], b[0]);
+      bounds[1] = Math.max(bounds[1], b[1]);
+      bounds[2] = Math.max(bounds[2], b[2]);
+      bounds[3] = Math.min(bounds[3], b[3]);
+    });
+    runInAction(() => {
+      this.map.zoomTo(bounds.slice(0, 2), bounds.slice(2, 4));
+    });
   }
 
   _createMapDragger() {

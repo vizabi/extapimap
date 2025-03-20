@@ -935,6 +935,10 @@ export default class Map {
   zoomRectangle(x1, y1, x2, y2) {
     const nw = this.point2Geo(Math.min(x1, x2), Math.min(y1, y2));
     const se = this.point2Geo(Math.max(x1, x2), Math.max(y1, y2));
+    this.zoomTo(nw, se);
+  }
+
+  zoomTo(nw, se) {
     this.context.ui.map.bounds = {
       west: nw[0],
       north: nw[1],
