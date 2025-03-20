@@ -392,6 +392,9 @@ class _VizabiExtApiMap extends Chart {
   _processFrameData() {
     if (!this.ui.map.showBubbles) {
       this.__data = this.model.dataArray;
+      if (this.model.encoding.frame.playing) {
+        this.__newLabelData = this.__isConstantFontSize ? this.__labelData : this.__selectedKeys.map(key => this.model.dataMap.get(key));
+      }
       return;
     }
     let newData;
