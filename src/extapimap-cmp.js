@@ -213,7 +213,8 @@ class _VizabiExtApiMap extends Chart {
       });
     });
 
-    this.FONT_FAMILY = this.element.style("font-family").split(",")[0];
+    this.FONT_FAMILY = 
+      'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"';
     this.deckMap = this.getDeck();
     this.props = this.getProps();
     this.DOM.mapForeground.select("canvas")
@@ -1498,10 +1499,10 @@ class _VizabiExtApiMap extends Chart {
           sdf: true,
           // fontSize: 24,
           fontSize: Math.ceil(this.__defaultFontSize * 1.3),
-          buffer: 10,
-          radius: 10,
-          cutoff: 0.24,
-          smoothing: 0.05
+          buffer: 8,
+          //radius: 10,
+          //cutoff: 0.24,
+          smoothing: 0.1
         } : { sdf: false },
         getPosition: this.props.getPosition,
         getPixelOffset: [-5, -5],//this.props.getPixelOffset,
@@ -1548,10 +1549,10 @@ class _VizabiExtApiMap extends Chart {
           sdf: true,
           // fontSize: 24,
           fontSize: Math.ceil((this.__isConstantFontSize ? this.__fontSize : this._labels.maxLabelTextSize) * 1.3),
-          buffer: 10,
-          radius: 10,
-          cutoff: 0.24,
-          smoothing: 0.05
+          buffer: 8,
+          //radius: 10,
+          //cutoff: 0.24,
+          smoothing: 0.1
         } : { sdf: false },
         getPosition: this.props.getLabelPositionZ,
         getPixelOffset: this.props.getPixelOffset,
