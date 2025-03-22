@@ -568,7 +568,7 @@ class GoogleMapLayer extends MapLayer {
   }
 
   getZoom() {
-    return this.map.getZoom();
+    return this.map.getZoom() - 1;
   }
 
   getCanvas() {
@@ -829,12 +829,9 @@ export default class Map {
       this.getMap();
       this.initMap(this.domSelector).then(
         () => {
-          if (this.mapInstance) {
-            this.mapInstance.rescaleMap();
-          } else {
-            this.topojsonMap.rescaleMap();
-          }
-        });
+          this.rescaleMap();
+        }
+      );
     }
   }
 
