@@ -1501,7 +1501,7 @@ class _VizabiExtApiMap extends Chart {
         fontSettings: this.ui.labels.removeLabelBox ? {
           sdf: true,
           // fontSize: 24,
-          fontSize: Math.ceil(this.__defaultFontSize * 1.3),
+          fontSize: Math.ceil(this.__fontSize * 1.3),
           buffer: 8,
           radius: 11,
           cutoff: 0.24,
@@ -1512,7 +1512,7 @@ class _VizabiExtApiMap extends Chart {
         getPixelOffset: [-5, -5],//this.props.getPixelOffset,
         getText: this.props.getLabelText,
         getColor: [0x33, 0x33, 0x33],
-        getSize: this.__defaultFontSize,
+        getSize: this.__fontSize,
         getTextAnchor: 'end',
         getAlignmentBaseline: 'bottom',
         getDragged: this.props.getDragged,
