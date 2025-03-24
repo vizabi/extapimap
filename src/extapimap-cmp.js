@@ -265,12 +265,12 @@ class _VizabiExtApiMap extends Chart {
       this.preload().then(() => {
         if (this.map.inPreload) return;
         this.addReaction(this._filterFeatures);
+        this.addReaction(this._updateUIStrings);
         this.addReaction(this.updateSize, {throttle_ms: 50});
         this.addReaction(this._updateFeatureBounds);
         //this.addReaction(this._updateMarkerSizeLimits);
         this.addReaction(this._updateLabelFontSizes);
         this.addReaction(this._updateSelected);
-        this.addReaction(this._updateUIStrings);
         this.addReaction(this._drawData);
         this.addReaction(this._mapReady);
         this.addReaction(this._updateMap);
@@ -465,7 +465,7 @@ class _VizabiExtApiMap extends Chart {
 
     // INFO ELEMENTS
 
-    this.DOM.cInfo.classed("vzb-hidden", hideSTitle);  
+    this.DOM.sInfo.classed("vzb-hidden", hideSTitle);  
 
     if (!hideSTitle && this.DOM.sInfo.select("svg").node()) {
       const titleBBox = this.DOM.sTitle.node().getBBox();
@@ -497,7 +497,7 @@ class _VizabiExtApiMap extends Chart {
 
     if (!hideATitle && this.DOM.aInfo.select("svg").node()) {
       const titleBBox = this.DOM.aTitle.node().getBBox();
-      const t = utils.transform(this.DOM.cTitle.node());
+      const t = utils.transform(this.DOM.aTitle.node());
       const hTranslate = isRTL ? (titleBBox.x + t.translateX - infoElHeight * 1.4) : (titleBBox.x + t.translateX + titleBBox.width + infoElHeight * 0.4);
 
       this.DOM.aInfo  
