@@ -25,18 +25,21 @@ const PROFILE_CONSTANTS = (width, height) => ({
     infoElHeight: 16,
     minRadiusPx: 0.5,
     maxRadiusPx: Math.max(0.5, MAX_RADIUS_EM * utils.hypotenuse(width, height)),
+    overflowBottom: 40,
   },
   MEDIUM: {
     margin: { top: 20, right: 20, left: 20, bottom: 30 },
     infoElHeight: 20,
     minRadiusPx: 1,
     maxRadiusPx: Math.max(0.5, MAX_RADIUS_EM * utils.hypotenuse(width, height)),
+    overflowBottom: 40,
   },
   LARGE: {
     margin: { top: 30, right: 30, left: 30, bottom: 35 },
     infoElHeight: 22,
     minRadiusPx: 1,
     maxRadiusPx: Math.max(0.5, MAX_RADIUS_EM * utils.hypotenuse(width, height)),
+    overflowBottom: 50,
   }
 });
 
@@ -699,7 +702,7 @@ class _VizabiExtApiMap extends Chart {
 
     this.DOM.chartSvg
       .style("width", this.width + "px")
-      .style("height", this.height + (this.ui.map.overflowBottom || 0) + "px");
+      .style("height", (this.height + this.profileConstants.overflowBottom) + "px");
 
     runInAction(() => {
       this.map.rescaleMap();

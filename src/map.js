@@ -262,7 +262,7 @@ class TopojsonLayer extends MapLayer {
       .precision(0.1);
 
     const width = this.context.width;
-    const height = this.context.height + (this.context.ui.map.overflowBottom || 0);
+    const height = this.context.height + this.context.profileConstants.overflowBottom;
 
     if (this.mapFeature.features) {
       const landInView = this.mapFeature.features.map(d => {
@@ -765,7 +765,7 @@ export default class Map {
         .style("top", 0)
         .style("bottom", 0)
         .style("width", this.context.width + "px")
-        .style("height", this.context.height + (this.context.ui.map.overflowBottom || 0) + "px");
+        .style("height", (this.context.height + this.context.profileConstants.overflowBottom) + "px");
       this.mapInstance.rescaleMap();
     } else {
       this.topojsonMap.rescaleMap();

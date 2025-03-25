@@ -106,8 +106,7 @@ ExtApiMap.DEFAULT_UI = {
       "showAreas": false,
       "showMap": true,
       "mapEngine": "mapbox",
-      "mapStyle": "mapbox://styles/mapbox/light-v9",    
-      overflowBottom: 50
+      "mapStyle": "mapbox://styles/mapbox/light-v9"
     },
     opacitySelectDim: 0.3,
     opacityRegular: 0.5,
