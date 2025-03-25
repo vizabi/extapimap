@@ -369,6 +369,12 @@ class _VizabiExtApiMap extends Chart {
     this.ui.opacityHighlightDim;
     this.MDL.color.scale.d3Scale;
     this.MDL.mapColor.scale.d3Scale;
+    if (this.ui.map.useBivariateColorScaleWithDataFromXY) {
+      this.MDL.x.scale.d3Scale;
+      this.MDL.y.scale.d3Scale;
+      this.MDL.x.scale.zoomed;
+      this.MDL.y.scale.zoomed;
+    }
 
     this.opacityUpdateTrigger++;
     this.deckMap.setProps({layers: this.getMapLayers()});
