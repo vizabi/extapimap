@@ -851,6 +851,7 @@ class _VizabiExtApiMap extends Chart {
     runInAction(() => {
       if (!this.ui.map.showBubbles || !this.MDL.trail?.show) {
         this.__labelData = this.__selectedKeys.map(key => this.model.dataMap.get(key));
+        this.opacityUpdateTrigger++;
         this.deckMap.setProps({layers: this.getMapLayers()});
       }
     });
