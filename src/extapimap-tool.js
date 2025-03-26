@@ -3,6 +3,7 @@ import {
   BaseComponent,
   TimeSlider,
   DataNotes,
+  DataWarning,
   LocaleService,
   LayoutService,
   CapitalVizabiService,
@@ -49,6 +50,12 @@ export default class ExtApiMap extends BaseComponent {
       name: "tree-menu",
       model: marker
     },{
+      type: DataWarning,
+      placeholder: ".vzb-datawarning",
+      options: {appendButtonHere: ".vzb-extapimap"},
+      model: marker,
+      name: "data-warning"
+    },{
       type: DataNotes,
       placeholder: ".vzb-datanotes",
       model: marker
@@ -75,6 +82,7 @@ export default class ExtApiMap extends BaseComponent {
         <div class="vzb-buttonlist"></div>
       </div>
       <div class="vzb-treemenu"></div>
+      <div class="vzb-datawarning"></div>
       <div class="vzb-datanotes"></div>
     `;
   
@@ -114,6 +122,13 @@ ExtApiMap.DEFAULT_UI = {
     panWithArrow: true,
     adaptMinMaxZoom: false,
     zoomOnScrolling: true,
+  },
+  "data-warning": {
+    margin: {
+      LARGE: { bottom: 20 },
+      MEDIUM: { bottom: 20 },
+      SMALL: { bottom: 10 }
+    }
   }
 };
 
