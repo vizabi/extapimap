@@ -29,6 +29,7 @@ const KEY = Symbol.for("key");
 const TRAIL_KEY = Symbol.for("trailHeadKey");
 const OPACITY_KEY = Symbol.for("opacity");
 const BOUNDS_KEY = "_bounds";
+const REQUIRED_KEY = Symbol.for("mapRequired");
 const R = Symbol("r");
 
 const MAX_RADIUS_EM = 0.05;
@@ -409,17 +410,18 @@ class _VizabiExtApiMap extends Chart {
     let newData;
     if (this.MDL.trail?.show) {
       newData = this.model.dataArray.filter(d => {
-        if (d[TRAIL_KEY]) return false;
+        if (d[TRAIL_KEY] || d[REQUIRED_KEY]) return false;
         d[R] = utils.areaToRadius(this.sScale(d.size) || 0);
         return true;
       });
     } else {
-      newData = this.model.dataArray;
-      newData.forEach(d => {
+      newData = this.model.dataArray.filter(d => {
+        if (d[REQUIRED_KEY]) return false;
         d[R] = utils.areaToRadius(this.sScale(d.size) || 0);
+        return true;
       });
     }
-    this.__newLabelData = this.__selectedKeys.map(key => this.model.dataMap.get(key));
+    this.__newLabelData = this.__selectedKeys.map(key => this.model.dataMap.get(key)).filter(d => d && !d[REQUIRED_KEY]);
     if (this.model.encoding.frame.playing) {
       this.__oldData = this.resortData(this.__data, newData);
     } else {
@@ -835,7 +837,8 @@ class _VizabiExtApiMap extends Chart {
 
     this.__someHighlighted = highlightedFilter.any();
     this.__highlightedMarkers = new Map(highlightedFilter.markers);
-    this.activeObject = this.__highlightedMarkers.size == 1 ? Object.assign({}, this.model.dataMap.get(this.__highlightedMarkers.keys().next().value)) : null;
+    const activeObject = this.__highlightedMarkers.size == 1 ? Object.assign({}, this.model.dataMap.get(this.__highlightedMarkers.keys().next().value)) : null;
+    this.activeObject = this.ui.map.showBubbles && activeObject?.[REQUIRED_KEY] ? null : activeObject;
     this.activeObjectData = this.activeObject ? [this.activeObject] : [];
     this.opacityUpdateTrigger++;
     this.deckMap.setProps({layers: this.getMapLayers()})
