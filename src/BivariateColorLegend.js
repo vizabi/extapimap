@@ -74,6 +74,8 @@ class BivariateColorLegend extends BaseComponent {
   };
 
   updateView() {
+    if (!this.root.ui.chart.map.useBivariateColorScaleWithDataFromXY) return;
+    
     const X = this.MDL.x;
     const Y = this.MDL.y;
 
@@ -144,6 +146,8 @@ class BivariateColorLegend extends BaseComponent {
   }
 
   updateHighlight() {
+    if (!this.root.ui.chart.map.useBivariateColorScaleWithDataFromXY) return;
+
     const X = this.MDL.x;
     const Y = this.MDL.y;
 
@@ -159,6 +163,14 @@ class BivariateColorLegend extends BaseComponent {
       const d = this.model.dataMap.get(key);
       const x = d.x;
       const y = d.y;
+
+      if (!(x || x === 0) || !(y || y === 0)) {
+        this.DOM.dotOuter.classed("vzb-hidden", true);
+        this.DOM.dotInner.classed("vzb-hidden", true);
+        this.DOM.valueY.text("");
+        this.DOM.valueX.text("");
+        return;
+      }
 
       const xSteps = !isMeasure(X) ? 0 : quantize(this.MDL.x, d.x, nSteps);
       const ySteps = nSteps - 1 - (!isMeasure(Y) ? 0 : quantize(Y, d.y, nSteps));
