@@ -8,7 +8,7 @@ import {bivariatePalettes, quantize} from "./bivariateColorScale.js";
 import * as d3 from "d3";
 
 const paletteWidthHeight = 120;
-const margin = {top: 15, right: 20, bottom: 20, left: 30};
+const margin = {top: 5, right: 20, bottom: 20, left: 20};
 const isMeasure = encoding => encoding.data.conceptProps.concept_type === "measure";
 
 class BivariateColorLegend extends BaseComponent {

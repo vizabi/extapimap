@@ -10,6 +10,7 @@ import {
 import * as d3 from "d3";
 import { runInAction, decorate, computed} from "mobx";
 import { BivariateColorLegend } from "./BivariateColorLegend.js";
+import { MapTitles } from "./axistitles.js";
 
 import MapEngine from "./map";
 import { GeoJsonLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
@@ -18,7 +19,6 @@ import LabelBackgroundLayer from "./layers/label-layer/label-background-layer/la
 import LabelMultiIconLayer from "./layers/label-layer/label-multi-icon-layer/label-multi-icon-layer.js";
 import LabelLayer from "./layers/label-layer/label-layer.js";
 
-const {ICON_QUESTION} = Icons;
 //const COLOR_BLACKISH = "rgb(51, 51, 51)";
 const COLOR_WHITEISH = "rgb(253, 253, 253)";
 const SUPERHIGHLIGHT_DELAY = 500;
@@ -78,21 +78,10 @@ class _VizabiExtApiMap extends Chart {
       <svg class="vzb-extapimap-svg vzb-export">
           <g class="vzb-bmc-map-background"></g>
           <g class="vzb-bmc-graph">
-              <g class="vzb-bmc-titles">
-                <g class="vzb-bmc-date"></g>
-                <g class="vzb-bmc-axis-s-title"><text></text></g>
-                <g class="vzb-bmc-axis-c-title"><text></text></g>
-                <g class="vzb-bmc-axis-a-title"><text></text></g>
-
-                <g class="vzb-bmc-axis-s-info vzb-noexport"></g>
-                <g class="vzb-bmc-axis-c-info vzb-noexport"></g>
-                <g class="vzb-bmc-axis-a-info vzb-noexport"></g>
-              </g>
-
-
+              <g class="vzb-bmc-date"></g>
+              <g class="vzb-bmc-titles"></g>
               <g class="vzb-bmc-lines"></g>
               <g class="vzb-bmc-bubbles"></g>
-
               <g class="vzb-bmc-labels"></g>
               <rect class="vzb-bc-zoom-rect"></rect>
           </g>
@@ -118,6 +107,9 @@ class _VizabiExtApiMap extends Chart {
         colorModelName: "color_map",
         legendModelName: "legend_map"
       }
+    },{
+      type: MapTitles,
+      placeholder: ".vzb-bmc-titles"
     }];
 
     super(config);
@@ -144,16 +136,9 @@ class _VizabiExtApiMap extends Chart {
     this.DOM.chartSvg.select(".vzb-bmc-graph").call(graph => 
       Object.assign(this.DOM, {
         graph,
-        titles: graph.select(".vzb-bmc-titles"),
         bubbleContainerCrop: graph.select(".vzb-bmc-bubbles-crop"),
         bubbleContainer: graph.select(".vzb-bmc-bubbles"),
         labelListContainer: graph.select(".vzb-bmc-bubble-labels"),
-        sTitle: graph.select(".vzb-bmc-axis-s-title"),
-        cTitle: graph.select(".vzb-bmc-axis-c-title"),
-        aTitle: graph.select(".vzb-bmc-axis-a-title"),
-        sInfo: graph.select(".vzb-bmc-axis-s-info"),
-        cInfo: graph.select(".vzb-bmc-axis-c-info"),
-        aInfo: graph.select(".vzb-bmc-axis-a-info"),
         bivariateLegend: this.element.select(".vzb-bmc-bivariate-legend"),
         colorAreaLegend: this.element.select(".vzb-bmc-color-legend"),
         year: graph.select(".vzb-bmc-date")
@@ -269,7 +254,6 @@ class _VizabiExtApiMap extends Chart {
       this.preload().then(() => {
         if (this.map.inPreload) return;
         this.addReaction(this._filterFeatures);
-        this.addReaction(this._updateUIStrings);
         this.addReaction(this.updateSize, {throttle_ms: 50});
         this.addReaction(this._updateFeatureBounds);
         //this.addReaction(this._updateMarkerSizeLimits);
@@ -440,98 +424,6 @@ class _VizabiExtApiMap extends Chart {
     });
   }
 
-  repositionElements() {
-    const margin = this.profileConstants.margin;
-    const infoElHeight = this.profileConstants.infoElHeight;
-    const verticalSpacing = infoElHeight * 1.2;
-    const isRTL = this.services.locale.isRTL();
-
-    this.DOM.titles
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    this._date.setConditions({
-      widthRatio: 2 / 10
-    });
-    this._date.resize(this.width, this.height - margin.top);
-
-    //TITLES
-
-    //hide the first line about bubble size when no bubbles
-    const hideSTitle = !this.ui.map.showBubbles;
-    this.DOM.sTitle
-      .attr("transform", "translate(" + (isRTL ? this.chartWidth : 0) + "," + margin.top + ")")
-      .classed("vzb-hidden", hideSTitle);
-
-    //hide the second line about color in large profile or when color is constant or no bubbles
-    const hideCTitle = this.services.layout.profile === "LARGE" || this.MDL.color.data.isConstant || !this.ui.map.showBubbles;
-    this.DOM.cTitle
-      .attr("transform", "translate(" + (isRTL ? this.chartWidth : 0) + "," + (margin.top + (hideSTitle ? 0 : verticalSpacing)) + ")")
-      .classed("vzb-hidden", hideCTitle);
-
-    //hide the second line about color in large profile or when color is constant or no bubbles
-    const hideATitle = !this.ui.map.showAreas || this.ui.map.useBivariateColorScaleWithDataFromXY;
-    this.DOM.aTitle
-      .attr("transform", "translate(" + (isRTL ? this.chartWidth : 0) + "," + (margin.top + (hideSTitle ? 0 : verticalSpacing) + (hideCTitle ? 0 : verticalSpacing)) + ")")
-      .classed("vzb-hidden", hideATitle);
-
-    // INFO ELEMENTS
-
-    this.DOM.sInfo.classed("vzb-hidden", hideSTitle);  
-
-    if (!hideSTitle && this.DOM.sInfo.select("svg").node()) {
-      const titleBBox = this.DOM.sTitle.node().getBBox();
-      const t = utils.transform(this.DOM.sTitle.node());
-      const hTranslate = isRTL ? (titleBBox.x + t.translateX - infoElHeight * 1.4) : (titleBBox.x + t.translateX + titleBBox.width + infoElHeight * 0.4);
-
-      this.DOM.sInfo
-        .attr("transform", `translate(${hTranslate},${t.translateY - verticalSpacing * 0.8})`)
-        .select("svg")
-        .attr("width", infoElHeight)
-        .attr("height", infoElHeight);
-    }
-
-    this.DOM.cInfo.classed("vzb-hidden", hideCTitle);
-
-    if (!hideCTitle && this.DOM.cInfo.select("svg").node()) {
-      const titleBBox = this.DOM.cTitle.node().getBBox();
-      const t = utils.transform(this.DOM.cTitle.node());
-      const hTranslate = isRTL ? (titleBBox.x + t.translateX - infoElHeight * 1.4) : (titleBBox.x + t.translateX + titleBBox.width + infoElHeight * 0.4);
-
-      this.DOM.cInfo  
-        .attr("transform", `translate(${hTranslate},${t.translateY - verticalSpacing * 0.8})`)
-        .select("svg")
-        .attr("width", infoElHeight)
-        .attr("height", infoElHeight);
-    }
-
-    this.DOM.aInfo.classed("vzb-hidden", hideATitle);
-
-    if (!hideATitle && this.DOM.aInfo.select("svg").node()) {
-      const titleBBox = this.DOM.aTitle.node().getBBox();
-      const t = utils.transform(this.DOM.aTitle.node());
-      const hTranslate = isRTL ? (titleBBox.x + t.translateX - infoElHeight * 1.4) : (titleBBox.x + t.translateX + titleBBox.width + infoElHeight * 0.4);
-
-      this.DOM.aInfo  
-        .attr("transform", `translate(${hTranslate},${t.translateY - verticalSpacing * 0.8})`)
-        .select("svg")
-        .attr("width", infoElHeight)
-        .attr("height", infoElHeight);
-    }
-
-    const hideBivariateLegend = !this.ui.map.useBivariateColorScaleWithDataFromXY || !this.ui.map.showAreas;
-    this.DOM.bivariateLegend
-      .style("font-size", infoElHeight + "px")
-      .style("top", (margin.top + (hideSTitle ? 0 : verticalSpacing) + (hideCTitle ? 0 : verticalSpacing) + (hideATitle ? 0 : verticalSpacing)) + "px")
-      .style(isRTL ? "right" : "left", (isRTL ? margin.right : margin.left) + "px")
-      .classed("vzb-invisible", hideBivariateLegend);
-
-    const hideColorAreaLegend = this.ui.map.useBivariateColorScaleWithDataFromXY || !this.ui.map.showAreas;
-    this.DOM.colorAreaLegend
-      //.style("font-size", infoElHeight + "px")
-      .style("top", (margin.top + (hideSTitle ? 0 : verticalSpacing) + (hideCTitle ? 0 : verticalSpacing) + (hideATitle ? 0 : verticalSpacing * 1.2)) + "px")
-      .style(isRTL ? "right" : "left", (isRTL ? margin.right : margin.left) + "px")
-      .classed("vzb-invisible", hideColorAreaLegend);
-  }
 
   _updateMap() {
     this.ui.map.showAreas;
@@ -559,93 +451,7 @@ class _VizabiExtApiMap extends Chart {
     this.sScale.range([minArea, maxArea]);
   }
 
-  _updateUIStrings() {
-    const {
-      size, color, mapColor
-    } = this.MDL;
 
-    const isRTL = this.services.locale.isRTL();
-
-    this.strings = {
-      title: {
-        S: Utils.getConceptName(size, this.localise), 
-        C: Utils.getConceptName(color, this.localise),
-        A: Utils.getConceptName(mapColor, this.localise)
-      }
-    };
-
-    this.DOM.sTitle
-      .classed("vzb-disabled", this.treemenu.state.ownReadiness !== Utils.STATUS.READY)
-      .select("text").text(this.localise("buttons/size") + ": " + this.strings.title.S)
-      .on("click", () => {
-        this.treemenu
-          .encoding("size")
-          .alignX(isRTL ? "right" : "left")
-          .alignY("top")
-          .updateView()
-          .toggle();
-      });
-
-    this.DOM.cTitle
-      .classed("vzb-disabled", this.treemenu.state.ownReadiness !== Utils.STATUS.READY)
-      .select("text").text(this.localise("buttons/color") + ": " + this.strings.title.C)
-      .on("click", () => {
-        this.treemenu
-          .encoding("color")
-          .alignX(isRTL ? "right" : "left")
-          .alignY("top")
-          .updateView()
-          .toggle();
-      });
-
-    this.DOM.aTitle
-      .classed("vzb-disabled", this.treemenu.state.ownReadiness !== Utils.STATUS.READY)
-      .select("text").text(this.localise("buttons/mapcolors") + ": " + this.strings.title.A)
-      .on("click", () => {
-        this.treemenu
-          .encoding("color_map")
-          .alignX(isRTL ? "right" : "left")
-          .alignY("top")
-          .updateView()
-          .toggle();
-      });
-
-    const toolRect = this.root.element.node().getBoundingClientRect();
-    const chartRect = this.element.node().getBoundingClientRect();
-
-    this._drawInfoEl(this.DOM.sInfo, this.DOM.sTitle, this.MDL.size, {x: chartRect.left - toolRect.left});
-    this._drawInfoEl(this.DOM.cInfo, this.DOM.cTitle, this.MDL.color);
-    this._drawInfoEl(this.DOM.aInfo, this.DOM.aTitle, this.MDL.mapColor);
-  }
-
-  _drawInfoEl(element, titleElement, model, posOffset = {}){
-    const dataNotes = this.root.findChild({type: "DataNotes"});
-    const conceptProps = model.data.conceptProps;
-    const infoElHeight = this.profileConstants.infoElHeight;
-
-    element
-      .on("click", () => {
-        dataNotes.pin();
-      })
-      .on("mouseover", function() {
-        const rect = this.getBBox();
-        const ctx = utils.makeAbsoluteContext(this, this.farthestViewportElement);
-        const coord = ctx(rect.x - 10, rect.y + rect.height + 10);
-        dataNotes
-          .setEncoding(model)
-          .show()
-          .setPos(coord.x + posOffset.x || 0, coord.y + posOffset.y || 0);
-      })
-      .on("mouseout", () => {
-        dataNotes.hide();
-      })
-      .html(ICON_QUESTION)
-      .select("svg")
-      .attr("width", infoElHeight + "px").attr("height", infoElHeight + "px")
-      .classed("vzb-hidden", 
-        !conceptProps?.description && !conceptProps?.sourceLink || titleElement.classed("vzb-hidden")
-      );
-  }
 
   updateSize() {
     this.services.layout.size;
@@ -658,93 +464,9 @@ class _VizabiExtApiMap extends Chart {
       this.map.rescaleMap();
     });
 
-    this.repositionElements();
-  }
-
-  // show size number on title when hovered on a bubble
-  updateTitleNumbers() {
-    const _this = this;
-
-    let mobile; // if is mobile device and only one bubble is selected, update the sTitle for the bubble
-    if (_this.isMobile && _this.model.marker.select && _this.model.marker.select.length === 1) {
-      mobile = _this.model.marker.select[0];
-    }
-
-    if (_this.hovered || mobile) {
-      const conceptPropsS = _this.model.marker.size.getConceptprops();
-      const conceptPropsC = _this.model.marker.color.getConceptprops();
-      const conceptPropsA = _this.model.marker.mapColor.getConceptprops();
-
-      const hovered = _this.hovered || mobile;
-      const formatterS = _this.model.marker.size.getTickFormatter();
-      const formatterC = _this.model.marker.color.getTickFormatter();
-
-      const unitS = conceptPropsS.unit || "";
-      const unitC = conceptPropsC.unit || "";
-      const unitA = conceptPropsA.unit || "";
-
-      const valueS = _this.values.size[utils.getKey(hovered, _this.dataKeys.size)];
-      let valueC = _this.values.color[utils.getKey(hovered, _this.dataKeys.color)];
-      let valueA = _this.values.color[utils.getKey(hovered, _this.dataKeys.map_color)];
-
-      //resolve value for color from the color legend model
-      if (_this.model.marker.color.isDiscrete() && valueC) {
-        valueC = this.model.marker.color.getColorlegendMarker().label.getItems()[valueC] || "";
-      }
-
-      _this.DOM.sTitle.select("text")
-        .text(_this.localise("buttons/size") + ": " + formatterS(valueS) + " " + unitS);
-
-      _this.DOM.cTitle.select("text")
-        .text(_this.localise("buttons/color") + ": " +
-          (valueC || valueC === 0 ? formatterC(valueC) + " " + unitC : _this.localise("hints/nodata")));
-
-      _this.DOM.aTitle.select("text")
-        .text(_this.localise("buttons/mapcolors") + ": " +
-          (valueA || valueA === 0 ? formatterC(valueA) + " " + unitA : _this.localise("hints/nodata")));
-  
-
-      this.DOM.sInfo.classed("vzb-hidden", true);
-      this.DOM.cInfo.classed("vzb-hidden", true);
-      this.DOM.aInfo.classed("vzb-hidden", true);
-    } else {
-      this.DOM.sTitle.select("text")
-        .text(this.localise("buttons/size") + ": " + this.strings.title.S);
-      this.DOM.cTitle.select("text")
-        .text(this.localise("buttons/color") + ": " + this.strings.title.C);
-      this.DOM.aTitle.select("text")
-        .text(this.localise("buttons/mapcolors") + ": " + this.strings.title.A);
-
-
-      this.DOM.sInfo.classed("vzb-hidden", this.DOM.sTitle.classed("vzb-hidden"));
-      this.DOM.cInfo.classed("vzb-hidden", this.DOM.cTitle.classed("vzb-hidden"));
-      this.DOM.aInfo.classed("vzb-hidden", this.DOM.aTitle.classed("vzb-hidden"));
-    }
-  }
-
-  fitSizeOfTitles() {
-    // reset font sizes first to make the measurement consistent
-    const sTitleText = this.DOM.sTitle.select("text").style("font-size", null);
-    const cTitleText = this.DOM.cTitle.select("text").style("font-size", null);
-    const aTitleText = this.DOM.aTitle.select("text").style("font-size", null);
-
-    const maxTextW = d3.max([
-      this.DOM.sTitle.classed("vzb-hidden") ? null : sTitleText.node().getBBox().width,
-      this.DOM.cTitle.classed("vzb-hidden") ? null : cTitleText.node().getBBox().width,
-      this.DOM.cTitle.classed("vzb-hidden") ? null : aTitleText.node().getBBox().width,
-    ]);
-
-    const maxFontSize = d3.max([
-      parseInt(sTitleText.style("font-size")),
-      parseInt(cTitleText.style("font-size")),
-      parseInt(aTitleText.style("font-size")),
-    ]);
-
-    const font = maxTextW > this.width ? maxFontSize * this.width / maxTextW + "px" : null;
-
-    sTitleText.style("font-size", font);
-    cTitleText.style("font-size", font);
-    aTitleText.style("font-size", font);
+    this._date
+      .setConditions({ widthRatio: 2 / 10 })
+      .resize(this.width, this.height - this.profileConstants.margin.top);
   }
 
   _blinkSuperHighlighted() {
