@@ -243,7 +243,6 @@ class _VizabiExtApiMap extends Chart {
     // new scales and axes
     this.sScale = this.MDL.size.scale.d3Scale;
     this.cScale = color => color || color == 0 ? this.MDL.color.scale.d3Scale(color) : COLOR_WHITEISH;
-    this.cMapScale = color => this.MDL.mapColor.scale.d3Scale(color);
 
     this.TIMEDIM = this.MDL.frame.data.concept;
     this.KEYS = this.model.data.space.filter(dim => dim !== this.TIMEDIM);

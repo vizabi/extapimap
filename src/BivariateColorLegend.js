@@ -55,6 +55,7 @@ class BivariateColorLegend extends BaseComponent {
 
   get MDL() {
     return {
+      mapColor: this.model.encoding.color_map,
       x: this.model.encoding.x,
       y: this.model.encoding.y,
       highlighted: this.model.encoding.highlighted,
@@ -89,8 +90,13 @@ class BivariateColorLegend extends BaseComponent {
     const height = nSteps * wh ;
     const width = nSteps * wh ;
 
-    this.yScale = Y.scale.d3Scale.copy().domain(Y.scale.zoomed).range([height - wh, 0]).clamp(true);
-    this.xScale = X.scale.d3Scale.copy().domain(X.scale.zoomed).range([0, width - wh]).clamp(true);
+    const isZoomed = this.MDL.mapColor.scale.borrowZoom;
+
+    const yDomain = isZoomed ? Y.scale.zoomed : Y.scale.domain;
+    const xDomain = isZoomed ? X.scale.zoomed : X.scale.domain;
+
+    this.yScale = Y.scale.d3Scale.copy().domain(yDomain).range([height - wh, 0]).clamp(true);
+    this.xScale = X.scale.d3Scale.copy().domain(xDomain).range([0, width - wh]).clamp(true);
 
     // GENERIC
     this.DOM.svg
@@ -105,8 +111,8 @@ class BivariateColorLegend extends BaseComponent {
       .attr("transform", `translate(${wh/2},${height + 3})`)
       .call(
         d3.axisBottom(this.xScale)
-          .tickValues(this.xScale.ticks().concat(X.scale.zoomed))
-          .tickFormat((n) => X.scale.zoomed.includes(n) ? this.localiseX(n) : "")
+          .tickValues(this.xScale.ticks().concat(xDomain))
+          .tickFormat((n) => xDomain.includes(n) ? this.localiseX(n) : "")
       );
 
     this.DOM.axisY
@@ -114,8 +120,8 @@ class BivariateColorLegend extends BaseComponent {
       .attr("transform", `translate(${-3},${wh/2}) rotate(90)`)
       .call(
         d3.axisBottom(this.yScale)
-          .tickValues(this.yScale.ticks().concat(Y.scale.zoomed))
-          .tickFormat((n) => Y.scale.zoomed.includes(n) ? this.localiseY(n) : "")
+          .tickValues(this.yScale.ticks().concat(yDomain))
+          .tickFormat((n) => yDomain.includes(n) ? this.localiseY(n) : "")
       );
 
     // PALETTE
@@ -172,8 +178,10 @@ class BivariateColorLegend extends BaseComponent {
         return;
       }
 
-      const xSteps = !isMeasure(X) ? 0 : quantize(this.MDL.x, d.x, nSteps);
-      const ySteps = nSteps - 1 - (!isMeasure(Y) ? 0 : quantize(Y, d.y, nSteps));
+      const isZoomed = this.MDL.mapColor.scale.borrowZoom;
+
+      const xSteps = !isMeasure(X) ? 0 : quantize(this.MDL.x, d.x, nSteps, isZoomed);
+      const ySteps = nSteps - 1 - (!isMeasure(Y) ? 0 : quantize(Y, d.y, nSteps, isZoomed));
 
       this.DOM.dotOuter
         .classed("vzb-hidden", false)

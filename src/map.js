@@ -840,7 +840,7 @@ export default class Map {
     return datapoint 
       ? colorScaleLogic({
         context: this.context, 
-        typicalColorScale: this.context.cMapScale, 
+        typicalColorScale: this.context.MDL.mapColor.scale, 
         missing: this.context.ui.map.missingDataColor ?? COLOR_WHITEISH, 
         color: datapoint.color_map, 
         x: datapoint.x, 

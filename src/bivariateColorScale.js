@@ -1,10 +1,11 @@
 import * as d3 from "d3";
 const clamp0to1 = (n) => n > 1 ? 1 : (n < 0 ? 0 : n);
 
-export function quantize(encoding, value, nSteps) {
+export function quantize(encoding, value, nSteps, isZoomed) {
   const scale = encoding.scale.d3Scale;
   const zoomed = encoding.scale.zoomed;
-  const range = [scale(zoomed[0]), scale(zoomed[1])];
+  const domain = encoding.scale.domain;
+  const range = isZoomed ? [scale(zoomed[0]), scale(zoomed[1])] : [scale(domain[0]), scale(domain[1])];
   const upsideDown = range[0] > range[1];
   const valueScaled0to1 = clamp0to1((scale(value) - d3.min(range)) / (d3.max(range) - d3.min(range)));
   const index = Math.round((upsideDown ? 1 - valueScaled0to1 : valueScaled0to1) * (nSteps - 1));
@@ -27,11 +28,12 @@ export const bivariatePalettes = {
 export function colorScaleLogic({context, typicalColorScale, missing, color, x, y}) {
   const isMeasure = enc => context.MDL[enc].data.conceptProps.concept_type === "measure";
   const bivariatePalette = bivariatePalettes[context.ui.map.bivariateColorPalette];
+  const isZoomed = typicalColorScale.borrowZoom;
   const nSteps = () => Math.sqrt(bivariatePalette?.length || 0);
 
   // bivariate scale disabled — revert to regular color encoding
   if (!context.ui.map.useBivariateColorScaleWithDataFromXY || !bivariatePalette)
-    return color || color === 0 ? typicalColorScale(color) : missing;
+    return color || color === 0 ? typicalColorScale.d3Scale(color) : missing;
     
   // one of x or y doesn't have data or both aren't measures
   else if ( !x && x !== 0 || !y && y !== 0 || !isMeasure("x") && !isMeasure("y"))
@@ -39,19 +41,19 @@ export function colorScaleLogic({context, typicalColorScale, missing, color, x, 
 
   // y is not a measure — univariate scale
   else if ( isMeasure("x") && !isMeasure("y") ) {
-    return bivariatePalette[quantize(context.MDL["x"], x, nSteps())];
+    return bivariatePalette[quantize(context.MDL["x"], x, nSteps(), isZoomed)];
   }
 
   // x is not a measure — univariate scale
   else if ( !isMeasure("x") && isMeasure("y") ) {
     const _nSteps = nSteps();
-    return bivariatePalette[quantize(context.MDL["y"], y, _nSteps) * _nSteps];
+    return bivariatePalette[quantize(context.MDL["y"], y, _nSteps, isZoomed) * _nSteps];
   }
 
   // both x and y are measures and have data — actual bivariate scale
   else {
     const _nSteps = nSteps();
-    return bivariatePalette[quantize(context.MDL["x"], x, _nSteps) + quantize(context.MDL["y"], y, _nSteps) * _nSteps];
+    return bivariatePalette[quantize(context.MDL["x"], x, _nSteps, isZoomed) + quantize(context.MDL["y"], y, _nSteps, isZoomed) * _nSteps];
   }
   
 }
