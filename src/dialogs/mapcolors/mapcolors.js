@@ -20,7 +20,10 @@ export class Mapcolors extends Dialog {
 
         <div class="vzb-dialog-content vzb-dialog-scrollable">
           <div class="vzb-clegend-container"></div>
-          <div class="vzb-options-container"></div>
+          <div class="vzb-options-container">
+            <div class="vzb-options-switch-borrowzoom"></div>
+            <div class="vzb-options-switch-bivariate"></div>
+          </div>
         </div>
 
         <div class="vzb-dialog-buttons">
@@ -49,10 +52,17 @@ export class Mapcolors extends Dialog {
       }
     }, {
       type: SimpleCheckbox,
-      placeholder: ".vzb-options-container",
+      placeholder: ".vzb-options-switch-bivariate",
       options: {
         checkbox: "useBivariateColorScaleWithDataFromXY",
         submodel: "root.ui.chart.map"
+      }
+    }, {
+      type: SimpleCheckbox,
+      placeholder: ".vzb-options-switch-borrowzoom",
+      options: {
+        checkbox: "borrowZoom",
+        submodel: "model.encoding.color_map.scale"
       }
     }];
     
