@@ -97,7 +97,7 @@ import {
         title: {
           S: Utils.getConceptName(size, this.localise), 
           C: Utils.getConceptName(color, this.localise),
-          A: Utils.getConceptName(mapColor, this.localise)
+          A: Utils.getConceptShortName(mapColor, this.localise)
         }
       };
     
