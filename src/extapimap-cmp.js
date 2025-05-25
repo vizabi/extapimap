@@ -202,6 +202,13 @@ class _VizabiExtApiMap extends Chart {
       });
     });
 
+    const MAP_STROKE_MIN_ZOOM = 5;
+    const MAP_STROKE_MAX_ZOOM = 8;
+    this.mapStrokeScaleZoomToOpacity = d3.scaleLinear()
+      .domain([MAP_STROKE_MIN_ZOOM, MAP_STROKE_MAX_ZOOM])
+      .range([0, 255])
+      .clamp(true);
+
     this.FONT_FAMILY = 
       'Verdana, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"';
     this.deckMap = this.getDeck();
@@ -869,11 +876,10 @@ class _VizabiExtApiMap extends Chart {
         target[0] = color[0];
         target[1] = color[1];
         target[2] = color[2];
-        target[3] = c ? 255 : 0;
+        target[3] = c ? Math.floor(this.mapStrokeScaleZoomToOpacity(this.__viewState.zoom)) : 0;
         return target;
       },
       onMapHover: ({ object: d }) => {
-        //console.log("onhover", d, this.activeObject);
         //zero opacity for non-selected markers
         if (d && this.map.getOpacity(d[KEY]) == 0) return;
         const invalidate = d?.[KEY] !== this.activeObject?.[KEY]
@@ -1137,7 +1143,7 @@ class _VizabiExtApiMap extends Chart {
         onClick: this.props.onMapClick,
         updateTriggers: {
           getFillColor: [this.activeObject, this.opacityUpdateTrigger, this.redrawUpdateTrigger, this.__labelData],
-          //getLineColor: [activeObject],
+          getLineColor: this.__viewState.zoom,
           //getPosition: [activeObject]
         },
         visible: !this.hideAllLayers
