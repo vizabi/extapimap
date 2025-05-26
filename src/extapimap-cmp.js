@@ -531,10 +531,33 @@ class _VizabiExtApiMap extends Chart {
   }
 
   getMapOpacity(key) {
+    const OPACITY_MAP_REGULAR = 0.8;
+    const OPACITY_MAP_SELECT_DIM = 0.5;
+    const OPACITY_MAP_HILT_DIM = 0.5;
+
     if (this.ui.map.showBubbles)
-      return this.ui.opacitySelectDim;
+      return OPACITY_MAP_SELECT_DIM;
       
-    return this.getOpacity( {[Symbol.for("key")]: key} );
+    const d = {[Symbol.for("key")]: key};
+
+    if (this.MDL.highlighted.data.filter.has(d)) return 1;
+    if (this.MDL.selected.data.filter.has(d)) return OPACITY_MAP_REGULAR;
+
+    if (this.__someSelected) return OPACITY_MAP_SELECT_DIM;
+    if (this.__someHighlighted) return OPACITY_MAP_HILT_DIM;
+
+    return OPACITY_MAP_REGULAR;
+  }
+
+  getMapStrokeOpacity(d) {
+    const zoomDependantOpacity = Math.floor(this.mapStrokeScaleZoomToOpacity(this.__viewState.zoom));
+    const OPACITY_MAP_REGULAR = 256;    
+
+    if (this.ui.map.showBubbles)
+      return zoomDependantOpacity
+
+    if (this.MDL.highlighted.data.filter.has(d)) return OPACITY_MAP_REGULAR;
+    return zoomDependantOpacity
   }
 
   getOpacity(d) {
@@ -544,7 +567,6 @@ class _VizabiExtApiMap extends Chart {
       opacityRegular,
     } = this.ui;
     
-    //if (this.MDL.highlighted.data.filter.has(d) || this.MDL.superHighlighted.data.filter.has(d)) return opacityRegular;
     if (this.MDL.highlighted.data.filter.has(d)) return opacityRegular;
     if (this.MDL.selected.data.filter.has(d)) return opacityRegular;
 
@@ -876,7 +898,7 @@ class _VizabiExtApiMap extends Chart {
         target[0] = color[0];
         target[1] = color[1];
         target[2] = color[2];
-        target[3] = c ? Math.floor(this.mapStrokeScaleZoomToOpacity(this.__viewState.zoom)) : 0;
+        target[3] = c ? this.getMapStrokeOpacity(d) : 0;
         return target;
       },
       onMapHover: ({ object: d }) => {
@@ -1143,7 +1165,7 @@ class _VizabiExtApiMap extends Chart {
         onClick: this.props.onMapClick,
         updateTriggers: {
           getFillColor: [this.activeObject, this.opacityUpdateTrigger, this.redrawUpdateTrigger, this.__labelData],
-          getLineColor: this.__viewState.zoom,
+          getLineColor: [this.__viewState.zoom, this.activeObject, this.opacityUpdateTrigger]
           //getPosition: [activeObject]
         },
         visible: !this.hideAllLayers
