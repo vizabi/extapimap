@@ -532,8 +532,8 @@ class _VizabiExtApiMap extends Chart {
 
   getMapOpacity(key) {
     const OPACITY_MAP_REGULAR = 0.8;
-    const OPACITY_MAP_SELECT_DIM = 0.5;
-    const OPACITY_MAP_HILT_DIM = 0.5;
+    const OPACITY_MAP_SELECT_DIM = 0.4;
+    const OPACITY_MAP_HILT_DIM = 0.4;
 
     if (this.ui.map.showBubbles)
       return OPACITY_MAP_SELECT_DIM;
@@ -541,7 +541,7 @@ class _VizabiExtApiMap extends Chart {
     const d = {[Symbol.for("key")]: key};
 
     if (this.MDL.highlighted.data.filter.has(d)) return 1;
-    if (this.MDL.selected.data.filter.has(d)) return OPACITY_MAP_REGULAR;
+    if (this.MDL.selected.data.filter.has(d)) return 1;
 
     if (this.__someSelected) return OPACITY_MAP_SELECT_DIM;
     if (this.__someHighlighted) return OPACITY_MAP_HILT_DIM;
