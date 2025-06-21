@@ -216,6 +216,7 @@ class _VizabiExtApiMap extends Chart {
     this.DOM.mapForeground.select("canvas")
       .call(this._createMapZoomer())
       .call(this._createMapDragger())
+      .on("contextmenu", (evt) => evt.preventDefault())
       .on("mousewheel", zoomOnWheel)
       .on("wheel", zoomOnWheel)
       .on("mouseleave", () => {
@@ -926,16 +927,29 @@ class _VizabiExtApiMap extends Chart {
           //}, 0);
         }
       },
-      onMapClick: ({ object: d }) => {
+      onMapClick: ({ object: d }, event) => {
         if (!d) return;
         if (d && this.map.getOpacity(d[KEY]) == 0) return;
-        let dataKey = {[KEY]: d?.[KEY]}
-        console.log("click pretoggle", d, dataKey);
+
         runInAction(() => {
-          this.model.encoding.selected.data.filter.toggle(dataKey);
-          console.log("click toggle", dataKey);
-        })      
-        this.deckMap.setProps({layers: this.getMapLayers()})
+          const dataKey = {[KEY]: d?.[KEY]}
+
+          if (event.rightButton) {
+            dataKey.name = this.__labelWithoutFrame(this.activeObject);
+            const toolNode = this.element.node();
+            const x = (this.width - event.offsetCenter.x) < 250 ? this.width - 250 : event.offsetCenter.x - 5;
+
+            //set context menu
+            const contextMenuComponent = this.root.findChild({type: "MarkerContextmenu"});
+            contextMenuComponent.show(dataKey, {
+              x: toolNode.offsetLeft + x,
+              y: toolNode.offsetTop + event.offsetCenter.y - 5
+            });
+          } else {
+            this.MDL.selected.data.filter.toggle(dataKey);
+          }
+        });
+        this.deckMap.setProps({layers: this.getMapLayers()});
       },
       getFillColor: (d, { target }) => {
         if (!d) return;
@@ -1002,34 +1016,33 @@ class _VizabiExtApiMap extends Chart {
           //}, 0);
         }
       },
-      onClick: ({ object:d, index }) => {
+      onClick: ({ object:d }, event) => {
         //console.log("onclick", d, this.activeObject);  
         if (!d) return;
         //zero opacity for non-selected markers
         if (this.getOpacity(d) == 0) return;
 
-        let dataKey = {[KEY]: d[KEY]}
-        console.log("click pretoggle", d, dataKey);
-        if (d[TRAIL_KEY]) {
-          const nextIndex = index + 1;
-          if (this.__data[nextIndex]?.[TRAIL_KEY] == d[TRAIL_KEY]) {
-            return;
-          } else {
-            dataKey = {[KEY]: d[TRAIL_KEY]}
-          }
-        }
-        //const invalidate = d?.[KEY] !== this.activeObject?.[KEY]
+        if (d[TRAIL_KEY]) return;
+
         runInAction(() => {
-          this.MDL.selected.data.filter.toggle(dataKey);
-          console.log("click toggle", dataKey);
+          const dataKey = {[KEY]: d[KEY]};
+
+          if (event.rightButton) {
+            dataKey.name = this.__labelWithoutFrame(d);
+            const toolNode = this.element.node();
+            const x = (this.width - event.offsetCenter.x) < 250 ? this.width - 250 : event.offsetCenter.x - 5;
+
+            //set context menu
+            const contextMenuComponent = this.root.findChild({type: "MarkerContextmenu"});
+            contextMenuComponent.show(dataKey, {
+              x: toolNode.offsetLeft + x,
+              y: toolNode.offsetTop + event.offsetCenter.y - 5
+            });
+          } else {
+            this.MDL.selected.data.filter.toggle(dataKey);
+          }
         })      
-        //this.activeObject = d;
-        //if (invalidate) {
-          //setTimeout(() => {
-          //console.log("invalidate", d, this.activeObject);  
-        this.deckMap.setProps({layers: this.getMapLayers()})
-          //}, 0);
-        //}
+        this.deckMap.setProps({layers: this.getMapLayers()});
       },
       getLabelPositionZ: (d, { index }) => {
         if (!d) return;

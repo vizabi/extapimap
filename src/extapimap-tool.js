@@ -7,6 +7,7 @@ import {
   LocaleService,
   LayoutService,
   CapitalVizabiService,
+  MarkerContextmenu,
   TreeMenu,
   SteppedSlider,
   Dialogs,
@@ -50,6 +51,11 @@ export default class ExtApiMap extends BaseComponent {
       name: "tree-menu",
       model: marker
     },{
+      type: MarkerContextmenu,
+      placeholder: ".vzb-marker-contextmenu",
+      model: marker,
+      name: "marker-contextmenu"
+    },{
       type: DataWarning,
       placeholder: ".vzb-datawarning",
       options: {appendButtonHere: ".vzb-extapimap"},
@@ -82,6 +88,7 @@ export default class ExtApiMap extends BaseComponent {
         <div class="vzb-buttonlist"></div>
       </div>
       <div class="vzb-treemenu"></div>
+      <div class="vzb-marker-contextmenu"></div>
       <div class="vzb-datawarning"></div>
       <div class="vzb-datanotes"></div>
     `;
