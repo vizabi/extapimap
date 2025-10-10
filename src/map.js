@@ -5,7 +5,7 @@ import {colorScaleLogic} from "./bivariateColorScale.js";
 import * as d3 from "d3";
 
 import GoogleMapsLoader from "google-maps";
-import mapboxgl from "mapbox-gl/dist/mapbox-gl.js";
+/* global mapboxgl */
 import { WebMercatorViewport } from "@deck.gl/core";
 
 const COLOR_WHITEISH = "rgb(253, 253, 253)";

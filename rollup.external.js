@@ -1,1 +1,2 @@
-module.exports = require("vizabi-tool-bundler").bind(null, 'ExtApiMap', 'extapimap', __dirname, require("./package.json"));
+module.exports = require("vizabi-tool-bundler")
+    .bind(null, 'ExtApiMap', 'extapimap', __dirname, require("./package.json"), {"mapbox-gl": "mapboxgl"});
