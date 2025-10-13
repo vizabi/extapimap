@@ -282,7 +282,7 @@ class _VizabiExtApiMap extends Chart {
 
   _filterFeatures() {
     if (this.ui.map.showAreas) {
-      const keys = new Set(this.model.dataMapCache.values().map(m=>m[KEY]));
+      const keys = new Set([...this.model.dataMapCache.values()].map(m=>m[KEY]));
       this.__filteredFeatures = this.map.topojsonMap.mapFeature.features.filter(f => keys.has(f[KEY]));
     } else {
       this.__filteredFeatures = [];
