@@ -22,8 +22,12 @@ import "./dialogs/mapcolors/mapcolors";
 export default class ExtApiMap extends BaseComponent {
 
   constructor(config){
-    const fullMarker = config.model.markers.bubble;
-    config.Vizabi.utils.applyDefaults(fullMarker.config, ExtApiMap.DEFAULT_CORE());  
+    const fullMarker = config.model.markers?.bubble;
+    const fullMarkerLegend = config.model.markers?.legend;
+    const fullMarkerLegendMap = config.model.markers?.legend_map;
+    config.Vizabi.utils.applyDefaults(fullMarker?.config || {}, ExtApiMap.DEFAULT_MODEL.bubble);  
+    config.Vizabi.utils.applyDefaults(fullMarkerLegend?.config || {}, ExtApiMap.DEFAULT_MODEL.legend);  
+    config.Vizabi.utils.applyDefaults(fullMarkerLegendMap?.config || {}, ExtApiMap.DEFAULT_MODEL.legend_map);  
 
     const frameType = config.Vizabi.stores.encodings.modelTypes.frame;
     const { marker, splashMarker } = frameType.splashMarker(fullMarker);
@@ -109,54 +113,240 @@ export default class ExtApiMap extends BaseComponent {
 ExtApiMap.mainComponent = VizabiExtApiMap;
 
 ExtApiMap.DEFAULT_UI = {
-  chart: {
-    viewWH: {
-      width: 0,
-      height: 0
-      
+  "locale": { "shortNumberFormat": true },
+  "layout": { "projector": false },
+
+  "buttons": {
+    "buttons": ["markercontrols", "moreoptions", "presentation", "sidebarcollapse", "fullscreen"]
+  },
+  "dialogs": {
+    "dialogs": {
+      "popup": ["markercontrols", "moreoptions"],
+      "sidebar": ["markercontrols", "zoom"],
+      "moreoptions": [
+        "opacity",
+        "speed",
+        "size",
+        "colors",
+        "label",
+        "mapcolors",
+        "mapoptions",
+        "zoom",
+        "technical",
+        "presentation",
+        "about"
+      ]
     },
-    map: {
-      "missingDataColor": false, //"#FDFDFD" or false for transparent
-      "showBubbles": true,
-      "showAreas": false,
-      "showMap": true,
+    "markercontrols": {
+      "disableSlice": true,
+      "disableAddRemoveGroups": true,
+      "primaryDim": null,
+      "drilldown": null,
+      "shortcutForSwitch": false,
+      "shortcutForSwitch_allow": null
+    } 
+  },
+  "marker-contextmenu": {
+    "primaryDim": null,
+    "drilldown": null,
+  },
+  "tree-menu": {
+    "showDataSources": false,
+    "folderStrategyByDataset": {}
+  },
+  "chart": {
+    "map": {
+      "skipShapesLoading": false,
+      "missingDataColor": false, //"#999" or false for transparent
+      "preserveAspectRatio": true,
       "mapEngine": "mapbox",
-      "mapStyle": "mapbox://styles/mapbox/light-v9"
+      "mapStyle": "mapbox://styles/mapbox/light-v9",
+      "showBubbles": false,
+      "showAreas": true,
+      "showMap": true,
+      "path": null,
+      "projection": "mercator",
+      "topology": {
+        "path": "assets/shapes.json",
+        "objects": {
+          "areas": "shapes",
+          "boundaries": "shapes",
+        },
+        "geoIdProperty": "id",
+      }
     },
-    opacitySelectDim: 0.3,
-    opacityRegular: 0.5,
-    cursorMode: "arrow",
-    panWithArrow: true,
-    adaptMinMaxZoom: false,
-    zoomOnScrolling: true,
+    "opacitySelectDim": 0.3,
+    "opacityHighlightDim": 0.3,
+    "opacityRegular": 0.8,
+    "cursorMode": "arrow",
+    "panWithArrow": true,
+    "adaptMinMaxZoom": false,
+    "zoomOnScrolling": true,
+    "labels": {
+      "enabled": true,
+      "dragging": true,
+      "removeLabelBox": true
+    },
   },
   "data-warning": {
-    margin: {
-      LARGE: { bottom: 20 },
-      MEDIUM: { bottom: 20 },
-      SMALL: { bottom: 10 }
+    "enable": false,
+    "margin": {
+      "LARGE": { "bottom": 20 },
+      "MEDIUM": { "bottom": 20 },
+      "SMALL": { "bottom": 10 }
     }
   }
 };
 
-ExtApiMap.DEFAULT_CORE = () => ({
-  encoding: {
-    "size": {
-      scale: {
-        modelType: "size",
-        allowedTypes: ["linear", "point"],
+ExtApiMap.DEFAULT_MODEL = {
+  "bubble": {
+    "requiredEncodings": ["color_map"],
+
+    "encoding": {
+      "show": {
+        "modelType": "selection"
+      },
+      "selected": {
+        "modelType": "selection"
+      },
+      "highlighted": {
+        "modelType": "selection"
+      },
+      "superhighlighted": {
+        "modelType": "selection"
+      },
+      "order": {
+        "modelType": "order",
+        "direction": "desc",
+        "data": {
+          "ref": "markers.bubble.config.encoding.size.data"
+        }
+      },
+      "color": {
+        "data": {
+          "constant": "_default"
+        },
+        "scale": {
+          "modelType": "color",
+          "type": "ordinal"
+        }
+      },
+      "color_map": {
+        "data": { },
+        "scale": {
+          "modelType": "color"
+        }
+      },
+      "size": {
+        "data": {
+          "constant": "_default"
+        },
+        "scale": {
+          "modelType": "size",
+          "allowedTypes": ["linear", "point"],
+          "extent": [0, 1]
+        }
+      },
+      "label": {
+        "data": {
+          "modelType": "entityPropertyDataConfig"
+        }
+      },
+      "size_label": {
+        "data": {
+          "constant": "_default"
+        },
+        "scale": {
+          "modelType": "size",
+          "allowedTypes": ["linear", "log", "genericLog", "pow", "point", "ordinal"],
+          "extent": [0, 0.34]
+        }
+      },
+      "frame": {
+        "modelType": "frame",
+        "speed": 200,
+        "splash": true
+      },
+      "centroid": {
+        "data": { }
+      },
+      // "lat": {
+      //   data: {
+      //     space: ["geo"],
+      //     concept: "latitude"
+      //   }
+      // },
+      // "lon": {
+      //   data: {
+      //     space: ["geo"],
+      //     concept: "longitude"
+      //   }
+      // }
+    }
+  },
+  "legend": {
+    "data": {
+      "ref": {
+        "transform": "entityConceptSkipFilter",
+        "path": "markers.bubble.encoding.color"
       }
     },
-    "size_label": {
-      data: {
-        constant: "_default"
+    "encoding": {
+      "color": {
+        "data": {
+          "concept": { "ref": "markers.bubble.encoding.color.data.concept" },
+          "constant": { "ref": "markers.bubble.encoding.color.data.constant" }
+        },
+        "scale": {
+          "modelType": "color",
+          "palette": { "ref": "markers.bubble.encoding.color.scale.palette" },
+          "domain": null,
+          "range": null,
+          "type": null,
+          "zoomed": null,
+          "zeroBaseline": false,
+          "clamp": false,
+          "allowedTypes": null
+        }
+        //"scale": { "ref": "markers.bubble.encoding.color.scale" }
       },
-      scale: {
-        modelType: "size",
-        extent: [0, 0.34]
+      "name": { "data": {  } },
+      "order": {
+        "modelType": "order",
+        "direction": "asc",
+        "data": { }
+      },
+      "map": { "data": { } }
+    }
+  },
+  "legend_map": {
+    "data": {
+      "ref": {
+        "transform": "entityConceptSkipFilter",
+        "path": "markers.bubble.encoding.color_map"
       }
+    },
+    "encoding": {
+      "color": {
+        "data": {
+          "concept": { "ref": "markers.bubble.encoding.color_map.data.concept" },
+          "constant": { "ref": "markers.bubble.encoding.color_map.data.constant" }
+        },
+        "scale": {
+          "modelType": "color",
+          "palette": { "ref": "markers.bubble.encoding.color_map.scale.palette" }
+        }
+        //"scale": { "ref": "markers.bubble.encoding.color.scale" }
+      },
+      "name": { "data": { } },
+      "order": {
+        "modelType": "order",
+        "direction": "asc",
+        "data": { }
+      },
+      "map": { "data": { } }
     }
   }
-});
+};
 
 ExtApiMap.versionInfo = { version: __VERSION, build: __BUILD, package: __PACKAGE_JSON_FIELDS, sharedComponents: versionInfo};

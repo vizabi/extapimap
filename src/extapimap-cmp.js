@@ -1382,20 +1382,14 @@ class _VizabiExtApiMap extends Chart {
 
 _VizabiExtApiMap.DEFAULT_UI = {
   "map": {
+    "skipShapesLoading": false,
     "missingDataColor": false, //"#FDFDFD" or false for transparent
-    "scale": 1,
     "preserveAspectRatio": true,
     "mapEngine": "mapbox",
     "mapStyle": "mapbox://styles/mapbox/light-v9",
     "showBubbles": true,
     "showAreas": false,
     "showMap": true,
-    "offset": {
-      top: 0.05,
-      right: 0.01,
-      bottom: 0.05,
-      left: -0.12
-    },
     "path": null,
     "bounds": {
       "north": 70,
@@ -1404,13 +1398,13 @@ _VizabiExtApiMap.DEFAULT_UI = {
       "east": -80
     },
     "projection": "mercator",
-    topology: {
-      path: "assets/world-50m.json",
-      objects: {
-        areas: "countries",
-        boundaries: "land"
+    "topology": {
+      "path": "assets/shapes.json",
+      "objects": {
+        "areas": "shapes",
+        "boundaries": "shapes",
       },
-      geoIdProperty: "id",
+      "geoIdProperty": "id",
     }
   }
 };

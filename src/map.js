@@ -114,7 +114,7 @@ class TopojsonLayer extends MapLayer {
     //   .attr("class", "vzb-bmc-map-graph");
     
     const assetName = utils.getProp(this.context, ["ui", "map", "topology", "path"])
-      || ("assets/world-50m.json");
+      || ("assets/shapes.json");
 
     const projection = "geo" + utils.capitalize(this.context.ui.map.projection);
 
@@ -130,7 +130,6 @@ class TopojsonLayer extends MapLayer {
 
     this.mapPath = d3.geoPath(this.projection);
 
-    this.context.ui.map.scale = 1;
     return this.context.ui.map.skipShapesLoading ? Promise.resolve() : this._loadShapes(assetName).then(
       shapes => {
         _this.parent.inPreload = false;
