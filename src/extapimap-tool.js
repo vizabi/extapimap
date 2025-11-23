@@ -113,7 +113,7 @@ export default class ExtApiMap extends BaseComponent {
 ExtApiMap.mainComponent = VizabiExtApiMap;
 
 ExtApiMap.DEFAULT_UI = {
-  "locale": { "shortNumberFormat": true },
+  "locale": { "id": "en", "shortNumberFormat": true },
   "layout": { "projector": false },
 
   "buttons": {
@@ -267,9 +267,13 @@ ExtApiMap.DEFAULT_MODEL = {
         "speed": 200,
         "splash": true
       },
-      "centroid": {
-        "data": { }
-      },
+      // To place bubbles on map pick centroid or lat and lon
+      // "centroid": {
+      //   "data": {
+      //     "space": ["geo"],
+      //     "concept": "geo"
+      //   }
+      // },
       // "lat": {
       //   data: {
       //     space: ["geo"],
