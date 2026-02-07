@@ -591,6 +591,16 @@ class _VizabiExtApiMap extends Chart {
     const activeObject = this.__highlightedMarkers.size == 1 ? Object.assign({}, this.model.dataMap.get(this.__highlightedMarkers.keys().next().value)) : null;
     this.activeObject = this.ui.map.showBubbles && activeObject?.[REQUIRED_KEY] ? null : activeObject;
     this.activeObjectData = this.activeObject ? [this.activeObject] : [];
+    this.labelGlow = false;
+    if (this.activeObject && this.__someSelected) {
+      const index = this.__selectedKeys.indexOf(this.activeObject[TRAIL_KEY] || this.activeObject[KEY]);
+      if (index > -1) {
+        this.__selectedKeys.push(this.__selectedKeys.splice(index, 1)[0]);
+        const data = this.__labelData.splice(index, 1);
+        this.__labelData = [...this.__labelData, ...data];
+        this.labelGlow = true;
+      }
+    }
     this.opacityUpdateTrigger++;
     this.deckMap.setProps({layers: this.getMapLayers()})
   }
@@ -1070,6 +1080,14 @@ class _VizabiExtApiMap extends Chart {
         const r = (this.ui.map.showBubbles ? d[R] / Math.sqrt(2) : 0) + 4;
         return [offsetX || -r, offsetY || -r];
       },
+      getGlowWidth: (d) => {
+        if (!d) return 0;
+        return this.activeObject && ((d[TRAIL_KEY] || d[KEY]) === (this.activeObject[TRAIL_KEY ] || this.activeObject[KEY])) ? 5 : 0;
+      },
+      getGlowColor: (d, { target }) => {
+        if (!d) return;
+        return this.ui.map.showBubbles ? this.props.getFillColor(d, { target }) : this.props.getMapFillColor(d, { target });
+      },
       onLabelDragStart: ({ object:d, x, y, coordinate, sourceLayer, viewport }, evt) => {
         console.log("onLabelDragStart", d, x, y, coordinate, viewport, sourceLayer)
         if (!d) return;
@@ -1334,6 +1352,9 @@ class _VizabiExtApiMap extends Chart {
           //smoothing: 0.1
         } : { sdf: false },
         //fontWeight: '500',
+        glow: this.labelGlow,
+        getGlowColor: this.props.getGlowColor,
+        getGlowWidth: this.props.getGlowWidth,
         getPosition: this.props.getLabelPositionZ,
         getPixelOffset: this.props.getPixelOffset,
         getLineSourceFillOffset: this.ui.map.showBubbles ? this.props.getRadius : 0,
@@ -1363,6 +1384,7 @@ class _VizabiExtApiMap extends Chart {
         updateTriggers: {
           getPixelOffset: [this.dragX, this.dragY],
           getDragged: [this.dragX0, this.dragY0],
+          getGlowWidth: [this.activeObject],
         },
         transitions: t ? {
           getLineSourceFillOffset: {

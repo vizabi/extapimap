@@ -9,6 +9,8 @@ export default class LabelLayer extends TextLayer {
     getLineSourceFillOffset: {type: 'accessor', value: 0},
     getRadius: {type: 'accessor', value: 0},
     getDragged: {type: 'accessor', value: 0.0},
+    getGlowColor: {type: 'accessor', value: [0, 0, 0, 255]},
+    getGlowWidth: {type: 'accessor', value: 0.0}
   }
   
   getPickingInfo(e) {
@@ -87,6 +89,55 @@ export default class LabelLayer extends TextLayer {
         }
       ),
       //...layers,
+      this.props.glow && new LabelBackgroundLayer(
+        this.getSubLayerProps({
+          id: 'glow',
+          updateTriggers: {
+            //getColor: [activeObject],
+            getDragged: this.props.updateTriggers.getDragged,
+            getPixelOffset: this.props.updateTriggers.getPixelOffset,
+            getPosition: this.props.updateTriggers.getPosition,
+            getSize: this.props.updateTriggers.getSize,
+            getGlowWidth: this.props.updateTriggers.getGlowWidth,
+          }
+        }), {
+          data: this.props.data,
+          getPosition: (d, { index, data }) => {
+            const pos = this.props.getPosition(d, { index, data });
+            return index == (data.length - 1) ? pos : [...pos.slice(0, 2), -10];
+          },
+          getBoundingRect: this.getBoundingRect,
+          getPixelOffset: this.props.getPixelOffset,
+          getSize: this.props.getSize,
+          getFillColor: (_, { index, data }) => {
+            const alpha = index == (data.length - 1) ? 255 : 0;
+            return [255, 255, 255, alpha];
+          },
+          getLineColor: (d, { index, data }) => {
+            const alpha = index == (data.length - 1) ? 255: 0;
+            return [...(typeof this.props.getBorderColor == "function" ? this.props.getBorderColor(d) : this.props.getBorderColor).slice(0,3), alpha];
+          },
+          getLineWidth: (_, { index, data }) => {
+            return index == (data.length - 1) ? 1: 0;
+          },
+          getGlowColor: this.props.getGlowColor,
+          getGlowWidth:  (d, { index, data }) => {
+            return index == (data.length - 1) ? this.props.getGlowWidth(d) : 0;
+          },
+          getDragged: this.props.getDragged,
+          padding: this.props.backgroundPadding,
+          edgeMaxCoord: this.props.edgeMaxCoord,
+          cornerRadius: 5,
+          transitions: {
+            getPosition: this.props.transitions?.getPosition,
+            getPixelOffset: this.props.transitions?.getPosition,
+            getSize: this.props.transitions?.getSize,
+            getFillColor: this.props.transitions?.getBackgroundColor,
+            getLineColor: this.props.transitions?.getBorderColor,
+            getLineWidth: this.props.transitions?.getBorderWidth,
+            getGlowColor: this.props.transitions?.getGlowColor,
+          }
+      }),
       ...super.renderLayers(),
       this.state.closeData?.length && new LabelCloseButtonLayer(
         this.getSubLayerProps({
