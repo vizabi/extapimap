@@ -441,19 +441,31 @@ class _VizabiExtApiMap extends Chart {
   }
 
   _updateMarkerSizeLimits() {
+    if (!this.ui.map.showBubbles) return;
     //this is very funny
     this.services.layout.size;
     this.MDL.size.scale.domain;
 
     const {
-      minRadiusPx: minRadius,
-      maxRadiusPx: maxRadius
+      minRadiusPx,
+      maxRadiusPx
     } = this.profileConstants;
+
+    //transfer min max radius to size dialog via root ui observable (probably a cleaner way is possible)
+    if (this.root.ui.minMaxRadius) {
+      this.root.ui.minMaxRadius.min = minRadiusPx;
+      this.root.ui.minMaxRadius.max = maxRadiusPx;
+    } else {
+      this.root.ui.minMaxRadius = {
+        min: minRadiusPx,
+        max: maxRadiusPx
+      };
+    }
 
     const extent = this.MDL.size.scale.extent || [0, 1];
 
-    let minArea = utils.radiusToArea(Math.max(maxRadius * extent[0], minRadius));
-    let maxArea = utils.radiusToArea(Math.max(maxRadius * extent[1], minRadius));
+    let minArea = utils.radiusToArea(Math.max(maxRadiusPx * extent[0], minRadiusPx));
+    let maxArea = utils.radiusToArea(Math.max(maxRadiusPx * extent[1], minRadiusPx));
 
     this.sScale.range([minArea, maxArea]);
   }
