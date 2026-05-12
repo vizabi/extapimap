@@ -1,3 +1,4 @@
+import { reaction } from "mobx";
 import "./styles.scss";
 import { 
   BaseComponent,
@@ -108,6 +109,33 @@ export default class ExtApiMap extends BaseComponent {
     super(config);
     this.splashMarker = splashMarker;
   }
+
+  setup() {
+    // Dynamically add/remove "size" from the sidebar based on showBubbles.
+    // Uses MobX reaction() instead of addReaction() to skip the initial run,
+    // keeping the URL clean on startup when showBubbles is false.
+    // Because Dialogs builds its own observable tree from config at construction
+    // time, writing to this.ui.dialogs.dialogs.sidebar doesn't automatically
+    // re-trigger Dialogs.resize() — so we call it manually after each change.
+    reaction(
+      () => this.ui.chart.map.showBubbles,
+      (showBubbles) => {
+        const sidebar = this.ui.dialogs.dialogs.sidebar;
+        const hasSizeInSidebar = sidebar.indexOf("size") > -1;
+
+        if (showBubbles && !hasSizeInSidebar) {
+          const zoomIdx = sidebar.indexOf("zoom");
+          const insertAt = zoomIdx > -1 ? zoomIdx : sidebar.length;
+          this.ui.dialogs.dialogs.sidebar = [...sidebar.slice(0, insertAt), "size", ...sidebar.slice(insertAt)];
+        } else if (!showBubbles && hasSizeInSidebar) {
+          this.ui.dialogs.dialogs.sidebar = sidebar.filter(d => d !== "size");
+        }
+
+        // Dialogs has a separate observable tree; manually trigger its resize.
+        this.findChild({name: "dialogs"})?.resize();
+      }
+    );
+  }
 }
 
 ExtApiMap.mainComponent = VizabiExtApiMap;
@@ -121,7 +149,7 @@ ExtApiMap.DEFAULT_UI = {
   },
   "dialogs": {
     "dialogs": {
-      "popup": ["markercontrols", "moreoptions"],
+      "popup": ["markercontrols", "size", "moreoptions"],
       "sidebar": ["markercontrols", "zoom"],
       "moreoptions": [
         "opacity",
@@ -150,6 +178,8 @@ ExtApiMap.DEFAULT_UI = {
   "marker-contextmenu": {
     "primaryDim": null,
     "drilldown": null,
+    "allowExplodeTo": [],
+    "allowFoldTo": []
   },
   "tree-menu": {
     "showDataSources": false,
