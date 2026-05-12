@@ -1,9 +1,7 @@
-@import "../node_modules/bourbon/core/_bourbon.scss";
-@import "../node_modules/@vizabi/shared-components/src/styles/vizabi-old/_mixins.scss";
-@import "../node_modules/@vizabi/shared-components/src/styles/vizabi-old/_common.scss";
-@import "../node_modules/@vizabi/shared-components/src/styles/vizabi-old/_chart.scss";
+@use "../node_modules/@vizabi/shared-components/src/styles/common" as *;
+@use "sass:meta";
 
-@import "../node_modules/mapbox-gl/dist/mapbox-gl";
+@use "../node_modules/mapbox-gl/dist/mapbox-gl";
 
 .vzb-tool {
   $vzb-bmc-date-size: 15em;
@@ -380,7 +378,8 @@
       }
     }
   }
-
-  @import 'dialogs/mapoptions/_mapoptions.scss';
-  @import 'dialogs/mapcolors/_mapcolors.scss';
 }
+
+@include meta.load-css('dialogs/mapoptions/_mapoptions.scss');
+@include meta.load-css('dialogs/mapcolors/_mapcolors.scss');
+

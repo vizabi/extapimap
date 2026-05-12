@@ -1,4 +1,3 @@
-import "./_mapcolors.scss";
 import {Dialog, IndicatorPicker, ColorLegend, SimpleCheckbox} from "@vizabi/shared-components";
 
 /*!

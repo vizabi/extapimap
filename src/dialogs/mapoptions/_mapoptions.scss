@@ -1,3 +1,6 @@
+@use "../../../node_modules/@vizabi/shared-components/src/styles/common" as *;
+
+.vzb-tool {
 //responsiveness
 // &.vzb-large {
 //   &.vzb-dialog-expand-true {
@@ -36,7 +39,8 @@
         .vzb-lmap-style {
           display: none;
         }
-  	  }
+      }
     }
   }
+}
 }
