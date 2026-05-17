@@ -544,9 +544,15 @@ class _VizabiExtApiMap extends Chart {
   }
 
   getMapOpacity(key) {
-    const OPACITY_MAP_REGULAR = 0.8;
-    const OPACITY_MAP_SELECT_DIM = 0.4;
-    const OPACITY_MAP_HILT_DIM = 0.4;
+    const {
+      opacityHighlightDim,
+      opacitySelectDim,
+      opacityRegular,
+    } = this.ui;
+    
+    const OPACITY_MAP_REGULAR = this.root.name === "combo" ? 0.8 : opacityRegular;
+    const OPACITY_MAP_SELECT_DIM = this.root.name === "combo" ? 0.4 : opacitySelectDim;
+    const OPACITY_MAP_HILT_DIM = this.root.name === "combo" ? 0.4 : opacityHighlightDim;
 
     if (this.ui.map.showBubbles)
       return OPACITY_MAP_SELECT_DIM;
